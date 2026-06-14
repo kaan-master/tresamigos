@@ -1,0 +1,14 @@
+{
+  "name": "tres-amigos-site",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Tres Amigos website with lightweight CMS for locations and order links.",
+  "scripts": {
+    "dev": "node server.cjs",
+    "start": "node server.cjs",
+    "build": "node --check server.cjs && node --check cms.js && node --check admin/admin.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

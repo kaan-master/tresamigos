@@ -1,0 +1,365 @@
+{
+  "site": {
+    "seo": {
+      "title": "Tres Amigos | Mexican Street Food Amsterdam",
+      "description": "Tres Amigos Amsterdam. Real Mexican street food met tacos, burritos, bowls en bestelopties per vestiging.",
+      "menuTitle": "Menu | Tres Amigos",
+      "menuDescription": "Bekijk het Tres Amigos menu met tacos, burritos, quesadillas, bowls, sides en desserts.",
+      "image": "assets/site/restaurant-interior.jpg"
+    },
+    "navCta": {
+      "label": "Order Now",
+      "url": "order.html"
+    },
+    "hero": {
+      "eyebrow": "Amsterdam Mexican Street Food",
+      "title": "Fresh Mexican street food.",
+      "intro": "Burritos, tacos, quesadillas, bowls and loaded sides from four Amsterdam locations. Simple to browse, fast to order.",
+      "primaryLabel": "Order now",
+      "primaryUrl": "order.html",
+      "secondaryLabel": "View menu",
+      "secondaryUrl": "menu.html",
+      "tags": [
+        "Tacos",
+        "Burritos",
+        "Bowls",
+        "Quesadillas",
+        "Amsterdam"
+      ]
+    },
+    "footer": {
+      "title": "Eat like a Mexican",
+      "intro": "Real Mexican street food by real Mexicans. Fast service, fresh food and a clear Amsterdam ordering experience.",
+      "email": "info@tresamigos.nl",
+      "instagramUrl": "https://www.instagram.com/tresamigosamsterdam/",
+      "tiktokUrl": "https://www.tiktok.com/",
+      "copyright": "© 2026 Tres Amigos."
+    },
+    "videosSection": {
+      "eyebrow": "Sfeer",
+      "title": "Street food in beweging.",
+      "intro": "Korte verticale beelden die rustig laten zien wat je kunt verwachten: warme tacos, snelle service en een herkenbare Tres Amigos sfeer."
+    }
+  },
+  "videos": [
+    {
+      "id": "beef-tacos",
+      "title": "Beef tacos",
+      "caption": "Zachte tortillas, pulled beef en frisse toppings.",
+      "src": "assets/brand/Beef tacos TA.mp4",
+      "active": true
+    },
+    {
+      "id": "sfeervideo",
+      "title": "Tres Amigos sfeer",
+      "caption": "Een korte blik op de energie achter de toonbank.",
+      "src": "assets/brand/Tres Amigos sfeervideo (1).mp4",
+      "active": true
+    },
+    {
+      "id": "fresh-kitchen",
+      "title": "Fresh from the kitchen",
+      "caption": "Casual, vers en snel klaar voor je bestelling.",
+      "src": "assets/brand/Tres amigos vid 5.mp4",
+      "active": true
+    }
+  ],
+  "menu": [
+    {
+      "id": "tacos",
+      "title": "Tacos",
+      "orderLabel": "Order Tacos",
+      "active": true,
+      "items": [
+        {
+          "id": "xl-pulled-beef-tacos",
+          "name": "XL Pulled Beef tacos",
+          "description": "Three big soft shell slow cooked pulled beef tacos with pickled red onions, cilantro and Mexican cheese.",
+          "price": "€15,95",
+          "active": true
+        },
+        {
+          "id": "xl-pulled-chicken-tacos",
+          "name": "XL Pulled Chicken tacos",
+          "description": "Three big soft shell slow cooked pulled chicken tacos with red onions, chipotle sauce, cilantro and Mexican cheese.",
+          "price": "€14,95",
+          "active": true
+        },
+        {
+          "id": "xl-jackfruit-tacos",
+          "name": "XL Jackfruit tacos",
+          "description": "Three soft shell tacos filled with homemade BBQ jackfruit, cheese and cilantro.",
+          "price": "€13,95",
+          "active": true
+        },
+        {
+          "id": "fried-fish-tacos",
+          "name": "Fried fish tacos",
+          "description": "Three soft shell tacos with fried white fish, lettuce, pico de gallo, red onions, lime sauce, guacamole and cilantro.",
+          "price": "€15,95",
+          "active": true
+        }
+      ]
+    },
+    {
+      "id": "burritos",
+      "title": "Burritos",
+      "orderLabel": "Order Burritos",
+      "active": true,
+      "items": [
+        {
+          "id": "pulled-chicken-burrito",
+          "name": "Pulled chicken burrito",
+          "description": "Pulled chicken, cheese, rice, pinto and black beans, chipotle, red onions and coriander.",
+          "price": "€15,95",
+          "active": true
+        },
+        {
+          "id": "ground-beef-burrito",
+          "name": "Ground beef burrito",
+          "description": "Ground beef, rice, pinto and black beans, chipotle, cheese and cilantro.",
+          "price": "€15,95",
+          "active": true
+        },
+        {
+          "id": "white-fish-burrito",
+          "name": "White fish burrito",
+          "description": "White fish of the day with lime sauce, rice, tomato, red onion, slaw and guacamole.",
+          "price": "€17,95",
+          "active": true
+        },
+        {
+          "id": "jackfruit-burrito",
+          "name": "Jackfruit burrito",
+          "description": "Homemade BBQ jackfruit, beans, cheese and rice.",
+          "price": "€15,45",
+          "active": true
+        },
+        {
+          "id": "vegan-burrito",
+          "name": "Vegan burrito",
+          "description": "Beans, rice, sweet corn, fresh lime juice, red onions, cilantro, guacamole and lettuce.",
+          "price": "€14,95",
+          "active": true
+        }
+      ]
+    },
+    {
+      "id": "quesadillas",
+      "title": "Quesadillas",
+      "orderLabel": "Order Quesadillas",
+      "active": true,
+      "items": [
+        {
+          "id": "pulled-chicken-quesadilla",
+          "name": "Pulled chicken quesadilla",
+          "description": "Mexican pulled chicken, homemade chipotle sauce, cheese, red onions and bell pepper.",
+          "price": "€9,50",
+          "active": true
+        },
+        {
+          "id": "ground-beef-quesadilla",
+          "name": "Ground beef quesadilla",
+          "description": "Ground beef, homemade chipotle sauce, cheese, red onions and bell pepper.",
+          "price": "€9,50",
+          "active": true
+        },
+        {
+          "id": "cheese-quesadilla",
+          "name": "Cheese quesadilla",
+          "description": "Mozzarella, homemade chipotle sauce, cheddar cheese, red onions and bell peppers.",
+          "price": "€6,95",
+          "active": true
+        }
+      ]
+    },
+    {
+      "id": "bowls",
+      "title": "Bowls",
+      "orderLabel": "Order Bowls",
+      "active": true,
+      "items": [
+        {
+          "id": "spicy-pulled-chicken-bowl",
+          "name": "Spicy pulled chicken bowl",
+          "description": "Rice base, chipotle pulled chicken, kidney beans, bell peppers, red onion, jalapeno and spicy chipotle sauce.",
+          "price": "€17,00",
+          "active": true
+        },
+        {
+          "id": "vegan-jackfruit-bowl",
+          "name": "Vegan Jackfruit bowl",
+          "description": "Savory jackfruit, kidney beans, crisp bell peppers, red onion and creamy guacamole.",
+          "price": "€17,00",
+          "active": true
+        },
+        {
+          "id": "chili-con-carne-bowl",
+          "name": "Chili con carne bowl",
+          "description": "Kidney beans, ground beef, sweet corn, pico de gallo, sour cream and homemade garlic sauce.",
+          "price": "€17,00",
+          "active": true
+        }
+      ]
+    },
+    {
+      "id": "sides",
+      "title": "Sides",
+      "orderLabel": "Order Sides",
+      "active": true,
+      "items": [
+        {
+          "id": "mozzarella-sticks",
+          "name": "Mozzarella sticks",
+          "description": "Portion of 5 cheese sticks filled with mozzarella cheese.",
+          "price": "€9,50",
+          "active": true
+        },
+        {
+          "id": "twister-fries",
+          "name": "Twister fries",
+          "description": "Big portion seasoned curly fries.",
+          "price": "€5,49",
+          "active": true
+        },
+        {
+          "id": "chili-cheese-nuggets",
+          "name": "Chili cheese nuggets",
+          "description": "Portion of 6 nuggets filled with bell pepper and cheese.",
+          "price": "€5,95",
+          "active": true
+        },
+        {
+          "id": "fries",
+          "name": "Fries",
+          "description": "Big portion seasoned fries.",
+          "price": "€4,95",
+          "active": true
+        }
+      ]
+    },
+    {
+      "id": "desserts",
+      "title": "Desserts",
+      "orderLabel": "Order Desserts",
+      "active": true,
+      "items": [
+        {
+          "id": "cheesecake",
+          "name": "Cheesecake",
+          "description": "New York style cheesecake.",
+          "price": "€7,00",
+          "active": true
+        },
+        {
+          "id": "xl-chocolate-chip-cookie",
+          "name": "XL Chocolate chip cookie",
+          "description": "Homemade chocolate chip cookie baked golden with gooey chocolate chunks.",
+          "price": "€3,00",
+          "active": true
+        },
+        {
+          "id": "fudge-brownie",
+          "name": "Fudge brownie",
+          "description": "Rich homemade fudge brownie with intense chocolate.",
+          "price": "€4,00",
+          "active": true
+        }
+      ]
+    }
+  ],
+  "locations": [
+    {
+      "id": "oost",
+      "area": "Amsterdam Oost",
+      "name": "Oost",
+      "address": "Wijttenbachstraat 10, 1093 JB Amsterdam",
+      "note": "Take away, delivery and dine in options",
+      "active": true,
+      "links": [
+        {
+          "label": "Take Away",
+          "url": "https://tresamigoswijttenbachstraat-bestellen.nl"
+        },
+        {
+          "label": "Thuisbezorgd",
+          "url": "https://www.thuisbezorgd.nl/menu/tres-amigos-oost"
+        },
+        {
+          "label": "Uber Eats",
+          "url": "https://www.ubereats.com/nl-en/store/tres-amigos-wijttenbachstraat/9o4B9AaRVaa-SDp4LyqZdA?diningMode=DELIVERY"
+        }
+      ]
+    },
+    {
+      "id": "zuid",
+      "area": "Amsterdam Zuid",
+      "name": "Zuid",
+      "address": "Van Woustraat 45H, 1074 AB Amsterdam",
+      "note": "Take away, delivery and dine in options",
+      "active": true,
+      "links": [
+        {
+          "label": "Take Away",
+          "url": "https://www.tresamigosvanwoustraat-bestellen.nl/?store_id=e5d6adad-45ee-48d0-8166-08de964eb761"
+        },
+        {
+          "label": "Thuisbezorgd",
+          "url": "https://www.thuisbezorgd.nl/menu/tres-amigos-oost"
+        },
+        {
+          "label": "Uber Eats",
+          "url": "https://www.ubereats.com/nl-en/store/tres-amigos-van-woustraat/DgiyEzZkSbqHCQgX9xCO3g?diningMode=DELIVERY"
+        }
+      ]
+    },
+    {
+      "id": "west",
+      "area": "Amsterdam West",
+      "name": "West",
+      "address": "Willem de Zwijgerlaan 63H, 1056 JG Amsterdam",
+      "note": "Take away, delivery and dine in options",
+      "active": true,
+      "links": [
+        {
+          "label": "Take Away",
+          "url": "https://tresamigoswillemdezwijgerlaan-bestellen.nl"
+        },
+        {
+          "label": "Delivery",
+          "url": "https://www.tresamigoswillemdezwijgerlaan-bestellen.nl/bestel"
+        },
+        {
+          "label": "Thuisbezorgd",
+          "url": "https://www.thuisbezorgd.nl/menu/tres-amigos-amsterdam-new"
+        },
+        {
+          "label": "Uber Eats",
+          "url": "https://www.ubereats.com/nl/store/tres-amigos-willem-de-zwijgerlaan/Y8zCSk8qUT2-nTc_nn4Ekw?diningMode=DELIVERY"
+        }
+      ]
+    },
+    {
+      "id": "nieuw-west",
+      "area": "Amsterdam Nieuw-West",
+      "name": "Nieuw-West",
+      "address": "Jacob Geelstraat 46, 1065 VT Amsterdam",
+      "note": "Take away, delivery and dine in options",
+      "active": true,
+      "links": [
+        {
+          "label": "Take Away",
+          "url": "https://tresamigosjacobgeelstraat-bestellen.nl"
+        },
+        {
+          "label": "Thuisbezorgd",
+          "url": "https://www.thuisbezorgd.nl/menu/bomies-fd%20"
+        },
+        {
+          "label": "Uber Eats",
+          "url": "https://www.ubereats.com/nl-en/store/tres-amigos-jacob-geelstraat/jjYrRDgjUFqZKcLXRFVBAw?diningMode=DELIVERY"
+        }
+      ]
+    }
+  ]
+}

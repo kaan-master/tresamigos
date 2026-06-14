@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tres Amigos Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="admin-page">
+  <main class="admin-shell">
+    <aside class="admin-sidebar">
+      <a class="brand admin-brand" href="/admin">
+        <span class="brand-mark"><img src="/assets/site/tres-amigos-logo-new.png" alt="Tres Amigos logo"></span>
+      </a>
+      <div class="admin-sidebar-intro">
+        <p class="mini-label">Tres CMS</p>
+        <h1>Dashboard</h1>
+        <p>Beheer home, vestigingen, bestelknoppen, video's, menu en contactinformatie.</p>
+      </div>
+
+      <nav class="admin-tabs" id="admin-tabs" hidden>
+        <button type="button" class="active" data-tab="overview">Overzicht</button>
+        <button type="button" data-tab="home">Home & knoppen</button>
+        <button type="button" data-tab="locations">Vestigingen</button>
+        <button type="button" data-tab="videos">Video's</button>
+        <button type="button" data-tab="menu">Menu</button>
+        <button type="button" data-tab="applications">Aanvragen</button>
+        <button type="button" data-tab="seo">SEO</button>
+        <button type="button" data-tab="footer">Footer</button>
+        <button type="button" data-tab="api">API</button>
+      </nav>
+
+      <div class="admin-sidebar-actions" id="admin-sidebar-actions" hidden>
+        <a class="btn alt" href="/index.html">Bekijk site</a>
+        <button class="btn" type="button" data-action="logout">Uitloggen</button>
+      </div>
+    </aside>
+
+    <section class="admin-content">
+      <form class="admin-login-card" id="login-form">
+        <p class="mini-label">Login</p>
+        <h2>Admin login</h2>
+        <label>
+          Wachtwoord
+          <input id="admin-password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="btn primary" type="submit">Inloggen</button>
+        <p class="admin-message" id="login-message"></p>
+      </form>
+
+      <form class="admin-editor" id="editor-form" hidden>
+        <div class="admin-topbar">
+          <div>
+            <p class="mini-label" id="panel-eyebrow">Overzicht</p>
+            <h2 id="panel-title">Tres Amigos beheren</h2>
+          </div>
+          <button class="btn primary" type="submit">Opslaan</button>
+        </div>
+
+        <section class="admin-panel active" data-panel="overview">
+          <div class="admin-kpi-grid" id="admin-kpis"></div>
+          <article class="admin-card">
+            <h3>Beheerlaag</h3>
+            <p class="admin-muted">Content, bestelknoppen, video, menu en SEO staan gescheiden van de HTML. De website haalt alles via de API op en blijft daardoor snel te beheren.</p>
+            <div class="admin-architecture">
+              <span>Website</span><span>API</span><span>Content</span><span>Admin</span>
+            </div>
+          </article>
+        </section>
+
+        <section class="admin-panel" data-panel="home">
+          <article class="admin-card">
+            <h3>Hero en hoofdknoppen</h3>
+            <div class="admin-grid">
+              <label>Eyebrow<input data-site-field="hero.eyebrow"></label>
+              <label>Titel<input data-site-field="hero.title"></label>
+              <label class="wide">Intro<textarea data-site-field="hero.intro"></textarea></label>
+              <label>Primaire knop tekst<input data-site-field="hero.primaryLabel"></label>
+              <label>Primaire knop URL<input data-site-field="hero.primaryUrl"></label>
+              <label>Secundaire knop tekst<input data-site-field="hero.secondaryLabel"></label>
+              <label>Secundaire knop URL<input data-site-field="hero.secondaryUrl"></label>
+              <label>Menu bestelknop tekst<input data-site-field="navCta.label"></label>
+              <label>Menu bestelknop URL<input data-site-field="navCta.url"></label>
+              <label class="wide">Tags onder de hero<textarea data-site-field="hero.tags" placeholder="Een tag per regel"></textarea></label>
+            </div>
+          </article>
+        </section>
+
+        <section class="admin-panel" data-panel="locations">
+          <article class="admin-card">
+            <div class="admin-section-head">
+              <div>
+                <h3>Vestigingen en bestelknoppen</h3>
+                <p>Zoek eerst een vestiging en klap daarna alleen het item open dat je wilt aanpassen.</p>
+              </div>
+              <button class="btn" type="button" data-action="add-location">Vestiging toevoegen</button>
+            </div>
+            <div class="admin-search-row">
+              <label>Zoeken<input id="locations-search" type="search" placeholder="Zoek op naam, regio of adres"></label>
+            </div>
+            <div class="admin-locations" id="locations-editor"></div>
+          </article>
+        </section>
+
+        <section class="admin-panel" data-panel="videos">
+          <article class="admin-card">
+            <div class="admin-section-head">
+              <div>
+                <h3>Portrait video's</h3>
+                <p>Korte verticale video's voor een rustige sfeerlaag op de homepage.</p>
+              </div>
+              <button class="btn" type="button" data-action="add-video">Video toevoegen</button>
+            </div>
+            <div class="admin-grid">
+              <label>Label<input data-site-field="videosSection.eyebrow"></label>
+              <label>Titel<input data-site-field="videosSection.title"></label>
+              <label class="wide">Intro<textarea data-site-field="videosSection.intro"></textarea></label>
+            </div>
+            <div class="admin-search-row">
+              <label>Zoeken<input id="videos-search" type="search" placeholder="Zoek op titel of bestand"></label>
+            </div>
+            <div class="admin-videos" id="videos-editor"></div>
+          </article>
+        </section>
+
+        <section class="admin-panel" data-panel="menu">
+          <article class="admin-card">
+            <div class="admin-section-head">
+              <div>
+                <h3>Food menu</h3>
+                <p>Beheer de categorieen en producten die op de menupagina verschijnen.</p>
+              </div>
+              <button class="btn" type="button" data-action="add-menu-category">Categorie toevoegen</button>
+            </div>
+            <div class="admin-search-row">
+              <label>Zoeken<input id="menu-search" type="search" placeholder="Zoek categorie, gerecht of prijs"></label>
+            </div>
+            <div class="admin-menu" id="menu-editor"></div>
+          </article>
+        </section>
+
+        <section class="admin-panel" data-panel="seo">
+          <article class="admin-card">
+            <div class="admin-section-head">
+              <div>
+                <h3>SEO</h3>
+                <p>Beheer titels en descriptions voor de belangrijkste pagina's.</p>
+              </div>
+            </div>
+            <div class="admin-search-row">
+              <label>Zoeken<input id="seo-search" type="search" placeholder="Zoek SEO veld"></label>
+            </div>
+            <div class="admin-seo" id="seo-editor"></div>
+          </article>
+        </section>
+
+        <section class="admin-panel" data-panel="applications">
+          <article class="admin-card">
+            <div class="admin-section-head">
+              <div>
+                <h3>Sollicitatie-aanvragen</h3>
+                <p>Nieuwe aanvragen uit de fullscreen sollicitatie-intake staan hier direct zichtbaar voor admin.</p>
+              </div>
+              <button class="btn" type="button" data-action="refresh-applications">Verversen</button>
+            </div>
+            <div class="admin-search-row">
+              <label>Zoeken<input id="applications-search" type="search" placeholder="Zoek op naam, rol, email of dag"></label>
+            </div>
+            <div class="admin-applications" id="applications-editor"></div>
+          </article>
+        </section>
+
+        <section class="admin-panel" data-panel="footer">
+          <article class="admin-card">
+            <h3>Footer en contact</h3>
+            <div class="admin-grid">
+              <label>Footer titel<input data-site-field="footer.title"></label>
+              <label>E-mail<input data-site-field="footer.email"></label>
+              <label class="wide">Footer tekst<textarea data-site-field="footer.intro"></textarea></label>
+              <label>Instagram URL<input data-site-field="footer.instagramUrl"></label>
+              <label>TikTok URL<input data-site-field="footer.tiktokUrl"></label>
+              <label class="wide">Copyright<input data-site-field="footer.copyright"></label>
+            </div>
+          </article>
+        </section>
+
+        <section class="admin-panel" data-panel="api">
+          <article class="admin-card">
+            <h3>API routes</h3>
+            <div class="admin-api-list">
+              <code>GET /api/content</code>
+              <span>Publieke websitecontent.</span>
+              <code>POST /api/admin/login</code>
+              <span>Adminlogin met sessietoken.</span>
+              <code>GET /api/admin/content</code>
+              <span>Beheerdata ophalen.</span>
+              <code>PUT /api/admin/content</code>
+              <span>Beheerdata opslaan.</span>
+              <code>POST /api/applications</code>
+              <span>Publieke sollicitatie-aanvraag opslaan.</span>
+              <code>GET /api/admin/applications</code>
+              <span>Sollicitatie-aanvragen voor admin.</span>
+            </div>
+          </article>
+        </section>
+
+        <p class="admin-message" id="editor-message"></p>
+      </form>
+    </section>
+  </main>
+  <script src="/admin/admin.js"></script>
+</body>
+</html>
