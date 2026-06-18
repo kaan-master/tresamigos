@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SiteSettings {
+  id                 String @id @default("default")
+  seoTitle           String
+  seoDescription     String
+  seoMenuTitle       String
+  seoMenuDescription String
+  seoImage           String
+  navCtaLabel        String
+  navCtaUrl          String
+  heroEyebrow        String
+  heroTitle          String
+  heroIntro          String
+  heroPrimaryLabel   String
+  heroPrimaryUrl     String
+  heroSecondaryLabel String
+  heroSecondaryUrl   String
+  heroTags           String[]
+  footerTitle        String
+  footerIntro        String
+  footerEmail        String
+  footerInstagramUrl String
+  footerTiktokUrl    String
+  footerCopyright    String
+  videosEyebrow      String
+  videosTitle        String
+  videosIntro        String
+  updatedAt          DateTime @updatedAt
+}
+
+model Location {
+  id        String      @id
+  area      String
+  name      String
+  address   String
+  note      String
+  featured  Boolean     @default(false)
+  active    Boolean     @default(true)
+  sortOrder Int         @default(0)
+  links     OrderLink[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model OrderLink {
+  id         String   @id @default(cuid())
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  label      String
+  url        String
+  sortOrder  Int      @default(0)
+}
+
+model Video {
+  id        String   @id
+  title     String
+  caption   String
+  src       String
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MenuCategory {
+  id         String     @id
+  title      String
+  orderLabel String
+  active     Boolean    @default(true)
+  sortOrder  Int        @default(0)
+  items      MenuItem[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model MenuItem {
+  id          String       @id
+  categoryId  String
+  category    MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name        String
+  description String
+  price       String
+  featured    Boolean      @default(false)
+  active      Boolean      @default(true)
+  sortOrder   Int          @default(0)
+}
+
+model Application {
+  id               String   @id @default(uuid())
+  createdAt        DateTime @default(now())
+  status           String   @default("nieuw")
+  role             String
+  name             String
+  email            String
+  phone            String   @default("")
+  days             String[]
+  availabilityNote String   @default("")
+  experience       String   @default("")
+  motivation       String   @default("")
+  pdfName          String?
+  pdfSize          Int?
+  pdfData          String?  @db.Text
+}

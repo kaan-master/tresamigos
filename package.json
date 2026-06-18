@@ -1,14 +1,23 @@
 {
-  "name": "tres-amigos-site",
+  "name": "tres-amigos-platform",
   "private": true,
-  "version": "1.0.0",
-  "description": "Tres Amigos website with lightweight CMS for locations and order links.",
-  "scripts": {
-    "dev": "node server.cjs",
-    "start": "node server.cjs",
-    "build": "node --check server.cjs && node --check cms.js && node --check admin/admin.js"
-  },
+  "version": "2.0.0",
+  "description": "Tres Amigos platform — React, NestJS, Prisma, PostgreSQL, Redis",
+  "packageManager": "pnpm@9.15.0",
   "engines": {
     "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter @tresamigos/api --filter @tresamigos/web --filter @tresamigos/admin dev",
+    "dev:api": "pnpm --filter @tresamigos/api dev",
+    "dev:web": "pnpm --filter @tresamigos/web dev",
+    "dev:admin": "pnpm --filter @tresamigos/admin dev",
+    "build": "pnpm -r build",
+    "db:generate": "pnpm --filter @tresamigos/api db:generate",
+    "db:migrate": "pnpm --filter @tresamigos/api db:deploy",
+    "db:seed": "pnpm --filter @tresamigos/api db:seed",
+    "db:reset": "pnpm --filter @tresamigos/api db:reset",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down"
   }
 }
