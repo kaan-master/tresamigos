@@ -158,6 +158,7 @@ export interface InstagramPost {
   url: string;
   caption: string;
   active?: boolean;
+  isVideo?: boolean;
 }
 
 export interface InstagramFeedPost {

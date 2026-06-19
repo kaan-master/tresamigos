@@ -37,7 +37,7 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
 
   if (!settings.enabled) return null;
 
-  const posts =
+  const posts: InstagramFeedPost[] =
     feed?.posts.length
       ? feed.posts
       : settings.posts
@@ -46,7 +46,8 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
             id: post.id,
             image: post.image,
             url: post.url,
-            caption: post.caption
+            caption: post.caption,
+            isVideo: post.isVideo
           }));
 
   if (!posts.length) return null;
