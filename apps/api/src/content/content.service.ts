@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import type { SiteContent } from "@tresamigos/types";
+import { Prisma } from "@prisma/client";
+import type { MenuItem, OrderLink, PageSeo, SeoPageKey, SiteContent } from "@tresamigos/types";
 import { sanitizeContent } from "@tresamigos/utils";
 import { PrismaService } from "../prisma/prisma.module";
 
@@ -28,7 +29,11 @@ export class ContentService {
           description: site.seoDescription,
           menuTitle: site.seoMenuTitle,
           menuDescription: site.seoMenuDescription,
-          image: site.seoImage
+          image: site.seoImage,
+          pages:
+            site.seoPages && typeof site.seoPages === "object" && !Array.isArray(site.seoPages)
+              ? (site.seoPages as unknown as Partial<Record<SeoPageKey, PageSeo>>)
+              : undefined
         },
         navCta: {
           label: site.navCtaLabel,
@@ -56,7 +61,35 @@ export class ContentService {
           eyebrow: site.videosEyebrow,
           title: site.videosTitle,
           intro: site.videosIntro
-        }
+        },
+        vacancy:
+          site.vacancyRoles && typeof site.vacancyRoles === "object" && !Array.isArray(site.vacancyRoles)
+            ? (site.vacancyRoles as unknown as SiteContent["site"]["vacancy"])
+            : undefined,
+        openingHours:
+          site.openingHours && typeof site.openingHours === "object" && !Array.isArray(site.openingHours)
+            ? (site.openingHours as unknown as SiteContent["site"]["openingHours"])
+            : undefined,
+        ourStory:
+          site.ourStory && typeof site.ourStory === "object" && !Array.isArray(site.ourStory)
+            ? (site.ourStory as unknown as SiteContent["site"]["ourStory"])
+            : undefined,
+        reviews:
+          site.reviews && typeof site.reviews === "object" && !Array.isArray(site.reviews)
+            ? (site.reviews as unknown as SiteContent["site"]["reviews"])
+            : undefined,
+        promoPopup:
+          site.promoPopup && typeof site.promoPopup === "object" && !Array.isArray(site.promoPopup)
+            ? (site.promoPopup as unknown as SiteContent["site"]["promoPopup"])
+            : undefined,
+        mailRelay:
+          site.mailRelay && typeof site.mailRelay === "object" && !Array.isArray(site.mailRelay)
+            ? (site.mailRelay as unknown as SiteContent["site"]["mailRelay"])
+            : undefined,
+        contactForm:
+          site.contactForm && typeof site.contactForm === "object" && !Array.isArray(site.contactForm)
+            ? (site.contactForm as unknown as SiteContent["site"]["contactForm"])
+            : undefined
       },
       locations: locations.map((location) => ({
         id: location.id,
@@ -85,6 +118,7 @@ export class ContentService {
           name: item.name,
           description: item.description,
           price: item.price,
+          image: item.image || undefined,
           featured: item.featured,
           active: item.active
         }))
@@ -100,11 +134,12 @@ export class ContentService {
         where: { id: "default" },
         create: {
           id: "default",
-          seoTitle: content.site.seo.title,
-          seoDescription: content.site.seo.description,
-          seoMenuTitle: content.site.seo.menuTitle,
-          seoMenuDescription: content.site.seo.menuDescription,
+          seoTitle: content.site.seo.pages.home.title,
+          seoDescription: content.site.seo.pages.home.description,
+          seoMenuTitle: content.site.seo.pages.menu.title,
+          seoMenuDescription: content.site.seo.pages.menu.description,
           seoImage: content.site.seo.image,
+          seoPages: content.site.seo.pages as unknown as Prisma.InputJsonValue,
           navCtaLabel: content.site.navCta.label,
           navCtaUrl: content.site.navCta.url,
           heroEyebrow: content.site.hero.eyebrow,
@@ -123,14 +158,22 @@ export class ContentService {
           footerCopyright: content.site.footer.copyright,
           videosEyebrow: content.site.videosSection.eyebrow,
           videosTitle: content.site.videosSection.title,
-          videosIntro: content.site.videosSection.intro
+          videosIntro: content.site.videosSection.intro,
+          vacancyRoles: content.site.vacancy as unknown as Prisma.InputJsonValue,
+          openingHours: content.site.openingHours as unknown as Prisma.InputJsonValue,
+          ourStory: content.site.ourStory as unknown as Prisma.InputJsonValue,
+          reviews: content.site.reviews as unknown as Prisma.InputJsonValue,
+          promoPopup: content.site.promoPopup as unknown as Prisma.InputJsonValue,
+          mailRelay: content.site.mailRelay as unknown as Prisma.InputJsonValue,
+          contactForm: content.site.contactForm as unknown as Prisma.InputJsonValue
         },
         update: {
-          seoTitle: content.site.seo.title,
-          seoDescription: content.site.seo.description,
-          seoMenuTitle: content.site.seo.menuTitle,
-          seoMenuDescription: content.site.seo.menuDescription,
+          seoTitle: content.site.seo.pages.home.title,
+          seoDescription: content.site.seo.pages.home.description,
+          seoMenuTitle: content.site.seo.pages.menu.title,
+          seoMenuDescription: content.site.seo.pages.menu.description,
           seoImage: content.site.seo.image,
+          seoPages: content.site.seo.pages as unknown as Prisma.InputJsonValue,
           navCtaLabel: content.site.navCta.label,
           navCtaUrl: content.site.navCta.url,
           heroEyebrow: content.site.hero.eyebrow,
@@ -149,7 +192,14 @@ export class ContentService {
           footerCopyright: content.site.footer.copyright,
           videosEyebrow: content.site.videosSection.eyebrow,
           videosTitle: content.site.videosSection.title,
-          videosIntro: content.site.videosSection.intro
+          videosIntro: content.site.videosSection.intro,
+          vacancyRoles: content.site.vacancy as unknown as Prisma.InputJsonValue,
+          openingHours: content.site.openingHours as unknown as Prisma.InputJsonValue,
+          ourStory: content.site.ourStory as unknown as Prisma.InputJsonValue,
+          reviews: content.site.reviews as unknown as Prisma.InputJsonValue,
+          promoPopup: content.site.promoPopup as unknown as Prisma.InputJsonValue,
+          mailRelay: content.site.mailRelay as unknown as Prisma.InputJsonValue,
+          contactForm: content.site.contactForm as unknown as Prisma.InputJsonValue
         }
       });
 
@@ -167,7 +217,7 @@ export class ContentService {
             active: location.active !== false,
             sortOrder: index,
             links: {
-              create: location.links.map((link, linkIndex) => ({
+              create: location.links.map((link: OrderLink, linkIndex: number) => ({
                 label: link.label,
                 url: link.url,
                 sortOrder: linkIndex
@@ -202,11 +252,12 @@ export class ContentService {
             active: category.active !== false,
             sortOrder: categoryIndex,
             items: {
-              create: category.items.map((item, itemIndex) => ({
+              create: category.items.map((item: MenuItem, itemIndex: number) => ({
                 id: item.id,
                 name: item.name,
                 description: item.description,
                 price: item.price,
+                image: item.image || "",
                 featured: item.featured === true,
                 active: item.active !== false,
                 sortOrder: itemIndex

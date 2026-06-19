@@ -7,7 +7,7 @@ import { AppModule } from "./app.module";
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useStaticAssets(join(__dirname, "../../../assets"), { prefix: "/assets/" });
-  const corsOrigins = (process.env.CORS_ORIGINS || "http://localhost:5173,http://localhost:5174")
+  const corsOrigins = (process.env.CORS_ORIGINS || "http://localhost:5180,http://localhost:5181")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
@@ -17,7 +17,7 @@ async function bootstrap() {
     credentials: true
   });
 
-  const port = Number(process.env.PORT || 3000);
+  const port = Number(process.env.PORT || 3100);
   await app.listen(port);
   console.log(`Tres Amigos API draait op http://localhost:${port}`);
 }

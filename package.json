@@ -8,11 +8,13 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "pnpm -r --parallel --filter @tresamigos/api --filter @tresamigos/web --filter @tresamigos/admin dev",
-    "dev:api": "pnpm --filter @tresamigos/api dev",
+    "postinstall": "pnpm build:packages",
+    "build:packages": "pnpm --filter @tresamigos/types build && pnpm --filter @tresamigos/utils build",
+    "dev": "pnpm build:packages && pnpm -r --parallel --filter @tresamigos/api --filter @tresamigos/web --filter @tresamigos/admin dev",
+    "dev:api": "pnpm build:packages && pnpm --filter @tresamigos/api dev",
     "dev:web": "pnpm --filter @tresamigos/web dev",
     "dev:admin": "pnpm --filter @tresamigos/admin dev",
-    "build": "pnpm -r build",
+    "build": "pnpm --filter @tresamigos/types build && pnpm --filter @tresamigos/utils build && pnpm -r --filter @tresamigos/api --filter @tresamigos/web --filter @tresamigos/admin build",
     "db:generate": "pnpm --filter @tresamigos/api db:generate",
     "db:migrate": "pnpm --filter @tresamigos/api db:deploy",
     "db:seed": "pnpm --filter @tresamigos/api db:seed",

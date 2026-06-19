@@ -1,13 +1,16 @@
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
+import { productImageUrl } from "../lib/productImage";
+import { pageSeo } from "../lib/seo";
 
 export function MenuPage({ content }: { content: SiteContent }) {
   const { site, menu } = content;
+  const seo = pageSeo(content, "menu");
   const activeMenu = menu.filter((category) => category.active !== false);
 
   return (
     <>
-      <Helmet title={site.seo.menuTitle} description={site.seo.menuDescription} />
+      <Helmet title={seo.title} description={seo.description} />
       <header className="page-head compact">
         <div className="shell">
           <div className="eyebrow">Full menu</div>
@@ -36,7 +39,8 @@ export function MenuPage({ content }: { content: SiteContent }) {
                 {category.items
                   .filter((item) => item.active !== false)
                   .map((item) => (
-                    <article className="product-card" key={item.id}>
+                    <article className="product-card has-image" key={item.id}>
+                      <img src={productImageUrl(item.image)} alt={item.name} loading="lazy" />
                       <div>
                         <h3>{item.name}</h3>
                         <p>{item.description}</p>

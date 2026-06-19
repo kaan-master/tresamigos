@@ -1,4 +1,4 @@
-const base = import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "";
+const base = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "");
 
 export function apiUrl(path: string) {
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
@@ -8,6 +8,28 @@ export async function fetchContent() {
   const response = await fetch(apiUrl("/api/content"));
   if (!response.ok) throw new Error("Content kon niet geladen worden.");
   return response.json();
+}
+
+export async function submitContact(body: unknown) {
+  const response = await fetch(apiUrl("/api/contact"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Verzenden mislukt.");
+  return data;
+}
+
+export async function submitPromoSubscribe(body: unknown) {
+  const response = await fetch(apiUrl("/api/promo/subscribe"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Verzenden mislukt.");
+  return data;
 }
 
 export async function submitApplication(body: unknown) {
@@ -24,7 +46,8 @@ export async function submitApplication(body: unknown) {
 export function assetUrl(path: string) {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return apiUrl(path.startsWith("/") ? path : `/${path}`);
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return import.meta.env.DEV ? normalized : apiUrl(normalized);
 }
 
 export function pageUrl(path: string) {

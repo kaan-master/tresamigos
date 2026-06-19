@@ -33,7 +33,23 @@ model SiteSettings {
   videosEyebrow      String
   videosTitle        String
   videosIntro        String
+  seoPages           Json     @default("{}")
+  vacancyRoles       Json     @default("{}")
+  openingHours       Json     @default("{}")
+  ourStory           Json     @default("{}")
+  reviews            Json     @default("{}")
+  promoPopup         Json     @default("{}")
+  mailRelay          Json     @default("{}")
+  contactForm        Json     @default("{}")
   updatedAt          DateTime @updatedAt
+}
+
+model PromoLead {
+  id        String   @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  createdAt DateTime @default(now())
 }
 
 model Location {
@@ -88,6 +104,7 @@ model MenuItem {
   name        String
   description String
   price       String
+  image       String       @default("")
   featured    Boolean      @default(false)
   active      Boolean      @default(true)
   sortOrder   Int          @default(0)

@@ -1,14 +1,32 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 
-export default defineConfig({
-  plugins: [react()],
-  base: "/admin/",
-  server: {
-    port: 5174,
-    proxy: {
-      "/api": "http://localhost:3000",
-      "/assets": "http://localhost:3000"
+const appDir = fileURLToPath(new URL(".", import.meta.url));
+const repoRoot = path.resolve(appDir, "../..");
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, repoRoot, "");
+  const apiTarget = env.VITE_API_URL || "http://localhost:3100";
+  const port = Number(env.VITE_ADMIN_PORT || 5181);
+
+  return {
+    envDir: repoRoot,
+    resolve: {
+      alias: {
+        "@tresamigos/types": path.resolve(repoRoot, "packages/types/src/index.ts")
+      }
+    },
+    plugins: [react()],
+    base: "/admin/",
+    server: {
+      port,
+      strictPort: true,
+      proxy: {
+        "/api": apiTarget,
+        "/assets": apiTarget
+      }
     }
-  }
+  };
 });

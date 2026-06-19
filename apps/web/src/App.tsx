@@ -38,8 +38,8 @@ function ShellRoutes() {
         <Route path="order" element={<OrderPage content={data} />} />
         <Route path="locations" element={<LocationsPage content={data} />} />
         <Route path="contact" element={<ContactPage content={data} />} />
-        <Route path="our-story" element={<OurStoryPage />} />
-        <Route path="vacancy" element={<VacancyPage />} />
+        <Route path="our-story" element={<OurStoryPage content={data} />} />
+        <Route path="vacancy" element={<VacancyPage content={data} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

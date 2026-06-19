@@ -1,36 +1,42 @@
 import { Helmet } from "../components/Helmet";
 import { assetUrl } from "../lib/api";
+import { pageSeo } from "../lib/seo";
+import type { SiteContent } from "@tresamigos/types";
 
-export function OurStoryPage() {
+export function OurStoryPage({ content }: { content: SiteContent }) {
+  const seo = pageSeo(content, "ourStory");
+  const story = content.site.ourStory;
+  const heroImage = story.heroImage || "assets/site/restaurant-interior.jpg";
+  const sideImage = story.sideImage || "assets/brand/home-card.png";
+
   return (
     <>
-      <Helmet title="Our Story | Tres Amigos" description="Het verhaal achter Tres Amigos Amsterdam." />
-      <header className="page-head compact">
-        <div className="shell">
-          <div className="eyebrow">Our story</div>
-          <h1>Real Mexicans. Real street food.</h1>
-          <p>Tres Amigos brings Mexican street food to Amsterdam with a clean, modern experience and four neighbourhood locations.</p>
+      <Helmet title={seo.title} description={seo.description} />
+      <header
+        className="story-hero"
+        style={{ backgroundImage: `linear-gradient(180deg,rgba(19,12,5,.25),rgba(19,12,5,.72)),url(${assetUrl(heroImage)})` }}
+      >
+        <div className="shell story-hero-inner">
+          <div className="eyebrow story-eyebrow">{story.eyebrow}</div>
+          <h1>{story.title}</h1>
+          <p>{story.intro}</p>
         </div>
       </header>
-      <main className="section">
-        <div className="shell split">
-          <article className="feature-card">
-            <span className="mini-label">Brand story</span>
-            <h2>Eat like a Mexican.</h2>
-            <p>
-              Tres Amigos started with a simple idea: serve real Mexican street food with fast service, fresh ingredients and a recognisable brand that still feels modern on the web.
-            </p>
-            <div className="palette">
-              <span style={{ background: "#FCB92A" }}>Corn</span>
-              <span style={{ background: "#F34238" }}>Cherry</span>
-              <span style={{ background: "#0056D7" }}>Blue</span>
-              <span style={{ background: "#593805", color: "#fff" }}>Mole</span>
-              <span style={{ background: "#F8E2BE" }}>Egg</span>
-            </div>
+
+      <main className="section story-page">
+        <div className="shell story-layout">
+          <article className="story-content">
+            {story.paragraphs.map((paragraph, index) => (
+              <p className="story-paragraph" key={`${index}-${paragraph.slice(0, 24)}`}>
+                {paragraph}
+              </p>
+            ))}
+            <div className="story-schedule">{story.scheduleSummary}</div>
           </article>
-          <article className="photo-block">
-            <img src={assetUrl("/assets/brand/home-card.png")} alt="Tres Amigos brand card" />
-          </article>
+
+          <figure className="story-visual">
+            <img src={assetUrl(sideImage)} alt="Tres Amigos brand" loading="lazy" />
+          </figure>
         </div>
       </main>
     </>

@@ -1,4 +1,4 @@
-const base = import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "";
+const base = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "");
 const tokenKey = "tres_amigos_admin_token";
 
 export function getToken() {
@@ -34,4 +34,33 @@ export async function login(password: string) {
     method: "POST",
     body: JSON.stringify({ password })
   });
+}
+
+export async function uploadMedia(file: File) {
+  const headers = new Headers();
+  const token = getToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const body = new FormData();
+  body.append("file", file);
+
+  const response = await fetch(apiUrl("/api/admin/media/upload"), {
+    method: "POST",
+    headers,
+    body
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || "Upload mislukt.");
+  return data as { asset: { url: string; filename: string }; message: string };
+}
+
+export async function deleteMedia(url: string) {
+  return api<{ message: string }>("/api/admin/media", {
+    method: "DELETE",
+    body: JSON.stringify({ url })
+  });
+}
+
+export async function listMedia() {
+  return api<{ assets: import("@tresamigos/types").MediaAsset[] }>("/api/admin/media");
 }

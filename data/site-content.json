@@ -1,11 +1,37 @@
 {
   "site": {
     "seo": {
-      "title": "Tres Amigos | Mexican Street Food Amsterdam",
-      "description": "Tres Amigos Amsterdam. Real Mexican street food met tacos, burritos, bowls en bestelopties per vestiging.",
-      "menuTitle": "Menu | Tres Amigos",
-      "menuDescription": "Bekijk het Tres Amigos menu met tacos, burritos, quesadillas, bowls, sides en desserts.",
-      "image": "assets/site/restaurant-interior.jpg"
+      "image": "assets/site/restaurant-interior.jpg",
+      "pages": {
+        "home": {
+          "title": "Tres Amigos | Mexican Street Food Amsterdam",
+          "description": "Tres Amigos Amsterdam. Real Mexican street food met tacos, burritos, bowls en bestelopties per vestiging."
+        },
+        "menu": {
+          "title": "Menu | Tres Amigos",
+          "description": "Bekijk het Tres Amigos menu met tacos, burritos, quesadillas, bowls, sides en desserts."
+        },
+        "locations": {
+          "title": "Locations | Tres Amigos",
+          "description": "Alle Tres Amigos vestigingen in Amsterdam met adressen en bestelopties."
+        },
+        "order": {
+          "title": "Order | Tres Amigos",
+          "description": "Bestel bij Tres Amigos Amsterdam per vestiging via Take Away, Delivery, Thuisbezorgd of Uber Eats."
+        },
+        "contact": {
+          "title": "Contact | Tres Amigos",
+          "description": "Neem contact op met Tres Amigos Amsterdam voor vragen over vestigingen, catering of samenwerking."
+        },
+        "ourStory": {
+          "title": "Our Story | Tres Amigos",
+          "description": "Het verhaal achter Tres Amigos Amsterdam: real Mexican street food by real Mexicans."
+        },
+        "vacancy": {
+          "title": "Work With Us | Tres Amigos",
+          "description": "Solliciteer bij Tres Amigos Amsterdam voor rollen in keuken, service en delivery."
+        }
+      }
     },
     "navCta": {
       "label": "Order Now",
@@ -33,12 +59,165 @@
       "email": "info@tresamigos.nl",
       "instagramUrl": "https://www.instagram.com/tresamigosamsterdam/",
       "tiktokUrl": "https://www.tiktok.com/",
-      "copyright": "© 2026 Tres Amigos."
+      "copyright": "© 2025 Tres Amigos. All rights reserved."
     },
     "videosSection": {
       "eyebrow": "Sfeer",
       "title": "Street food in beweging.",
       "intro": "Korte verticale beelden die rustig laten zien wat je kunt verwachten: warme tacos, snelle service en een herkenbare Tres Amigos sfeer."
+    },
+    "openingHours": {
+      "enabled": true,
+      "eyebrow": "Take away!",
+      "title": "Order now",
+      "sectionLabel": "Open Hours",
+      "summary": "Open 7 days a week",
+      "groups": [
+        { "label": "Mon–Thu", "hours": "11 am – 10:30 pm" },
+        { "label": "Fri–Sat", "hours": "11 am – 1 am" },
+        { "label": "Sun", "hours": "11 am – 10:30 pm" }
+      ],
+      "ctaLabel": "Order now",
+      "ctaUrl": "/order"
+    },
+    "ourStory": {
+      "eyebrow": "Our story",
+      "title": "Three friends. One kitchen table.",
+      "intro": "We are three childhood friends from Amsterdam with a shared passion for cooking and a deep love for Mexican cuisine.",
+      "paragraphs": [
+        "What started as a dream at the kitchen table, grew into Tres Amigos: a contemporary Tex-Mex concept that revolves around friendship, hospitality and good food.",
+        "At Tres Amigos we serve well-known classics such as burritos, tacos and quesadillas – with a modern twist, inspired by our personal style and always prepared with attention to quality and taste. Our goal is to let people enjoy fresh and affordable food in a lively, accessible setting.",
+        "What sets us apart is not only our menu, but especially the energy we bring as young entrepreneurs. We build with heart and soul a place where you feel welcome – whether you step in for a quick bite or a cozy evening with friends."
+      ],
+      "scheduleSummary": "Open 7 Days a week · Sun–Thu: 11 am–10:30 pm · Fri–Sat: 11 am–1 am",
+      "heroImage": "assets/site/restaurant-interior.jpg",
+      "sideImage": "assets/brand/home-card.png"
+    },
+    "reviews": {
+      "enabled": true,
+      "eyebrow": "Testimonials",
+      "title": "What guests say",
+      "minRating": 4,
+      "googlePlaceId": "",
+      "curated": [
+        {
+          "id": "review-1",
+          "author": "Guest review",
+          "rating": 5,
+          "text": "¡Estos tacos están bien chidos! Every time I eat them, they leave me wanting more. The people here are super friendly and the vibe is always good.",
+          "relativeTime": "2 months ago"
+        },
+        {
+          "id": "review-2",
+          "author": "Guest review",
+          "rating": 5,
+          "text": "As a mexican chef myself I have to say that this place surprised me. I'll surely come back!",
+          "relativeTime": "3 months ago"
+        },
+        {
+          "id": "review-3",
+          "author": "Guest review",
+          "rating": 5,
+          "text": "Amazing food and beautiful Spanish people. Fast service and great tacos.",
+          "relativeTime": "4 months ago"
+        },
+        {
+          "id": "review-4",
+          "author": "Guest review",
+          "rating": 5,
+          "text": "Great food and great service. I highly recommend the XL Chicken Tacos, some of the best I've ever eat. Very recommended.",
+          "relativeTime": "5 months ago"
+        }
+      ]
+    },
+    "promoPopup": {
+      "enabled": true,
+      "delaySeconds": 18,
+      "title": "You've got 10% off",
+      "subtitle": "Enter your details to receive your discount code by email.",
+      "discountCode": "AMIGOS10",
+      "image": "assets/site/quesadilla-drinks.webp",
+      "successMessage": "Check your inbox — your discount code is on the way."
+    },
+    "mailRelay": {
+      "enabled": false,
+      "fromName": "Tres Amigos",
+      "replyTo": "info@tresamigos.nl",
+      "subject": "Your 10% Tres Amigos discount",
+      "bodyTemplate": "Hi {{firstName}},\n\nThanks for joining the Tres Amigos list.\n\nYour discount code: {{discountCode}}\n\nSee you soon!\nTres Amigos"
+    },
+    "contactForm": {
+      "enabled": true,
+      "title": "Send us a message",
+      "intro": "Questions about locations, catering or partnerships? Fill in the form and we will reply by email.",
+      "successMessage": "Thanks — your message has been sent. We will get back to you soon.",
+      "notifySubject": "New contact message via tresamigos.nl",
+      "image": "assets/site/restaurant-interior.jpg"
+    },
+    "vacancy": {
+      "heroTitle": "Join the crew",
+      "heroIntro": "Build your career at Tres Amigos. Choose a role, read the full description and apply in a few simple steps.",
+      "heroImage": "assets/site/restaurant-interior.jpg",
+      "formImage": "assets/brand/home-card.png",
+      "jobs": [
+        {
+          "id": "preparation-chef",
+          "enabled": true,
+          "title": "Preparation Chef",
+          "summary": "As a Preparation Chef, you will be responsible for efficiently and effectively preparing all ingredients and components required for the daily operations of the Mexican restaurant.",
+          "requirements": [
+            "Excellent customer service skills with a friendly and helpful attitude.",
+            "Ability to work efficiently in a fast-paced environment and under pressure.",
+            "Accuracy and attention to detail when handling orders and preparing dishes."
+          ],
+          "fullDescription": "As a Preparation Chef, you will be responsible for efficiently and effectively preparing all ingredients and components required for the daily operations of the Mexican restaurant. You keep prep stations stocked, maintain quality standards and support the line during peak hours.",
+          "applyLabel": "Apply here",
+          "image": "assets/site/restaurant-interior.jpg"
+        },
+        {
+          "id": "kitchen-employee",
+          "enabled": true,
+          "title": "Kitchen Employee",
+          "summary": "As a member of the kitchen crew, you will be responsible for various tasks that contribute to the smooth operation of the takeaway service and ensure a great experience for our customers.",
+          "requirements": [
+            "Ability to work efficiently in a fast-paced environment and under time constraints.",
+            "Accuracy and attention to detail in order processing and food preparation.",
+            "Basic knowledge of Mexican cuisine and dishes is a plus."
+          ],
+          "fullDescription": "As a member of the kitchen crew, you will be responsible for various tasks that contribute to the smooth operation of the takeaway service and ensure a great experience for our customers. From assembly to packaging, you help keep orders moving fast and fresh.",
+          "applyLabel": "Apply here",
+          "image": "assets/brand/home-card.png"
+        },
+        {
+          "id": "shift-leader",
+          "enabled": true,
+          "title": "Shift Leader",
+          "summary": "You are responsible for coordinating and managing daily operational activities during your shift at Tres Amigos. You act as the link between management and staff.",
+          "requirements": [
+            "Lead and motivate staff to prep orders quickly and efficiently.",
+            "Give clear instructions and guide the team. You're in charge!",
+            "Oversee all restaurant operations: reception, service, kitchen, checkout, and couriers."
+          ],
+          "fullDescription": "You are responsible for coordinating and managing daily operational activities during your shift at Tres Amigos. You act as the link between management and staff, keep service smooth and step in when the pace picks up.",
+          "applyLabel": "Apply here",
+          "image": "assets/site/quesadilla-drinks.webp"
+        },
+        {
+          "id": "branch-manager",
+          "enabled": true,
+          "title": "Branch Manager",
+          "summary": "As the Manager of Tres Amigos, you will be responsible for effectively leading the team and overseeing all operational aspects of the takeaway service.",
+          "requirements": [
+            "Manage orders, inventory, scheduling, and customer service.",
+            "Keep operations running smoothly and up to standards.",
+            "Hire, train, and coach staff for top performance.",
+            "Schedule shifts, assign tasks, and track team results."
+          ],
+          "fullDescription": "As the Manager of Tres Amigos, you will be responsible for effectively leading the team and overseeing all operational aspects of the takeaway service. You set the tone, protect quality and build a crew people want to work with.",
+          "applyLabel": "Apply here",
+          "image": "assets/brand/eat-like-a-mexican.png"
+        }
+      ]
     }
   },
   "videos": [

@@ -1,6 +1,9 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import type { SiteContent } from "@tresamigos/types";
 import { assetUrl, pageUrl } from "../lib/api";
+import { usePageMotion } from "../hooks/usePageMotion";
+import { AnalyticsTracker } from "./AnalyticsTracker";
+import { PromoPopup } from "./PromoPopup";
 
 interface LayoutProps {
   content: SiteContent;
@@ -8,9 +11,13 @@ interface LayoutProps {
 
 export function Layout({ content }: LayoutProps) {
   const { site, locations } = content;
+  const location = useLocation();
+  usePageMotion();
 
   return (
     <>
+      <AnalyticsTracker />
+      <PromoPopup settings={site.promoPopup} />
       <nav className="nav">
         <div className="shell nav-inner">
           <Link className="brand" to="/">
@@ -41,7 +48,9 @@ export function Layout({ content }: LayoutProps) {
           </div>
         </div>
       </nav>
-      <Outlet />
+      <div className="page-enter" key={location.pathname}>
+        <Outlet />
+      </div>
       <footer className="footer">
         <div className="shell footer-grid">
           <div>
@@ -49,16 +58,32 @@ export function Layout({ content }: LayoutProps) {
             <p className="lead">{site.footer.intro}</p>
           </div>
           <div>
+            <h3>Opening hours</h3>
+            <p className="footer-hours-summary">{site.openingHours.summary}</p>
+            {site.openingHours.groups.map((group) => (
+              <p key={`${group.label}-${group.hours}`}>
+                <strong>{group.label}:</strong> {group.hours}
+              </p>
+            ))}
+          </div>
+          <div>
             <h3>Locations</h3>
             {locations
               .filter((location) => location.active !== false)
-              .map((location) => (
-                <p key={location.id}>
-                  {location.address.split(",")[0]}
-                  <br />
-                  {location.address.split(",").slice(1).join(",").trim() || location.area}
-                </p>
-              ))}
+              .map((location) => {
+                const parts = location.address.split(",").map((part) => part.trim()).filter(Boolean);
+                return (
+                  <p key={location.id}>
+                    {parts[0]}
+                    {parts.length > 1 ? (
+                      <>
+                        <br />
+                        {parts.slice(1).join(", ")}
+                      </>
+                    ) : null}
+                  </p>
+                );
+              })}
           </div>
           <div>
             <h3>Contact</h3>

@@ -18,11 +18,12 @@ async function upsertSite(content: SiteContent) {
     where: { id: "default" },
     create: {
       id: "default",
-      seoTitle: site.seo.title,
-      seoDescription: site.seo.description,
-      seoMenuTitle: site.seo.menuTitle,
-      seoMenuDescription: site.seo.menuDescription,
+      seoTitle: site.seo.pages.home.title,
+      seoDescription: site.seo.pages.home.description,
+      seoMenuTitle: site.seo.pages.menu.title,
+      seoMenuDescription: site.seo.pages.menu.description,
       seoImage: site.seo.image,
+      seoPages: site.seo.pages,
       navCtaLabel: site.navCta.label,
       navCtaUrl: site.navCta.url,
       heroEyebrow: site.hero.eyebrow,
@@ -41,14 +42,22 @@ async function upsertSite(content: SiteContent) {
       footerCopyright: site.footer.copyright,
       videosEyebrow: site.videosSection.eyebrow,
       videosTitle: site.videosSection.title,
-      videosIntro: site.videosSection.intro
+      videosIntro: site.videosSection.intro,
+      vacancyRoles: site.vacancy as object,
+      openingHours: site.openingHours as object,
+      ourStory: site.ourStory as object,
+      reviews: site.reviews as object,
+      promoPopup: site.promoPopup as object,
+      mailRelay: site.mailRelay as object,
+      contactForm: site.contactForm as object
     },
     update: {
-      seoTitle: site.seo.title,
-      seoDescription: site.seo.description,
-      seoMenuTitle: site.seo.menuTitle,
-      seoMenuDescription: site.seo.menuDescription,
+      seoTitle: site.seo.pages.home.title,
+      seoDescription: site.seo.pages.home.description,
+      seoMenuTitle: site.seo.pages.menu.title,
+      seoMenuDescription: site.seo.pages.menu.description,
       seoImage: site.seo.image,
+      seoPages: site.seo.pages,
       navCtaLabel: site.navCta.label,
       navCtaUrl: site.navCta.url,
       heroEyebrow: site.hero.eyebrow,
@@ -67,7 +76,14 @@ async function upsertSite(content: SiteContent) {
       footerCopyright: site.footer.copyright,
       videosEyebrow: site.videosSection.eyebrow,
       videosTitle: site.videosSection.title,
-      videosIntro: site.videosSection.intro
+      videosIntro: site.videosSection.intro,
+      vacancyRoles: site.vacancy as object,
+      openingHours: site.openingHours as object,
+      ourStory: site.ourStory as object,
+      reviews: site.reviews as object,
+      promoPopup: site.promoPopup as object,
+      mailRelay: site.mailRelay as object,
+      contactForm: site.contactForm as object
     }
   });
 }

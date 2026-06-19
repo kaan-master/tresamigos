@@ -6,9 +6,11 @@ Production-oriented platform voor de Tres Amigos website, beheeromgeving, sollic
 
 | App | Poort | Beschrijving |
 |-----|-------|--------------|
-| `apps/web` | 5173 | React publieke website |
-| `apps/admin` | 5174 | React admin dashboard |
-| `apps/api` | 3000 | NestJS API · Prisma · PostgreSQL · Redis |
+| `apps/web` | 5180 | React publieke website |
+| `apps/admin` | 5181 | React admin dashboard |
+| `apps/api` | 3100 | NestJS API · Prisma · PostgreSQL · Redis |
+| PostgreSQL (Docker) | 5434 | Niet 5432 — lokale Postgres op Windows |
+| Redis (Docker) | 6380 | Niet 6379 — andere projecten |
 
 ## Packages
 
@@ -44,11 +46,13 @@ Zet minimaal in `.env`:
 
 ```env
 ADMIN_PASSWORD=<sterk-wachtwoord>
-DATABASE_URL=postgresql://tresamigos:tresamigos@localhost:5432/tresamigos?schema=public
-REDIS_URL=redis://localhost:6379
+DATABASE_URL=postgresql://tresamigos:tresamigos@localhost:5434/tresamigos?schema=public
+REDIS_URL=redis://localhost:6380
 ```
 
 ### 3. Infrastructuur
+
+PostgreSQL draait op **poort 5434** (niet 5432), zodat het niet botst met een lokale PostgreSQL-installatie op Windows.
 
 ```bash
 pnpm infra:up
@@ -62,10 +66,10 @@ pnpm db:seed
 pnpm dev
 ```
 
-- Website: http://localhost:5173
-- Admin: http://localhost:5174/admin/
-- API: http://localhost:3000/api/content
-- Health: http://localhost:3000/health
+- Website: http://localhost:5180
+- Admin: http://localhost:5181/admin/
+- API: http://localhost:3100/api/content
+- Health: http://localhost:3100/health
 
 ## API routes
 
@@ -85,7 +89,7 @@ pnpm dev
 4. Nginx:
    - `/` → web build (`apps/web/dist`)
    - `/admin/` → admin build (`apps/admin/dist`)
-   - `/api/` → NestJS op poort 3000
+   - `/api/` → NestJS op poort 3100
    - `/assets/` → statische assets map
 
 ## Legacy

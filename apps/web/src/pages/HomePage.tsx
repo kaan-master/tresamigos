@@ -1,10 +1,13 @@
-import { useEffect } from "react";
 import { Helmet } from "../components/Helmet";
+import { ReviewsSection } from "../components/ReviewsSection";
 import type { SiteContent } from "@tresamigos/types";
 import { assetUrl, pageUrl } from "../lib/api";
+import { productImageUrl } from "../lib/productImage";
+import { pageSeo } from "../lib/seo";
 
 export function HomePage({ content }: { content: SiteContent }) {
   const { site, videos, menu, locations } = content;
+  const seo = pageSeo(content, "home");
   const featuredItems = menu
     .flatMap((category) => category.items.filter((item) => item.active !== false))
     .filter((item) => item.featured)
@@ -15,13 +18,9 @@ export function HomePage({ content }: { content: SiteContent }) {
       : menu.flatMap((category) => category.items.filter((item) => item.active !== false)).slice(0, 4);
   const previewLocations = locations.filter((location) => location.active !== false).slice(0, 4);
 
-  useEffect(() => {
-    document.title = site.seo.title;
-  }, [site.seo.title]);
-
   return (
     <>
-      <Helmet title={site.seo.title} description={site.seo.description} />
+      <Helmet title={seo.title} description={seo.description} />
       <main>
         <header className="hero hero-clean">
           <div className="shell hero-grid">
@@ -43,7 +42,7 @@ export function HomePage({ content }: { content: SiteContent }) {
                 .filter((video) => video.active !== false)
                 .slice(0, 3)
                 .map((video) => (
-                  <article className="portrait-video-card in-view" key={video.id}>
+                  <article className="portrait-video-card" key={video.id}>
                     <video src={assetUrl(video.src)} muted autoPlay loop playsInline preload="metadata" />
                     <div>
                       <h3>{video.title}</h3>
@@ -63,7 +62,7 @@ export function HomePage({ content }: { content: SiteContent }) {
           </div>
         </div>
 
-        <section className="section video-section in-view">
+        <section className="section video-section">
           {videos[0] ? (
             <video
               className="video-section-bg"
@@ -82,7 +81,7 @@ export function HomePage({ content }: { content: SiteContent }) {
               <h2 className="section-title">{site.videosSection.title}</h2>
               <p className="lead">{site.videosSection.intro}</p>
             </div>
-            <div className="hero-card food-first in-view">
+            <div className="hero-card food-first">
               <img src={assetUrl(site.seo.image || "/assets/site/restaurant-interior.jpg")} alt="Tres Amigos restaurant interior" />
               <div className="image-caption">Four locations in Amsterdam</div>
             </div>
@@ -101,7 +100,7 @@ export function HomePage({ content }: { content: SiteContent }) {
                 <div className="compact-menu-list">
                   {showcaseItems.map((item) => (
                     <article className="compact-menu-item" key={item.id}>
-                      <img src={assetUrl("/assets/site/quesadilla-drinks.webp")} alt={item.name} />
+                      <img src={productImageUrl(item.image)} alt={item.name} loading="lazy" />
                       <div>
                         <h3>{item.name}</h3>
                         <p>{item.description}</p>
@@ -120,6 +119,8 @@ export function HomePage({ content }: { content: SiteContent }) {
           </div>
         </section>
 
+        <ReviewsSection settings={site.reviews} />
+
         <section className="section section-soft">
           <div className="shell">
             <div className="section-heading">
@@ -135,7 +136,7 @@ export function HomePage({ content }: { content: SiteContent }) {
               {previewLocations.map((location) => (
                 <div key={location.id}>
                   <strong>{location.area}</strong>
-                  <span>{location.address.split(",")[0]}</span>
+                  <span>{location.address}</span>
                 </div>
               ))}
             </div>
@@ -153,11 +154,9 @@ export function HomePage({ content }: { content: SiteContent }) {
         <section className="section">
           <div className="shell feature-grid">
             <article className="feature-card">
-              <span className="mini-label">Modern direction</span>
-              <h2>Cleaner than the test version.</h2>
-              <p>
-                The site uses mostly white space, food photography and simple cards. The brand colours appear as small accents, light blue panels, labels and one moving strip, not as full-page poster styling.
-              </p>
+              <span className="mini-label">Our story</span>
+              <h2>{site.ourStory.title}</h2>
+              <p>{site.ourStory.intro}</p>
               <a className="text-link" href="/our-story">
                 Read the story
               </a>

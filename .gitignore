@@ -1,9 +1,9 @@
 node_modules/
 dist/
+packages/*/dist/
 .env
 *.log
 data/*.tmp
 legacy/
 .turbo/
 apps/api/uploads/
-apps/api/prisma/migrations/

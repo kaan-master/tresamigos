@@ -1,30 +1,15 @@
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
-
-function orderButtons(links: SiteContent["locations"][number]["links"]) {
-  return (
-    <div className="actions">
-      {links.map((link) => (
-        <a
-          className="btn alt"
-          href={link.url}
-          key={`${link.label}-${link.url}`}
-          target={link.url.startsWith("http") ? "_blank" : undefined}
-          rel={link.url.startsWith("http") ? "noreferrer" : undefined}
-        >
-          {link.label}
-        </a>
-      ))}
-    </div>
-  );
-}
+import { LocationCard, OrderCard } from "../components/LocationCards";
+import { pageSeo } from "../lib/seo";
 
 export function OrderPage({ content }: { content: SiteContent }) {
   const locations = content.locations.filter((location) => location.active !== false);
+  const seo = pageSeo(content, "order");
 
   return (
     <>
-      <Helmet title="Order | Tres Amigos" description="Bestel bij Tres Amigos Amsterdam per vestiging." />
+      <Helmet title={seo.title} description={seo.description} />
       <header className="page-head compact">
         <div className="shell">
           <div className="eyebrow">Order</div>
@@ -35,13 +20,7 @@ export function OrderPage({ content }: { content: SiteContent }) {
       <main className="section">
         <div className="shell order-grid">
           {locations.map((location) => (
-            <article className="order-card in-view" key={location.id}>
-              <span className="tag">{location.area}</span>
-              <h3>{location.name}</h3>
-              <p>{location.address}</p>
-              <p>{location.note}</p>
-              {orderButtons(location.links)}
-            </article>
+            <OrderCard location={location} key={location.id} />
           ))}
         </div>
       </main>
@@ -51,10 +30,11 @@ export function OrderPage({ content }: { content: SiteContent }) {
 
 export function LocationsPage({ content }: { content: SiteContent }) {
   const locations = content.locations.filter((location) => location.active !== false);
+  const seo = pageSeo(content, "locations");
 
   return (
     <>
-      <Helmet title="Locations | Tres Amigos" description="Alle Tres Amigos vestigingen in Amsterdam." />
+      <Helmet title={seo.title} description={seo.description} />
       <header className="page-head compact">
         <div className="shell">
           <div className="eyebrow">Locations</div>
@@ -65,15 +45,7 @@ export function LocationsPage({ content }: { content: SiteContent }) {
       <main className="section">
         <div className="shell locations four">
           {locations.map((location) => (
-            <article className="location-card in-view" key={location.id}>
-              <span className="tag">{location.area}</span>
-              <h3>{location.name}</h3>
-              <div className="meta">
-                <span>{location.address}</span>
-                <span>{location.note}</span>
-              </div>
-              {orderButtons(location.links)}
-            </article>
+            <LocationCard location={location} key={location.id} />
           ))}
         </div>
       </main>

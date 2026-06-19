@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import type { Application, CreateApplicationInput } from "@tresamigos/types";
-import { sanitizeApplication } from "@tresamigos/utils";
+import type { Application, CreateApplicationInput, SiteContent } from "@tresamigos/types";
+import { sanitizeApplication, sanitizeContent } from "@tresamigos/utils";
 import { PrismaService } from "../prisma/prisma.module";
 
 @Injectable()
@@ -27,7 +27,7 @@ export class ApplicationsService {
       id: record.id,
       createdAt: record.createdAt.toISOString(),
       status: record.status,
-      role: record.role as Application["role"],
+      role: record.role,
       name: record.name,
       email: record.email,
       phone: record.phone,
@@ -48,9 +48,27 @@ export class ApplicationsService {
 
   async create(input: CreateApplicationInput) {
     const application = sanitizeApplication(input);
-    if (!application.name || !application.email || !application.days.length) {
+    if (!application.name || !application.email || !application.days.length || !application.role) {
       throw new BadRequestException({
-        message: "Naam, e-mail en minimaal een dag zijn verplicht."
+        message: "Naam, e-mail, functie en minimaal een dag zijn verplicht."
+      });
+    }
+
+    const site = await this.prisma.siteSettings.findUnique({ where: { id: "default" } });
+    const vacancyRaw =
+      site?.vacancyRoles && typeof site.vacancyRoles === "object" && !Array.isArray(site.vacancyRoles)
+        ? site.vacancyRoles
+        : {};
+    const vacancy = sanitizeContent({
+      site: { vacancy: vacancyRaw as unknown as SiteContent["site"]["vacancy"] }
+    }).site.vacancy;
+    const job = vacancy.jobs.find(
+      (item) => item.enabled !== false && (item.id === application.role || item.title === application.role)
+    );
+
+    if (!job) {
+      throw new BadRequestException({
+        message: "Deze functie accepteert momenteel geen sollicitaties."
       });
     }
 
@@ -59,7 +77,7 @@ export class ApplicationsService {
         id: application.id,
         createdAt: new Date(application.createdAt),
         status: application.status,
-        role: application.role,
+        role: job.title,
         name: application.name,
         email: application.email,
         phone: application.phone,

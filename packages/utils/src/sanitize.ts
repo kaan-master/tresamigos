@@ -1,12 +1,14 @@
 import crypto from "node:crypto";
 import type {
   Application,
-  ApplicationRole,
   CreateApplicationInput,
+  PageSeo,
+  SeoPageKey,
   SiteContent,
+  VacancyRoleConfig,
   WeekDay
 } from "@tresamigos/types";
-import { APPLICATION_ROLES, WEEK_DAYS } from "@tresamigos/types";
+import { SEO_PAGE_KEYS, WEEK_DAYS } from "@tresamigos/types";
 
 export function cleanText(value: unknown, fallback = "", max = 1000): string {
   if (typeof value !== "string") return fallback;
@@ -59,6 +61,396 @@ export function cleanList(value: unknown, allowed: readonly string[], max = 20):
     .slice(0, max);
 }
 
+const DEFAULT_VACANCY_JOBS: SiteContent["site"]["vacancy"]["jobs"] = [
+  {
+    id: "preparation-chef",
+    enabled: true,
+    title: "Preparation Chef",
+    summary:
+      "As a Preparation Chef, you will be responsible for efficiently and effectively preparing all ingredients and components required for the daily operations of the Mexican restaurant.",
+    requirements: [
+      "Excellent customer service skills with a friendly and helpful attitude.",
+      "Ability to work efficiently in a fast-paced environment and under pressure.",
+      "Accuracy and attention to detail when handling orders and preparing dishes."
+    ],
+    fullDescription:
+      "As a Preparation Chef, you will be responsible for efficiently and effectively preparing all ingredients and components required for the daily operations of the Mexican restaurant. You keep prep stations stocked, maintain quality standards and support the line during peak hours.",
+    applyLabel: "Apply here",
+    image: "assets/site/restaurant-interior.jpg"
+  },
+  {
+    id: "kitchen-employee",
+    enabled: true,
+    title: "Kitchen Employee",
+    summary:
+      "As a member of the kitchen crew, you will be responsible for various tasks that contribute to the smooth operation of the takeaway service and ensure a great experience for our customers.",
+    requirements: [
+      "Ability to work efficiently in a fast-paced environment and under time constraints.",
+      "Accuracy and attention to detail in order processing and food preparation.",
+      "Basic knowledge of Mexican cuisine and dishes is a plus."
+    ],
+    fullDescription:
+      "As a member of the kitchen crew, you will be responsible for various tasks that contribute to the smooth operation of the takeaway service and ensure a great experience for our customers. From assembly to packaging, you help keep orders moving fast and fresh.",
+    applyLabel: "Apply here",
+    image: "assets/brand/home-card.png"
+  },
+  {
+    id: "shift-leader",
+    enabled: true,
+    title: "Shift Leader",
+    summary:
+      "You are responsible for coordinating and managing daily operational activities during your shift at Tres Amigos. You act as the link between management and staff.",
+    requirements: [
+      "Lead and motivate staff to prep orders quickly and efficiently.",
+      "Give clear instructions and guide the team. You're in charge!",
+      "Oversee all restaurant operations: reception, service, kitchen, checkout, and couriers."
+    ],
+    fullDescription:
+      "You are responsible for coordinating and managing daily operational activities during your shift at Tres Amigos. You act as the link between management and staff, keep service smooth and step in when the pace picks up.",
+    applyLabel: "Apply here",
+    image: "assets/site/quesadilla-drinks.webp"
+  },
+  {
+    id: "branch-manager",
+    enabled: true,
+    title: "Branch Manager",
+    summary:
+      "As the Manager of Tres Amigos, you will be responsible for effectively leading the team and overseeing all operational aspects of the takeaway service.",
+    requirements: [
+      "Manage orders, inventory, scheduling, and customer service.",
+      "Keep operations running smoothly and up to standards.",
+      "Hire, train, and coach staff for top performance.",
+      "Schedule shifts, assign tasks, and track team results."
+    ],
+    fullDescription:
+      "As the Manager of Tres Amigos, you will be responsible for effectively leading the team and overseeing all operational aspects of the takeaway service. You set the tone, protect quality and build a crew people want to work with.",
+    applyLabel: "Apply here",
+    image: "assets/brand/eat-like-a-mexican.png"
+  }
+];
+
+const DEFAULT_VACANCY: SiteContent["site"]["vacancy"] = {
+  heroTitle: "Join the crew",
+  heroIntro: "Build your career at Tres Amigos. Choose a role, read the full description and apply in a few simple steps.",
+  heroImage: "assets/site/restaurant-interior.jpg",
+  formImage: "assets/brand/home-card.png",
+  jobs: DEFAULT_VACANCY_JOBS
+};
+
+function sanitizeVacancySettings(vacancy: SiteContent["site"]["vacancy"] | undefined) {
+  const raw = vacancy || DEFAULT_VACANCY;
+
+  const legacyRoles =
+    raw && typeof raw === "object" && "roles" in raw && raw.roles && typeof raw.roles === "object"
+      ? (raw.roles as Record<string, VacancyRoleConfig>)
+      : null;
+
+  const rawJobs = Array.isArray(raw.jobs)
+    ? raw.jobs
+    : legacyRoles
+      ? Object.entries(legacyRoles).map(([key, config], index) => ({
+          id: cleanSlug(key, `job-${index + 1}`),
+          enabled: config.enabled !== false,
+          title: config.title,
+          summary: config.copy,
+          requirements: [] as string[],
+          fullDescription: config.copy,
+          applyLabel: "Apply here",
+          image: ""
+        }))
+      : DEFAULT_VACANCY_JOBS;
+
+  const jobs = rawJobs.slice(0, 20).map((job, index) => {
+    const title = cleanText(job?.title, DEFAULT_VACANCY_JOBS[index]?.title || `Role ${index + 1}`, 160);
+    const requirements = Array.isArray(job?.requirements)
+      ? job.requirements.map((item) => cleanText(item, "", 240)).filter(Boolean).slice(0, 12)
+      : DEFAULT_VACANCY_JOBS[index]?.requirements || [];
+
+    return {
+      id: cleanSlug(job?.id, cleanSlug(title, `job-${index + 1}`)),
+      enabled: job?.enabled !== false,
+      title,
+      summary: cleanText(job?.summary, DEFAULT_VACANCY_JOBS[index]?.summary || "", 800),
+      requirements,
+      fullDescription: cleanText(job?.fullDescription, DEFAULT_VACANCY_JOBS[index]?.fullDescription || "", 2000),
+      applyLabel: cleanText(job?.applyLabel, "Apply here", 80),
+      image: cleanUrl(job?.image) || DEFAULT_VACANCY_JOBS[index]?.image || DEFAULT_VACANCY.heroImage
+    };
+  });
+
+  return {
+    heroTitle: cleanText(raw.heroTitle, DEFAULT_VACANCY.heroTitle, 160),
+    heroIntro: cleanText(raw.heroIntro, DEFAULT_VACANCY.heroIntro, 600),
+    heroImage: cleanUrl(raw.heroImage) || DEFAULT_VACANCY.heroImage,
+    formImage: cleanUrl(raw.formImage) || DEFAULT_VACANCY.formImage,
+    jobs: jobs.length ? jobs : DEFAULT_VACANCY_JOBS
+  };
+}
+
+const DEFAULT_OPENING_HOURS: SiteContent["site"]["openingHours"] = {
+  enabled: true,
+  eyebrow: "Take away!",
+  title: "Order now",
+  sectionLabel: "Open Hours",
+  summary: "Open 7 days a week",
+  groups: [
+    { label: "Mon–Thu", hours: "11 am – 10:30 pm" },
+    { label: "Fri–Sat", hours: "11 am – 1 am" },
+    { label: "Sun", hours: "11 am – 10:30 pm" }
+  ],
+  ctaLabel: "Order now",
+  ctaUrl: "/order"
+};
+
+const DEFAULT_OUR_STORY: SiteContent["site"]["ourStory"] = {
+  eyebrow: "Our story",
+  title: "Three friends. One kitchen table.",
+  intro:
+    "We are three childhood friends from Amsterdam with a shared passion for cooking and a deep love for Mexican cuisine.",
+  paragraphs: [
+    "What started as a dream at the kitchen table, grew into Tres Amigos: a contemporary Tex-Mex concept that revolves around friendship, hospitality and good food.",
+    "At Tres Amigos we serve well-known classics such as burritos, tacos and quesadillas – with a modern twist, inspired by our personal style and always prepared with attention to quality and taste. Our goal is to let people enjoy fresh and affordable food in a lively, accessible setting.",
+    "What sets us apart is not only our menu, but especially the energy we bring as young entrepreneurs. We build with heart and soul a place where you feel welcome – whether you step in for a quick bite or a cozy evening with friends."
+  ],
+  scheduleSummary: "Open 7 Days a week · Sun–Thu: 11 am–10:30 pm · Fri–Sat: 11 am–1 am",
+  heroImage: "assets/site/restaurant-interior.jpg",
+  sideImage: "assets/brand/home-card.png"
+};
+
+const DEFAULT_REVIEWS: SiteContent["site"]["reviews"] = {
+  enabled: true,
+  eyebrow: "Testimonials",
+  title: "What guests say",
+  minRating: 4,
+  googlePlaceId: "",
+  curated: [
+    {
+      id: "review-1",
+      author: "Guest review",
+      rating: 5,
+      text: "¡Estos tacos están bien chidos! Every time I eat them, they leave me wanting more. The people here are super friendly and the vibe is always good.",
+      relativeTime: "2 months ago"
+    },
+    {
+      id: "review-2",
+      author: "Guest review",
+      rating: 5,
+      text: "As a mexican chef myself I have to say that this place surprised me. I'll surely come back!",
+      relativeTime: "3 months ago"
+    },
+    {
+      id: "review-3",
+      author: "Guest review",
+      rating: 5,
+      text: "Amazing food and beautiful Spanish people. Fast service and great tacos.",
+      relativeTime: "4 months ago"
+    },
+    {
+      id: "review-4",
+      author: "Guest review",
+      rating: 5,
+      text: "Great food and great service. I highly recommend the XL Chicken Tacos, some of the best I've ever eat. Very recommended.",
+      relativeTime: "5 months ago"
+    }
+  ]
+};
+
+const DEFAULT_PROMO_POPUP: SiteContent["site"]["promoPopup"] = {
+  enabled: true,
+  delaySeconds: 18,
+  title: "You've got 10% off",
+  subtitle: "Enter your details to receive your discount code by email.",
+  discountCode: "AMIGOS10",
+  image: "assets/site/quesadilla-drinks.webp",
+  successMessage: "Check your inbox — your discount code is on the way."
+};
+
+const DEFAULT_MAIL_RELAY: SiteContent["site"]["mailRelay"] = {
+  enabled: false,
+  fromName: "Tres Amigos",
+  replyTo: "info@tresamigos.nl",
+  subject: "Your 10% Tres Amigos discount",
+  bodyTemplate:
+    "Hi {{firstName}},\n\nThanks for joining the Tres Amigos list.\n\nYour discount code: {{discountCode}}\n\nSee you soon!\nTres Amigos"
+};
+
+const DEFAULT_CONTACT_FORM: SiteContent["site"]["contactForm"] = {
+  enabled: true,
+  title: "Send us a message",
+  intro: "Questions about locations, catering or partnerships? Fill in the form and we will reply by email.",
+  successMessage: "Thanks — your message has been sent. We will get back to you soon.",
+  notifySubject: "New contact message via tresamigos.nl",
+  image: "assets/site/restaurant-interior.jpg"
+};
+
+function sanitizeOpeningHours(value: SiteContent["site"]["openingHours"] | undefined) {
+  const raw = value || DEFAULT_OPENING_HOURS;
+  const groups = Array.isArray(raw.groups)
+    ? raw.groups
+        .slice(0, 8)
+        .map((group, index) => ({
+          label: cleanText(group?.label, DEFAULT_OPENING_HOURS.groups[index]?.label || `Group ${index + 1}`, 80),
+          hours: cleanText(group?.hours, DEFAULT_OPENING_HOURS.groups[index]?.hours || "", 120)
+        }))
+        .filter((group) => group.label && group.hours)
+    : DEFAULT_OPENING_HOURS.groups;
+
+  return {
+    enabled: raw.enabled !== false,
+    eyebrow: cleanText(raw.eyebrow, DEFAULT_OPENING_HOURS.eyebrow, 80),
+    title: cleanText(raw.title, DEFAULT_OPENING_HOURS.title, 120),
+    sectionLabel: cleanText(raw.sectionLabel, DEFAULT_OPENING_HOURS.sectionLabel, 80),
+    summary: cleanText(raw.summary, DEFAULT_OPENING_HOURS.summary, 160),
+    groups: groups.length ? groups : DEFAULT_OPENING_HOURS.groups,
+    ctaLabel: cleanText(raw.ctaLabel, DEFAULT_OPENING_HOURS.ctaLabel, 80),
+    ctaUrl: cleanUrl(raw.ctaUrl) || DEFAULT_OPENING_HOURS.ctaUrl
+  };
+}
+
+function sanitizeOurStory(value: SiteContent["site"]["ourStory"] | undefined) {
+  const raw = value || DEFAULT_OUR_STORY;
+  const paragraphs = Array.isArray(raw.paragraphs)
+    ? raw.paragraphs.map((item) => cleanText(item, "", 1200)).filter(Boolean).slice(0, 8)
+    : DEFAULT_OUR_STORY.paragraphs;
+
+  return {
+    eyebrow: cleanText(raw.eyebrow, DEFAULT_OUR_STORY.eyebrow, 80),
+    title: cleanText(raw.title, DEFAULT_OUR_STORY.title, 180),
+    intro: cleanText(raw.intro, DEFAULT_OUR_STORY.intro, 600),
+    paragraphs: paragraphs.length ? paragraphs : DEFAULT_OUR_STORY.paragraphs,
+    scheduleSummary: cleanText(raw.scheduleSummary, DEFAULT_OUR_STORY.scheduleSummary, 240),
+    heroImage: cleanUrl(raw.heroImage) || DEFAULT_OUR_STORY.heroImage,
+    sideImage: cleanUrl(raw.sideImage) || DEFAULT_OUR_STORY.sideImage
+  };
+}
+
+function sanitizeReviews(value: SiteContent["site"]["reviews"] | undefined) {
+  const raw = value || DEFAULT_REVIEWS;
+  const minRating = Math.min(5, Math.max(1, Number(raw.minRating) || DEFAULT_REVIEWS.minRating));
+  const curated = Array.isArray(raw.curated)
+    ? raw.curated
+        .slice(0, 24)
+        .map((review, index) => ({
+          id: cleanSlug(review?.id, `review-${index + 1}`),
+          author: cleanText(review?.author, "Guest", 120),
+          rating: Math.min(5, Math.max(1, Number(review?.rating) || 5)),
+          text: cleanText(review?.text, "", 1200),
+          relativeTime: cleanText(review?.relativeTime, "", 80),
+          publishedAt: cleanText(review?.publishedAt, "", 40)
+        }))
+        .filter((review) => review.text && review.rating >= minRating)
+    : DEFAULT_REVIEWS.curated;
+
+  return {
+    enabled: raw.enabled !== false,
+    eyebrow: cleanText(raw.eyebrow, DEFAULT_REVIEWS.eyebrow, 80),
+    title: cleanText(raw.title, DEFAULT_REVIEWS.title, 120),
+    minRating,
+    googlePlaceId: cleanText(raw.googlePlaceId, "", 120),
+    curated: curated.length ? curated : DEFAULT_REVIEWS.curated
+  };
+}
+
+function sanitizePromoPopup(value: SiteContent["site"]["promoPopup"] | undefined) {
+  const raw = value || DEFAULT_PROMO_POPUP;
+  const delaySeconds = Math.min(120, Math.max(5, Number(raw.delaySeconds) || DEFAULT_PROMO_POPUP.delaySeconds));
+
+  return {
+    enabled: raw.enabled !== false,
+    delaySeconds,
+    title: cleanText(raw.title, DEFAULT_PROMO_POPUP.title, 160),
+    subtitle: cleanText(raw.subtitle, DEFAULT_PROMO_POPUP.subtitle, 320),
+    discountCode: cleanText(raw.discountCode, DEFAULT_PROMO_POPUP.discountCode, 40),
+    image: cleanUrl(raw.image) || DEFAULT_PROMO_POPUP.image,
+    successMessage: cleanText(raw.successMessage, DEFAULT_PROMO_POPUP.successMessage, 240)
+  };
+}
+
+function sanitizeMailRelay(value: SiteContent["site"]["mailRelay"] | undefined) {
+  const raw = value || DEFAULT_MAIL_RELAY;
+  return {
+    enabled: raw.enabled === true,
+    fromName: cleanText(raw.fromName, DEFAULT_MAIL_RELAY.fromName, 120),
+    replyTo: cleanText(raw.replyTo, DEFAULT_MAIL_RELAY.replyTo, 180),
+    subject: cleanText(raw.subject, DEFAULT_MAIL_RELAY.subject, 180),
+    bodyTemplate: cleanText(raw.bodyTemplate, DEFAULT_MAIL_RELAY.bodyTemplate, 4000)
+  };
+}
+
+function sanitizeContactForm(value: SiteContent["site"]["contactForm"] | undefined) {
+  const raw = value || DEFAULT_CONTACT_FORM;
+  return {
+    enabled: raw.enabled !== false,
+    title: cleanText(raw.title, DEFAULT_CONTACT_FORM.title, 120),
+    intro: cleanText(raw.intro, DEFAULT_CONTACT_FORM.intro, 500),
+    successMessage: cleanText(raw.successMessage, DEFAULT_CONTACT_FORM.successMessage, 240),
+    notifySubject: cleanText(raw.notifySubject, DEFAULT_CONTACT_FORM.notifySubject, 180),
+    image: cleanUrl(raw.image) || DEFAULT_CONTACT_FORM.image
+  };
+}
+
+const DEFAULT_SEO_PAGES: Record<SeoPageKey, PageSeo> = {
+  home: {
+    title: "Tres Amigos | Mexican Street Food Amsterdam",
+    description:
+      "Tres Amigos Amsterdam. Real Mexican street food met tacos, burritos, bowls en bestelopties per vestiging."
+  },
+  menu: {
+    title: "Menu | Tres Amigos",
+    description: "Bekijk het Tres Amigos menu met tacos, burritos, quesadillas, bowls, sides en desserts."
+  },
+  locations: {
+    title: "Locations | Tres Amigos",
+    description: "Alle Tres Amigos vestigingen in Amsterdam met adressen en bestelopties."
+  },
+  order: {
+    title: "Order | Tres Amigos",
+    description: "Bestel bij Tres Amigos Amsterdam per vestiging via Take Away, Delivery, Thuisbezorgd of Uber Eats."
+  },
+  contact: {
+    title: "Contact | Tres Amigos",
+    description: "Neem contact op met Tres Amigos Amsterdam voor vragen over vestigingen, catering of samenwerking."
+  },
+  ourStory: {
+    title: "Our Story | Tres Amigos",
+    description: "Het verhaal achter Tres Amigos Amsterdam: real Mexican street food by real Mexicans."
+  },
+  vacancy: {
+    title: "Work With Us | Tres Amigos",
+    description: "Solliciteer bij Tres Amigos Amsterdam voor rollen in keuken, service en delivery."
+  }
+};
+
+function sanitizeSeoPages(seo: SiteContent["site"]["seo"]): Record<SeoPageKey, PageSeo> {
+  const rawPages =
+    seo.pages && typeof seo.pages === "object" ? (seo.pages as Partial<Record<SeoPageKey, Partial<PageSeo>>>) : {};
+
+  return SEO_PAGE_KEYS.reduce(
+    (pages, key) => {
+      const page = rawPages[key] || {};
+      const legacyTitle =
+        key === "home"
+          ? seo.title
+          : key === "menu"
+            ? seo.menuTitle
+            : undefined;
+      const legacyDescription =
+        key === "home"
+          ? seo.description
+          : key === "menu"
+            ? seo.menuDescription
+            : undefined;
+
+      pages[key] = {
+        title: cleanText(page.title || legacyTitle, DEFAULT_SEO_PAGES[key].title, 180),
+        description: cleanText(page.description || legacyDescription, DEFAULT_SEO_PAGES[key].description, 300)
+      };
+      return pages;
+    },
+    {} as Record<SeoPageKey, PageSeo>
+  );
+}
+
 export function sanitizeApplication(input: CreateApplicationInput | Application): Application {
   const pdf = input?.pdf && typeof input.pdf === "object" ? input.pdf : null;
   const pdfName = cleanText(pdf?.name, "", 180);
@@ -68,9 +460,7 @@ export function sanitizeApplication(input: CreateApplicationInput | Application)
     id: cleanText(input?.id, crypto.randomUUID(), 80),
     createdAt: cleanText(input?.createdAt, new Date().toISOString(), 80),
     status: cleanText(input?.status, "nieuw", 40),
-    role: (APPLICATION_ROLES.includes(input?.role as ApplicationRole)
-      ? input.role
-      : APPLICATION_ROLES[0]) as ApplicationRole,
+    role: cleanText(input?.role, "", 160),
     name: cleanText(input?.name, "", 160),
     email: cleanText(input?.email, "", 180),
     phone: cleanText(input?.phone, "", 80),
@@ -97,6 +487,13 @@ export function sanitizeContent(input: unknown): SiteContent {
   const footer = site.footer || ({} as SiteContent["site"]["footer"]);
   const navCta = site.navCta || ({} as SiteContent["site"]["navCta"]);
   const videosSection = site.videosSection || ({} as SiteContent["site"]["videosSection"]);
+  const vacancy = site.vacancy;
+  const openingHours = site.openingHours;
+  const ourStory = site.ourStory;
+  const reviews = site.reviews;
+  const promoPopup = site.promoPopup;
+  const mailRelay = site.mailRelay;
+  const contactForm = site.contactForm;
 
   const locations = Array.isArray(payload.locations)
     ? payload.locations.slice(0, 50).map((location, index) => {
@@ -151,6 +548,7 @@ export function sanitizeContent(input: unknown): SiteContent {
                 name,
                 description: cleanText(item.description, "", 420),
                 price: cleanPrice(item.price),
+                image: cleanUrl(item.image),
                 featured: item.featured === true,
                 active: item.active !== false
               };
@@ -170,19 +568,12 @@ export function sanitizeContent(input: unknown): SiteContent {
   return {
     site: {
       seo: {
-        title: cleanText(seo.title, "Tres Amigos | Mexican Street Food Amsterdam", 180),
-        description: cleanText(
-          seo.description,
-          "Tres Amigos Amsterdam. Mexican street food, tacos, burritos, bowls and order links for every location.",
-          300
-        ),
-        menuTitle: cleanText(seo.menuTitle, "Menu | Tres Amigos", 180),
-        menuDescription: cleanText(
-          seo.menuDescription,
-          "Bekijk het Tres Amigos menu met tacos, burritos, quesadillas, bowls, sides en desserts.",
-          300
-        ),
-        image: cleanUrl(seo.image)
+        image: cleanUrl(seo.image),
+        pages: sanitizeSeoPages(seo),
+        title: cleanText(seo.title, DEFAULT_SEO_PAGES.home.title, 180),
+        description: cleanText(seo.description, DEFAULT_SEO_PAGES.home.description, 300),
+        menuTitle: cleanText(seo.menuTitle, DEFAULT_SEO_PAGES.menu.title, 180),
+        menuDescription: cleanText(seo.menuDescription, DEFAULT_SEO_PAGES.menu.description, 300)
       },
       navCta: {
         label: cleanText(navCta.label, "Order Now", 80),
@@ -212,7 +603,14 @@ export function sanitizeContent(input: unknown): SiteContent {
         eyebrow: cleanText(videosSection.eyebrow, "Sfeer", 80),
         title: cleanText(videosSection.title, "Street food in beweging.", 160),
         intro: cleanText(videosSection.intro, "", 500)
-      }
+      },
+      openingHours: sanitizeOpeningHours(openingHours),
+      ourStory: sanitizeOurStory(ourStory),
+      reviews: sanitizeReviews(reviews),
+      promoPopup: sanitizePromoPopup(promoPopup),
+      mailRelay: sanitizeMailRelay(mailRelay),
+      contactForm: sanitizeContactForm(contactForm),
+      vacancy: sanitizeVacancySettings(vacancy)
     },
     videos,
     menu,
