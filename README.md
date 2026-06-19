@@ -8,35 +8,45 @@ Monorepo voor het Tres Amigos platform.
 | `apps/admin` | React · TypeScript · Vite |
 | `apps/api` | NestJS · TypeScript · Prisma · PostgreSQL · Redis |
 
-Productie draait met **Nginx** (poort 80), **systemd** (API) en **Docker Compose** (PostgreSQL + Redis).
+Productie: **Nginx** (poort 80) · **systemd** (API op 3100) · **Docker Compose** (PostgreSQL + Redis).
 
 ## Lokaal ontwikkelen
 
 ```bash
 pnpm install
-cp .env.example .env   # vul ADMIN_PASSWORD in; zet NODE_ENV=development en VITE_API_URL=http://localhost:3100
+cp .env.example .env   # vul ADMIN_PASSWORD in
 pnpm infra:up
 pnpm db:migrate
 pnpm db:seed
-pnpm dev
+./start.sh development   # of: pnpm dev
 ```
 
 - Website: http://localhost:5180
 - Admin: http://localhost:5181/admin/
 - API: http://localhost:3100/api/content
 
+Lokaal optioneel in `.env`: `VITE_API_URL=http://localhost:3100` (zonder `/api` suffix).
+
 ## Productie (Ubuntu)
 
-Volledige serverhandleiding: **[DEPLOY-UBUNTU.md](./DEPLOY-UBUNTU.md)**
+Volledige handleiding: **[DEPLOY-UBUNTU.md](./DEPLOY-UBUNTU.md)**
 
-Kort:
+```bash
+cd /var/www/tresamigos
+./start.sh production
+```
 
-- Web op `/` · Admin op `/admin/` · API op `/api/`
-- API intern op `127.0.0.1:3100`
-- PostgreSQL op poort `5434` · Redis op poort `6380`
-- `VITE_API_URL` leeg laten in productie (relatieve API-calls)
+| Route | Doel |
+|-------|------|
+| `/` | Web (`apps/web/dist`) |
+| `/admin/` | Admin (`apps/admin/dist`) |
+| `/api/*` | API → `127.0.0.1:3100` |
+
+- **`VITE_API_URL=` leeg** in productie → relatieve API-paden (`/api/content`)
+- Geen Vite dev servers, geen `pnpm dev` op productie
+- Config templates: `deploy/nginx-tresamigos.conf`, `deploy/tresamigos-api.service`
 
 ## Packages
 
 - `packages/types` — gedeelde TypeScript contracts
-- `packages/utils` — sanitization & auth helpers
+- `packages/utils` — sanitization, auth helpers, API URL helpers

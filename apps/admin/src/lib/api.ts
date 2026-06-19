@@ -1,4 +1,6 @@
-const base = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "");
+import { buildApiUrl, resolveApiBase } from "@tresamigos/utils/api-url";
+
+const base = import.meta.env.DEV ? "" : resolveApiBase(import.meta.env.VITE_API_URL);
 const tokenKey = "tres_amigos_admin_token";
 
 export function getToken() {
@@ -14,7 +16,7 @@ export function clearToken() {
 }
 
 function apiUrl(path: string) {
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+  return buildApiUrl(path, base);
 }
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {

@@ -1,14 +1,16 @@
 # Tres Amigos — deploy op Ubuntu
 
-Volledige serverhandleiding voor productie met Nginx (poort 80), systemd en Docker Compose.
+Productie-architectuur:
 
 | Route | Doel |
 |-------|------|
-| `/` | React website (`apps/web/dist`) |
-| `/admin/` | React admin (`apps/admin/dist`) |
-| `/api/` | NestJS API (proxy naar `127.0.0.1:3100`) |
+| `http://SERVER_IP/` | React website (`apps/web/dist`) |
+| `http://SERVER_IP/admin/` | React admin (`apps/admin/dist`) |
+| `http://SERVER_IP/api/*` | NestJS API → `127.0.0.1:3100` |
 
-PostgreSQL draait op poort **5434**, Redis op **6380** (via Docker Compose).
+Alleen **Nginx** luistert op poort 80. Web en admin zijn statische Vite-builds. De API is het enige Node-proces (intern op 3100).
+
+PostgreSQL draait op poort **5434**, Redis op **6380** (Docker Compose).
 
 ---
 
@@ -52,7 +54,6 @@ nano .env
 Productie `.env` voorbeeld:
 
 ```env
-NODE_ENV=production
 PORT=3100
 
 DATABASE_URL=postgresql://tresamigos:tresamigos@localhost:5434/tresamigos?schema=public
@@ -62,7 +63,9 @@ ADMIN_PASSWORD=<sterk-wachtwoord>
 ADMIN_PASSWORD_HASH=
 CORS_ORIGINS=http://167.233.20.221
 
+# Leeg laten — browser gebruikt relatieve /api/... paden
 VITE_API_URL=
+
 VITE_WEB_PORT=5180
 VITE_ADMIN_PORT=5181
 
@@ -80,39 +83,34 @@ INSTAGRAM_USER_ID=
 
 **Belangrijk:**
 
-- `VITE_API_URL=` **leeg laten** in productie.
-- Frontend gebruikt relatieve API-calls (`/api/...`).
-- Vul **niet** `http://167.233.20.221/api` in — dat geeft dubbele paden (`/api/api/...`).
+- **`VITE_API_URL=` leeg laten** in productie → `fetch("/api/content")`, niet `/api/api/...`.
+- Vul **niet** `http://SERVER_IP/api` in — dat geeft dubbele paden.
+- **`NODE_ENV`** hoort niet in `.env` voor Vite. Zet `NODE_ENV=production` in systemd (zie service hieronder).
 
-## 5. Database en Redis
+## 5. systemd service (API)
 
-```bash
-pnpm infra:up
-pnpm --filter @tresamigos/api prisma generate
-pnpm db:deploy
-pnpm db:seed
-```
-
-## 6. Build
+Kopieer de meegeleverde unit:
 
 ```bash
-pnpm build
+cp deploy/tresamigos-api.service /etc/systemd/system/tresamigos-api.service
+systemctl daemon-reload
+systemctl enable tresamigos-api
+systemctl start tresamigos-api
+systemctl status tresamigos-api
 ```
 
-## 7. systemd service (API)
-
-```bash
-nano /etc/systemd/system/tresamigos-api.service
-```
+Referentie (`deploy/tresamigos-api.service`):
 
 ```ini
 [Unit]
 Description=Tres Amigos API
 After=network.target docker.service
+Wants=docker.service
 
 [Service]
 Type=simple
 WorkingDirectory=/var/www/tresamigos
+Environment=NODE_ENV=production
 EnvironmentFile=/var/www/tresamigos/.env
 ExecStart=/usr/bin/pnpm --filter @tresamigos/api start
 Restart=always
@@ -122,25 +120,24 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
-Activeren:
+## 6. Nginx
+
+Kopieer de meegeleverde config:
 
 ```bash
-systemctl daemon-reload
-systemctl enable tresamigos-api
-systemctl restart tresamigos-api
-systemctl status tresamigos-api
+cp deploy/nginx-tresamigos.conf /etc/nginx/sites-available/tresamigos
+ln -sf /etc/nginx/sites-available/tresamigos /etc/nginx/sites-enabled/tresamigos
+rm -f /etc/nginx/sites-enabled/default
+nginx -t
+systemctl reload nginx
 ```
 
-## 8. Nginx
-
-```bash
-nano /etc/nginx/sites-available/tresamigos
-```
+Verwachte routing (`deploy/nginx-tresamigos.conf`):
 
 ```nginx
 server {
     listen 80 default_server;
-    server_name 167.233.20.221 _;
+    server_name _;
 
     root /var/www/tresamigos/apps/web/dist;
     index index.html;
@@ -167,38 +164,65 @@ server {
 }
 ```
 
-Activeren:
+**Niet doen:** `location /assets/` alias naar `/var/www/tresamigos/assets` — Vite-build JS/CSS staat óók onder `/assets/` en breekt dan.
+
+Optioneel (CMS-uploads): alleen `/assets/uploads/` proxien naar de API — zie `deploy/nginx-tresamigos.conf`.
+
+## 7. Eerste deploy
 
 ```bash
-ln -sf /etc/nginx/sites-available/tresamigos /etc/nginx/sites-enabled/tresamigos
-rm -f /etc/nginx/sites-enabled/default
-nginx -t
-systemctl reload nginx
+cd /var/www/tresamigos
+chmod +x start.sh
+./start.sh production
 ```
 
-## 9. Checks
+Op `/var/www/tresamigos` detecteert `./start.sh` automatisch productiemodus.
 
-```bash
-curl -I http://167.233.20.221/
-curl -I http://167.233.20.221/admin/
-curl http://167.233.20.221/api/content | head -c 300
-curl http://127.0.0.1:3100/health
-```
-
-## 10. Deploy update
-
-Na een `git pull`:
+## 8. Deploy update
 
 ```bash
 cd /var/www/tresamigos
 git pull
-pnpm install
-pnpm --filter @tresamigos/api prisma generate
-pnpm db:deploy
-pnpm build
-systemctl restart tresamigos-api
-systemctl reload nginx
+./start.sh production
 ```
+
+Of expliciet:
+
+```bash
+./start.sh production   # git pull, build, restart API, reload nginx, health checks
+./start.sh development  # lokaal: docker + pnpm dev
+```
+
+`start.sh` productie:
+
+- `git pull`
+- `pnpm install`
+- Prisma generate + migraties + seed
+- `pnpm build` (met lege `VITE_API_URL`)
+- **Geen** `pnpm dev`, **geen** Vite dev servers
+- Herstart API via `systemctl restart tresamigos-api` (of stop oude proces op 3100)
+- `nginx -t && systemctl reload nginx`
+- Health checks
+
+## 9. Health checks (handmatig)
+
+Vervang `SERVER_IP`:
+
+```bash
+curl -I http://SERVER_IP/
+curl -I http://SERVER_IP/admin/
+curl http://SERVER_IP/api/content | head -c 300
+curl http://SERVER_IP/api/instagram/feed | head -c 300
+grep -R "/api/api" -n apps/web/dist apps/admin/dist
+ss -tulpn | grep :3100
+```
+
+Verwacht:
+
+- Web en admin: HTTP 200
+- API: JSON
+- `grep`: **geen** output (geen dubbele `/api/api`)
+- Precies één API-proces op poort 3100
 
 ---
 
@@ -206,23 +230,29 @@ systemctl reload nginx
 
 ### `/api/api/admin/login` of dubbele `/api/`-paden
 
-`VITE_API_URL` staat verkeerd. Zet `VITE_API_URL=` leeg in `.env` en voer opnieuw `pnpm build` uit.
+`VITE_API_URL` staat verkeerd (bijv. `http://SERVER_IP/api`). Zet `VITE_API_URL=` leeg in `.env` en voer `./start.sh production` opnieuw uit.
 
 ### `EADDRINUSE 3100`
 
-De API draait al (systemd of een achtergebleven proces). Controleer met `systemctl status tresamigos-api` of stop het dubbele proces.
+Dubbele API-processen. Controleer:
+
+```bash
+ss -tulpn | grep :3100
+systemctl status tresamigos-api
+```
+
+Stop handmatige `pnpm dev` / `node dist/main.js` en gebruik alleen systemd.
 
 ### Lege pagina terwijl HTML wél laadt
 
-JavaScript of CSS wordt niet geladen. Controleer asset-URLs:
+JavaScript/CSS niet geladen. Controleer:
 
 ```bash
-curl -I http://167.233.20.221/assets/<bestand>.js
-curl -I http://167.233.20.221/assets/<bestand>.css
+curl -I http://SERVER_IP/assets/<bestand>.js
 ```
 
-Vervang `<bestand>` door een bestandsnaam uit `apps/web/dist/index.html`.
+Gebruik bestandsnamen uit `apps/web/dist/index.html`. Voeg **geen** brede `/assets/` Nginx-alias toe.
 
-### `413 Request Entity Too Large` (sollicitaties met CV)
+### `413 Request Entity Too Large`
 
-Zorg dat `client_max_body_size 15M;` in de Nginx-config staat en herlaad Nginx.
+Zorg dat `client_max_body_size 15M;` in Nginx staat en herlaad Nginx.

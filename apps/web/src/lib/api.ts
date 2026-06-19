@@ -1,7 +1,9 @@
-const base = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "");
+import { buildApiUrl, resolveApiBase } from "@tresamigos/utils/api-url";
+
+const base = import.meta.env.DEV ? "" : resolveApiBase(import.meta.env.VITE_API_URL);
 
 export function apiUrl(path: string) {
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+  return buildApiUrl(path, base);
 }
 
 export async function fetchContent() {
@@ -50,7 +52,7 @@ export function assetUrl(path: string) {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  return import.meta.env.DEV ? normalized : apiUrl(normalized);
+  return import.meta.env.DEV ? normalized : buildApiUrl(normalized, base);
 }
 
 export function pageUrl(path: string) {
