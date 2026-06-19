@@ -262,11 +262,24 @@ export interface MediaLibraryResponse {
   assets: MediaAsset[];
 }
 
+export interface AnalyticsDailyEntry {
+  date: string;
+  visitors: number;
+}
+
 export interface AnalyticsSnapshot {
   liveNow: number;
   viewsToday: number;
   viewsWeek: number;
   topPages: { path: string; views: number }[];
+  dailyLog: AnalyticsDailyEntry[];
+  updatedAt: string;
+}
+
+export interface PublicAnalyticsStats {
+  liveNow: number;
+  viewsToday: number;
+  dailyLog: AnalyticsDailyEntry[];
   updatedAt: string;
 }
 

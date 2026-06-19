@@ -80,12 +80,16 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
   useEffect(() => {
     if (!open) return;
     const scrollY = window.scrollY;
+    document.body.dataset.applicationOpen = "true";
+    window.dispatchEvent(new CustomEvent("ta-application-modal"));
     document.body.style.position = "fixed";
     document.body.style.top = `-${scrollY}px`;
     document.body.style.left = "0";
     document.body.style.right = "0";
     document.body.style.overflow = "hidden";
     return () => {
+      delete document.body.dataset.applicationOpen;
+      window.dispatchEvent(new CustomEvent("ta-application-modal"));
       document.body.style.position = "";
       document.body.style.top = "";
       document.body.style.left = "";

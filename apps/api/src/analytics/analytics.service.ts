@@ -1,9 +1,10 @@
 import { Injectable } from "@nestjs/common";
-import type { AnalyticsPingInput, AnalyticsSnapshot } from "@tresamigos/types";
+import type { AnalyticsDailyEntry, AnalyticsPingInput, AnalyticsSnapshot, PublicAnalyticsStats } from "@tresamigos/types";
 import { RedisService } from "../redis/redis.module";
 
-const LIVE_WINDOW_MS = 45_000;
+const LIVE_WINDOW_MS = 30_000;
 const KEY_TTL_SECONDS = 60 * 60 * 24 * 14;
+const DAILY_LOG_DAYS = 14;
 
 @Injectable()
 export class AnalyticsService {
@@ -23,6 +24,17 @@ export class AnalyticsService {
     const keys: string[] = [];
     const now = new Date();
     for (let index = 0; index < 7; index += 1) {
+      const day = new Date(now);
+      day.setDate(now.getDate() - index);
+      keys.push(day.toISOString().slice(0, 10));
+    }
+    return keys;
+  }
+
+  private dayKeys(days = DAILY_LOG_DAYS) {
+    const keys: string[] = [];
+    const now = new Date();
+    for (let index = days - 1; index >= 0; index -= 1) {
       const day = new Date(now);
       day.setDate(now.getDate() - index);
       keys.push(day.toISOString().slice(0, 10));
@@ -122,17 +134,71 @@ export class AnalyticsService {
     return merged.size;
   }
 
+  private async dailyLogRedis(days = DAILY_LOG_DAYS): Promise<AnalyticsDailyEntry[]> {
+    const client = this.redis.client;
+    const dates = this.dayKeys(days);
+    const counts = await Promise.all(
+      dates.map(async (date) => ({
+        date,
+        visitors: Number(await client.scard(`analytics:unique:${date}`)) || 0
+      }))
+    );
+    return counts;
+  }
+
+  private dailyLogMemory(days = DAILY_LOG_DAYS): AnalyticsDailyEntry[] {
+    return this.dayKeys(days).map((date) => ({
+      date,
+      visitors: date === this.todayKey()
+        ? this.memoryUniqueToday.size
+        : this.memoryUniqueWeek.get(date)?.size || 0
+    }));
+  }
+
+  async getPublicStats(): Promise<PublicAnalyticsStats> {
+    const today = this.todayKey();
+    const now = Date.now();
+
+    if (this.redis.isAvailable()) {
+      const client = this.redis.client;
+      const [liveNow, viewsToday, dailyLog] = await Promise.all([
+        client.zcount("analytics:live", now - LIVE_WINDOW_MS, "+inf"),
+        client.scard(`analytics:unique:${today}`),
+        this.dailyLogRedis()
+      ]);
+
+      return {
+        liveNow: Number(liveNow) || 0,
+        viewsToday: Number(viewsToday) || 0,
+        dailyLog,
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    for (const [id, seenAt] of this.memoryLive) {
+      if (seenAt < now - LIVE_WINDOW_MS) this.memoryLive.delete(id);
+    }
+
+    return {
+      liveNow: this.memoryLive.size,
+      viewsToday: this.memoryUniqueToday.size,
+      dailyLog: this.dailyLogMemory(),
+      updatedAt: new Date().toISOString()
+    };
+  }
+
   async getSnapshot(): Promise<AnalyticsSnapshot> {
     const today = this.todayKey();
     const now = Date.now();
 
     if (this.redis.isAvailable()) {
       const client = this.redis.client;
-      const [liveNow, viewsToday, viewsWeek, pageKeys] = await Promise.all([
+      const [liveNow, viewsToday, viewsWeek, pageKeys, dailyLog] = await Promise.all([
         client.zcount("analytics:live", now - LIVE_WINDOW_MS, "+inf"),
         client.scard(`analytics:unique:${today}`),
         this.uniqueWeekCountRedis(),
-        client.keys(`analytics:unique:page:${today}:*`)
+        client.keys(`analytics:unique:page:${today}:*`),
+        this.dailyLogRedis()
       ]);
 
       const pageCounts = await Promise.all(
@@ -148,6 +214,7 @@ export class AnalyticsService {
         viewsToday: Number(viewsToday) || 0,
         viewsWeek: viewsWeek,
         topPages: pageCounts.sort((left, right) => right.views - left.views).slice(0, 8),
+        dailyLog,
         updatedAt: new Date().toISOString()
       };
     }
@@ -164,6 +231,7 @@ export class AnalyticsService {
         .map(([path, visitors]) => ({ path, views: visitors.size }))
         .sort((left, right) => right.views - left.views)
         .slice(0, 8),
+      dailyLog: this.dailyLogMemory(),
       updatedAt: new Date().toISOString()
     };
   }

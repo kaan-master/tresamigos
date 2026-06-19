@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port,
       strictPort: true,
+      host: true,
       proxy: {
         "/api": apiTarget,
         "/assets": apiTarget

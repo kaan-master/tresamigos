@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
-import type { AnalyticsPingInput, AnalyticsSnapshot } from "@tresamigos/types";
+import type { AnalyticsPingInput, AnalyticsSnapshot, PublicAnalyticsStats } from "@tresamigos/types";
 import { AdminGuard } from "../auth/admin.guard";
 import { AnalyticsService } from "./analytics.service";
 
@@ -19,6 +19,11 @@ export class PublicAnalyticsController {
   @Post("ping")
   ping(@Body() body: AnalyticsPingInput, @Req() req: Request) {
     return this.analyticsService.ping(body, clientIp(req));
+  }
+
+  @Get("stats")
+  stats(): Promise<PublicAnalyticsStats> {
+    return this.analyticsService.getPublicStats();
   }
 }
 

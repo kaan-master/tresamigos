@@ -162,8 +162,15 @@ export function ContactPage({ content }: { content: SiteContent }) {
                         required
                       />
                     </label>
-                    <button className="btn primary" type="submit" disabled={submitting}>
-                      {submitting ? t("common.submitting") : t("contact.send")}
+                    <button className={`btn primary${submitting ? " is-loading" : ""}`} type="submit" disabled={submitting}>
+                      {submitting ? (
+                        <>
+                          <span className="btn-spinner" aria-hidden="true" />
+                          {t("common.submitting")}
+                        </>
+                      ) : (
+                        t("contact.send")
+                      )}
                     </button>
                     {message ? <p className={`form-message ${messageType}`.trim()}>{message}</p> : null}
                   </form>

@@ -88,8 +88,15 @@ export function ReviewSubmitForm({ settings }: { settings: ReviewsSettings }) {
         </label>
         {error ? <p className="form-message is-error">{error}</p> : null}
         {message ? <p className="form-message is-success">{message}</p> : null}
-        <button className="btn primary" type="submit" disabled={submitting}>
-          {submitting ? "Sending..." : "Send review"}
+        <button className={`btn primary${submitting ? " is-loading" : ""}`} type="submit" disabled={submitting}>
+          {submitting ? (
+            <>
+              <span className="btn-spinner" aria-hidden="true" />
+              Sending...
+            </>
+          ) : (
+            "Send review"
+          )}
         </button>
       </form>
     </article>

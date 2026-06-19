@@ -25,7 +25,7 @@ export class RedisService implements OnModuleDestroy {
   }
 
   isAvailable() {
-    return this.available;
+    return this.available || this.client.status === "ready";
   }
 
   async onModuleDestroy() {

@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import type { Application, SiteContent } from "@tresamigos/types";
 import { api } from "./lib/api";
+import { randomSaveError, randomSaveLoading, randomSaveSuccess } from "./lib/saveMessages";
+import { AdminBadge } from "./components/AdminBadge";
+import { AdminButton } from "./components/AdminButton";
+import { IconLogout, IconSave, tabIcons } from "./components/AdminIcons";
 import { AdminLoaderScreen, AdminLoadingPopup } from "./components/AdminLoadingPopup";
 import { OverviewPanel } from "./components/OverviewPanel";
 import { LocationsPanel } from "./components/LocationsPanel";
@@ -74,6 +78,7 @@ export function AdminDashboard({ onLogout }: Props) {
     null
   );
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   async function loadAll() {
     setLoading(true);
@@ -114,22 +119,25 @@ export function AdminDashboard({ onLogout }: Props) {
   }, [content, applications.length]);
 
   async function saveContent() {
-    if (!content) return;
-    setPopup({ title: "Opslaan...", message: "Wijzigingen worden veilig opgeslagen.", tone: "loading" });
+    if (!content || saving) return;
+    const loadingMsg = randomSaveLoading();
+    setSaving(true);
+    setPopup({ title: loadingMsg.title, message: loadingMsg.message, tone: "loading" });
     try {
       const saved = await api<SiteContent>("/api/admin/content", {
         method: "PUT",
         body: JSON.stringify(content)
       });
       setContent(saved);
-      setPopup({ title: "Opgeslagen", message: "Alle wijzigingen staan live klaar in de API.", tone: "success" });
-      window.setTimeout(() => setPopup(null), 2200);
+      const successMsg = randomSaveSuccess();
+      setPopup({ title: successMsg.title, message: successMsg.message, tone: "success" });
+      window.setTimeout(() => setPopup(null), 3200);
     } catch (error) {
-      setPopup({
-        title: "Opslaan mislukt",
-        message: error instanceof Error ? error.message : "Probeer opnieuw.",
-        tone: "error"
-      });
+      const fallback = error instanceof Error ? error.message : "Probeer opnieuw.";
+      const errorMsg = randomSaveError(fallback);
+      setPopup({ title: errorMsg.title, message: errorMsg.message, tone: "error" });
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -157,23 +165,27 @@ export function AdminDashboard({ onLogout }: Props) {
           </div>
 
           <nav className="ta-nav">
-            {tabs.map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                className={activeTab === id ? "is-active" : ""}
-                onClick={() => setActiveTab(id)}
-              >
-                {label}
-              </button>
-            ))}
+            {tabs.map(([id, label]) => {
+              const Icon = tabIcons[id];
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={activeTab === id ? "is-active" : ""}
+                  onClick={() => setActiveTab(id)}
+                >
+                  <Icon width={18} height={18} />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
           </nav>
         </aside>
 
         <main className="ta-main">
           <header className="ta-main-head ta-fade-in">
             <div>
-              <span className="ta-badge">Tres CMS</span>
+              <AdminBadge />
               <h1>{activeLabel}</h1>
             </div>
           </header>
@@ -313,12 +325,18 @@ export function AdminDashboard({ onLogout }: Props) {
       </div>
 
       <div className="ta-action-dock">
-        <button className="ta-btn ta-btn-primary" type="button" onClick={() => void saveContent()}>
+        <AdminButton
+          variant="primary"
+          icon={<IconSave width={16} height={16} />}
+          loading={saving}
+          loadingText="Opslaan..."
+          onClick={() => void saveContent()}
+        >
           Opslaan
-        </button>
-        <button className="ta-btn ta-btn-ghost" type="button" onClick={onLogout}>
+        </AdminButton>
+        <AdminButton variant="ghost" icon={<IconLogout width={16} height={16} />} onClick={onLogout}>
           Uitloggen
-        </button>
+        </AdminButton>
       </div>
 
       <AdminLoadingPopup

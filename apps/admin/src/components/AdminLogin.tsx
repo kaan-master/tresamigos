@@ -1,4 +1,6 @@
 import { FormEvent, useState } from "react";
+import { AdminBadge } from "./AdminBadge";
+import { AdminButton } from "./AdminButton";
 
 interface Props {
   loading: boolean;
@@ -27,7 +29,7 @@ export function AdminLogin({ loading, message, onSubmit }: Props) {
 
       <section className="ta-login-panel">
         <form className="ta-login-card" onSubmit={handleSubmit}>
-          <span className="ta-badge">Tres CMS</span>
+          <AdminBadge compact />
           <h2>Welkom terug</h2>
           <p>Log in om content, bestelknoppen en aanvragen te beheren.</p>
 
@@ -43,9 +45,9 @@ export function AdminLogin({ loading, message, onSubmit }: Props) {
             />
           </label>
 
-          <button className="ta-btn ta-btn-primary ta-btn-block" type="submit" disabled={loading}>
-            {loading ? "Bezig met inloggen..." : "Inloggen"}
-          </button>
+          <AdminButton variant="primary" block type="submit" loading={loading} loadingText="Ring betreden...">
+            Inloggen
+          </AdminButton>
 
           {message ? <p className="ta-message">{message}</p> : null}
         </form>

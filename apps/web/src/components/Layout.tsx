@@ -5,6 +5,7 @@ import { usePageMotion } from "../hooks/usePageMotion";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { AnalyticsTracker } from "./AnalyticsTracker";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { LiveVisitorsStats } from "./LiveVisitorsStats";
 import { PromoPopup } from "./PromoPopup";
 
 interface LayoutProps {
@@ -111,6 +112,7 @@ export function Layout({ content }: LayoutProps) {
             </p>
           </div>
         </div>
+        <LiveVisitorsStats />
         <div className="shell copyright">{site.footer.copyright}</div>
       </footer>
     </>

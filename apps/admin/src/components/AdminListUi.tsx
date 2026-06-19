@@ -22,11 +22,13 @@ interface FilterProps {
 
 export function AdminFilterChips({ value, onChange, options }: FilterProps) {
   return (
-    <div className="ta-filter-chips">
+    <div className="ta-filter-chips" role="tablist">
       {options.map((option) => (
         <button
           key={option.value}
           type="button"
+          role="tab"
+          aria-selected={value === option.value}
           className={value === option.value ? "is-active" : ""}
           onClick={() => onChange(option.value)}
         >

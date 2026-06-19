@@ -30,7 +30,7 @@ export function OverviewPanel() {
     }
 
     void load();
-    const interval = window.setInterval(() => void load(), 10_000);
+    const interval = window.setInterval(() => void load(), 3_000);
     return () => {
       active = false;
       window.clearInterval(interval);
@@ -111,6 +111,21 @@ export function OverviewPanel() {
         </article>
       </section>
 
+      {stats?.dailyLog?.length ? (
+        <section className="ta-location-editor">
+          <h3 className="ta-section-title">Bezoekers per dag</h3>
+          <p className="ta-seo-hint">Unieke bezoekers per IP — laatste 14 dagen</p>
+          <div className="ta-data-list">
+            {[...stats.dailyLog].reverse().map((day) => (
+              <div className="ta-data-row" key={day.date}>
+                <span>{new Date(`${day.date}T12:00:00`).toLocaleDateString("nl-NL")}</span>
+                <strong>{day.visitors}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {stats?.topPages.length ? (
         <section className="ta-location-editor">
           <h3 className="ta-section-title">Top routes vandaag</h3>
@@ -127,7 +142,7 @@ export function OverviewPanel() {
 
       {stats?.updatedAt ? (
         <p className="ta-seo-hint">
-          Laatste update: {new Date(stats.updatedAt).toLocaleTimeString("nl-NL")} · ververst elke 10 sec · bezoekers per IP
+          Laatste update: {new Date(stats.updatedAt).toLocaleTimeString("nl-NL")} · ververst elke 3 sec · bezoekers per IP
         </p>
       ) : null}
     </div>

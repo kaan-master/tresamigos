@@ -4,6 +4,10 @@ import { apiUrl, assetUrl } from "../lib/api";
 
 const STORAGE_KEY = "tresamigos-promo-dismissed";
 
+function isApplicationOpen() {
+  return document.body.dataset.applicationOpen === "true";
+}
+
 export function PromoPopup({ settings }: { settings: PromoPopupSettings }) {
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState("");
@@ -14,8 +18,22 @@ export function PromoPopup({ settings }: { settings: PromoPopupSettings }) {
     if (!settings.enabled) return;
     if (window.localStorage.getItem(STORAGE_KEY) === "1") return;
 
-    const timer = window.setTimeout(() => setVisible(true), settings.delaySeconds * 1000);
-    return () => window.clearTimeout(timer);
+    function tryShow() {
+      if (isApplicationOpen()) return;
+      setVisible(true);
+    }
+
+    const timer = window.setTimeout(tryShow, settings.delaySeconds * 1000);
+
+    function onApplicationChange() {
+      if (isApplicationOpen()) setVisible(false);
+    }
+
+    window.addEventListener("ta-application-modal", onApplicationChange);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("ta-application-modal", onApplicationChange);
+    };
   }, [settings.enabled, settings.delaySeconds]);
 
   function dismiss() {
@@ -44,7 +62,7 @@ export function PromoPopup({ settings }: { settings: PromoPopupSettings }) {
     }
   }
 
-  if (!visible) return null;
+  if (!visible || isApplicationOpen()) return null;
 
   return (
     <div className="promo-overlay" role="dialog" aria-modal="true" aria-labelledby="promo-title">
@@ -82,8 +100,15 @@ export function PromoPopup({ settings }: { settings: PromoPopupSettings }) {
                 required
               />
             </label>
-            <button className="btn promo-submit" type="submit" disabled={submitting}>
-              {submitting ? "Sending..." : "Continue"}
+            <button className={`btn promo-submit${submitting ? " is-loading" : ""}`} type="submit" disabled={submitting}>
+              {submitting ? (
+                <>
+                  <span className="btn-spinner" aria-hidden="true" />
+                  Sending...
+                </>
+              ) : (
+                "Continue"
+              )}
             </button>
             {message ? <p className="promo-message">{message}</p> : null}
           </form>
