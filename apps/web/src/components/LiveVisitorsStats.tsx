@@ -28,7 +28,7 @@ export function LiveVisitorsStats() {
     }
 
     void load();
-    const interval = window.setInterval(() => void load(), 3_000);
+    const interval = window.setInterval(() => void load(), 2_000);
     const onPing = () => void load();
     window.addEventListener("ta-analytics-ping", onPing);
     return () => {

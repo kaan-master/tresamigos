@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import type { SiteContent } from "@tresamigos/types";
 import { assetUrl, pageUrl } from "../lib/api";
@@ -12,11 +13,31 @@ interface LayoutProps {
   content: SiteContent;
 }
 
+function HamburgerIcon({ open }: { open: boolean }) {
+  return (
+    <svg className={`hamburger-icon${open ? " is-open" : ""}`} viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path className="hamburger-line hamburger-line-top" d="M4 7h16" />
+      <path className="hamburger-line hamburger-line-mid" d="M4 12h16" />
+      <path className="hamburger-line hamburger-line-bot" d="M4 17h16" />
+    </svg>
+  );
+}
+
 export function Layout({ content }: LayoutProps) {
   const { site, locations } = content;
   const location = useLocation();
   const { t } = useLanguage();
+  const [menuOpen, setMenuOpen] = useState(false);
   usePageMotion();
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.body.classList.toggle("nav-open", menuOpen);
+    return () => document.body.classList.remove("nav-open");
+  }, [menuOpen]);
 
   return (
     <>
@@ -34,10 +55,18 @@ export function Layout({ content }: LayoutProps) {
               Amigos
             </span>
           </Link>
-          <button className="mobile-toggle" type="button" data-menu-toggle>
-            {t("common.menu")}
+          <button
+            className={`mobile-toggle${menuOpen ? " is-open" : ""}`}
+            type="button"
+            aria-expanded={menuOpen}
+            aria-controls="site-nav-links"
+            aria-label={menuOpen ? t("common.closeMenu") : t("common.openMenu")}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <HamburgerIcon open={menuOpen} />
+            <span className="mobile-toggle-label">{menuOpen ? t("common.close") : t("common.menu")}</span>
           </button>
-          <div className="nav-links">
+          <div className={`nav-links${menuOpen ? " open" : ""}`} id="site-nav-links">
             <NavLink to="/" end>
               {t("nav.home")}
             </NavLink>
@@ -52,6 +81,7 @@ export function Layout({ content }: LayoutProps) {
             </Link>
           </div>
         </div>
+        {menuOpen ? <button className="nav-backdrop" type="button" aria-label={t("common.closeMenu")} onClick={() => setMenuOpen(false)} /> : null}
       </nav>
       <div className="page-enter" key={location.pathname}>
         <Outlet />

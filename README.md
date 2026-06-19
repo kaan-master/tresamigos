@@ -15,10 +15,15 @@ Productie: **Nginx** (poort 80) · **systemd** (API op 3100) · **Docker Compose
 ```bash
 pnpm install
 cp .env.example .env   # vul ADMIN_PASSWORD in
-pnpm infra:up
-pnpm db:migrate
-pnpm db:seed
-./start.sh development   # of: pnpm dev
+chmod +x start-containers.sh start.sh
+./start-containers.sh   # git pull + docker + migraties + pnpm dev
+```
+
+Of:
+
+```bash
+./start.sh development
+pnpm dev
 ```
 
 - Website: http://localhost:5180

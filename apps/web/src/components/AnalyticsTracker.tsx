@@ -37,7 +37,7 @@ export function AnalyticsTracker() {
     }
 
     void ping();
-    const interval = window.setInterval(() => void ping(), 10_000);
+    const interval = window.setInterval(() => void ping(), 5_000);
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
 

@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { AnalyticsDailyEntry, AnalyticsPingInput, AnalyticsSnapshot, PublicAnalyticsStats } from "@tresamigos/types";
 import { RedisService } from "../redis/redis.module";
 
-const LIVE_WINDOW_MS = 30_000;
+const LIVE_WINDOW_MS = 45_000;
 const KEY_TTL_SECONDS = 60 * 60 * 24 * 14;
 const DAILY_LOG_DAYS = 14;
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AnalyticsSnapshot } from "@tresamigos/types";
 import { api } from "../lib/api";
+import { IconEye, IconOverview, IconUsers } from "./AdminIcons";
 import { BarChart, DonutChart, chartColors } from "./DonutChart";
 
 function formatPath(path: string) {
@@ -11,6 +12,7 @@ function formatPath(path: string) {
 export function OverviewPanel() {
   const [stats, setStats] = useState<AnalyticsSnapshot | null>(null);
   const [error, setError] = useState("");
+  const [pulse, setPulse] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -19,7 +21,10 @@ export function OverviewPanel() {
       try {
         const data = await api<AnalyticsSnapshot>("/api/admin/analytics");
         if (active) {
-          setStats(data);
+          setStats((prev) => {
+            if (prev && data.liveNow !== prev.liveNow) setPulse(true);
+            return data;
+          });
           setError("");
         }
       } catch (loadError) {
@@ -30,12 +35,18 @@ export function OverviewPanel() {
     }
 
     void load();
-    const interval = window.setInterval(() => void load(), 3_000);
+    const interval = window.setInterval(() => void load(), 2_000);
     return () => {
       active = false;
       window.clearInterval(interval);
     };
   }, []);
+
+  useEffect(() => {
+    if (!pulse) return;
+    const timer = window.setTimeout(() => setPulse(false), 700);
+    return () => window.clearTimeout(timer);
+  }, [pulse, stats?.liveNow]);
 
   const pageSegments = useMemo(() => {
     const pages = stats?.topPages ?? [];
@@ -60,25 +71,31 @@ export function OverviewPanel() {
     return <div className="ta-empty">Live statistieken laden...</div>;
   }
 
+  const liveNow = stats?.liveNow ?? 0;
+
   return (
     <div className="ta-analytics">
       {error ? <div className="ta-alert is-error">{error}</div> : null}
 
-      <div className="ta-analytics-live">
+      <div className={`ta-analytics-live${liveNow > 0 ? " is-hot" : ""}${pulse ? " is-pulse" : ""}`}>
         <span className="ta-live-dot" aria-hidden="true" />
-        <div>
-          <strong>{stats?.liveNow ?? 0}</strong>
-          <span>mensen kijken nu op de website</span>
+        <div className="ta-analytics-live-copy">
+          <strong>{liveNow}</strong>
+          <span>{liveNow === 1 ? "bezoeker live op de website" : "bezoekers live op de website"}</span>
+          <small>Direct zichtbaar · ververst elke 2 sec · site stuurt elke 5 sec een ping</small>
         </div>
+        <IconEye className="ta-analytics-live-icon" width={36} height={36} />
       </div>
 
       <div className="ta-kpis">
-        <article className="ta-kpi">
+        <article className="ta-kpi ta-kpi-icon">
+          <IconUsers width={20} height={20} />
           <span>Unieke bezoekers vandaag</span>
           <strong>{stats?.viewsToday ?? 0}</strong>
           <small>Per IP-adres, max. 1x per dag</small>
         </article>
-        <article className="ta-kpi">
+        <article className="ta-kpi ta-kpi-icon">
+          <IconOverview width={20} height={20} />
           <span>Unieke bezoekers (7 dagen)</span>
           <strong>{stats?.viewsWeek ?? 0}</strong>
           <small>Samengesteld over de afgelopen week</small>
@@ -94,7 +111,7 @@ export function OverviewPanel() {
           {pageSegments.length ? (
             <DonutChart segments={pageSegments} centerLabel="BEZOEK" />
           ) : (
-            <div className="ta-empty">Nog geen paginabezoeken vandaag.</div>
+            <div className="ta-empty">Nog geen paginabezoeken vandaag — open de site in een ander tabblad.</div>
           )}
         </article>
 
@@ -142,7 +159,7 @@ export function OverviewPanel() {
 
       {stats?.updatedAt ? (
         <p className="ta-seo-hint">
-          Laatste update: {new Date(stats.updatedAt).toLocaleTimeString("nl-NL")} · ververst elke 3 sec · bezoekers per IP
+          Laatste update: {new Date(stats.updatedAt).toLocaleTimeString("nl-NL")} · live counter elke 2 sec
         </p>
       ) : null}
     </div>

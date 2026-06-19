@@ -1280,17 +1280,67 @@ select {
   border: 1px solid rgba(0, 86, 215, 0.18);
   border-radius: 22px;
   background: linear-gradient(135deg, rgba(0, 86, 215, 0.08), rgba(252, 185, 42, 0.08));
+  transition:
+    transform 320ms var(--ta-ease-bounce),
+    box-shadow 320ms ease,
+    border-color 320ms ease;
+}
+
+.ta-analytics-live.is-hot {
+  border-color: rgba(31, 122, 69, 0.35);
+  background: linear-gradient(135deg, rgba(31, 122, 69, 0.12), rgba(252, 185, 42, 0.1));
+  box-shadow: 0 16px 40px rgba(31, 122, 69, 0.12);
+}
+
+.ta-analytics-live.is-pulse {
+  transform: scale(1.015);
+}
+
+.ta-analytics-live-copy {
+  flex: 1;
 }
 
 .ta-analytics-live strong {
   display: block;
-  font-size: 42px;
-  letter-spacing: -0.05em;
+  font-size: clamp(48px, 6vw, 64px);
+  letter-spacing: -0.06em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .ta-analytics-live span {
+  display: block;
+  margin-top: 6px;
+  color: var(--ta-label);
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.ta-analytics-live small {
+  display: block;
+  margin-top: 4px;
   color: var(--ta-muted);
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.ta-analytics-live-icon {
+  flex: 0 0 auto;
+  color: var(--ta-mole);
+  opacity: 0.55;
+}
+
+.ta-kpi-icon {
+  position: relative;
+  padding-top: 42px;
+}
+
+.ta-kpi-icon > svg {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  color: var(--ta-corn);
+  opacity: 0.9;
 }
 
 .ta-live-dot {

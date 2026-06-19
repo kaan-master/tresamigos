@@ -89,7 +89,7 @@ stop_port_3100() {
   echo "  · controleren poort 3100..."
   port_3100_pids | sed 's/^/    /' || true
 
-  if systemctl list-unit-files tresamigos-api.service >/dev/null 2>&1; then
+  if [ -f /etc/systemd/system/tresamigos-api.service ]; then
     if systemctl is-active --quiet tresamigos-api 2>/dev/null; then
       warn "systemd service tresamigos-api draait al — wordt straks herstart"
       return
@@ -110,9 +110,10 @@ stop_port_3100() {
 }
 
 restart_api() {
-  if systemctl list-unit-files tresamigos-api.service >/dev/null 2>&1; then
+  if [ -f /etc/systemd/system/tresamigos-api.service ]; then
     echo "  · systemctl restart tresamigos-api"
     systemctl restart tresamigos-api
+    sleep 2
     systemctl --no-pager --full status tresamigos-api || true
     ok "API herstart via systemd"
     return
@@ -167,7 +168,7 @@ health_checks() {
 }
 
 run_production() {
-  TOTAL=11
+  TOTAL=12
   SERVER_IP="$(read_server_ip)"
 
   echo
@@ -193,6 +194,19 @@ run_production() {
   docker info >/dev/null 2>&1 || fail "Docker daemon draait niet."
   docker compose up -d
   ok "Containers actief"
+
+  step "Redis bereikbaar"
+  redis_ready=0
+  for attempt in $(seq 1 20); do
+    if docker compose exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; then
+      redis_ready=1
+      break
+    fi
+    echo "  · poging ${attempt}/20..."
+    sleep 1
+  done
+  [[ "$redis_ready" -eq 1 ]] || fail "Redis reageert niet — live analytics werkt niet zonder Redis."
+  ok "Redis healthy"
 
   step "Database bereikbaar"
   ready=0
@@ -248,7 +262,7 @@ run_production() {
 }
 
 run_development() {
-  TOTAL=6
+  TOTAL=8
 
   echo
   echo "╔══════════════════════════════════════════════════╗"
@@ -260,6 +274,12 @@ run_development() {
   echo "  API   → http://localhost:3100/api/content"
   echo "  DB    → localhost:5434  ·  Redis → localhost:6380"
   echo
+
+  if [[ "${SKIP_PULL:-}" != "1" ]] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    step "Git pull"
+    git pull --ff-only || warn "Git pull overgeslagen (merge/conflict of geen remote)"
+    ok "Repository bijgewerkt"
+  fi
 
   step "Docker controleren"
   command -v docker >/dev/null 2>&1 || fail "Docker niet gevonden. Installeer Docker Engine."
@@ -284,6 +304,19 @@ run_development() {
   step "PostgreSQL + Redis containers starten"
   docker compose up -d
   ok "Containers gestart ($(docker compose ps --format '{{.Name}}' 2>/dev/null | tr '\n' ' '))"
+
+  step "Redis bereikbaar"
+  redis_ready=0
+  for attempt in $(seq 1 20); do
+    if docker compose exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; then
+      redis_ready=1
+      break
+    fi
+    echo "  · poging ${attempt}/20..."
+    sleep 1
+  done
+  [[ "$redis_ready" -eq 1 ]] || warn "Redis reageert nog niet — analytics kan tijdelijk in geheugen draaien"
+  [[ "$redis_ready" -eq 1 ]] && ok "Redis healthy"
 
   step "Wachten tot database bereikbaar is"
   ready=0

@@ -506,3 +506,29 @@ main{background:var(--paper)}.hero{padding:54px 0 46px;background:linear-gradien
 @keyframes btn-spin{to{transform:rotate(360deg)}}
 .form-message.success,.form-message.is-success{animation:form-pop .32s cubic-bezier(.34,1.56,.64,1) both}
 @keyframes form-pop{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:translateY(0)}}
+
+.nav{position:relative}
+.mobile-toggle{display:none;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:10px 14px;font-weight:850;color:var(--text);cursor:pointer;transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .22s ease,background .22s ease,border-color .22s ease}
+.mobile-toggle:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(31,22,11,.08)}
+.mobile-toggle:active{transform:scale(.97)}
+.mobile-toggle.is-open{background:var(--corn);border-color:#e5a41e;box-shadow:0 10px 24px rgba(252,185,42,.24)}
+.mobile-toggle-label{font-size:13px;font-weight:900}
+.hamburger-icon{display:block;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.hamburger-line{transition:transform .24s ease,opacity .18s ease}
+.hamburger-icon.is-open .hamburger-line-top{transform:translateY(5px) rotate(45deg);transform-origin:center}
+.hamburger-icon.is-open .hamburger-line-mid{opacity:0}
+.hamburger-icon.is-open .hamburger-line-bot{transform:translateY(-5px) rotate(-45deg);transform-origin:center}
+.nav-backdrop{position:fixed;inset:0;z-index:40;border:0;background:rgba(20,14,8,.42);backdrop-filter:blur(2px);animation:nav-backdrop-in .22s ease both}
+@keyframes nav-backdrop-in{from{opacity:0}to{opacity:1}}
+body.nav-open{overflow:hidden}
+@media(max-width:920px){
+  .mobile-toggle{display:inline-flex}
+  .nav-inner{position:relative;z-index:52}
+  .nav-links{display:none;position:fixed;left:14px;right:14px;top:84px;z-index:51;flex-direction:column;align-items:stretch;background:#fff;border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:0 24px 60px rgba(31,22,11,.16);max-height:calc(100vh - 100px);overflow:auto;animation:nav-sheet-in .28s cubic-bezier(.22,1,.36,1) both}
+  .nav-links.open{display:flex}
+  .nav-links a{width:100%;padding:14px 12px;border-radius:14px;font-size:15px;font-weight:850}
+  .nav-links a.active,.nav-links a:hover{background:var(--soft-yellow)}
+  .nav-links .nav-cta{text-align:center;width:100%;margin-top:6px;padding:14px 18px}
+}
+@keyframes nav-sheet-in{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.live-stats-now strong{font-variant-numeric:tabular-nums}
