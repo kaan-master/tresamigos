@@ -20,6 +20,9 @@
     "db:seed": "pnpm --filter @tresamigos/api db:seed",
     "db:reset": "pnpm --filter @tresamigos/api db:reset",
     "infra:up": "docker compose up -d",
-    "infra:down": "docker compose down"
+    "infra:down": "docker compose down",
+    "deploy": "bash start.sh production",
+    "start:prod": "bash start.sh production",
+    "start:dev": "bash start.sh development"
   }
 }

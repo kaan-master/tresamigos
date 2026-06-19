@@ -151,9 +151,14 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    location = /admin {
+        return 301 /admin/;
+    }
+
     location /admin/ {
         alias /var/www/tresamigos/apps/admin/dist/;
-        try_files $uri $uri/ /admin/index.html;
+        index index.html;
+        try_files $uri $uri/ index.html;
     }
 
     location / {
@@ -185,6 +190,10 @@ Na een push naar git:
 ```bash
 cd /var/www/tresamigos
 ./start.sh production
+# of als Permission denied:
+bash start.sh production
+# of:
+pnpm deploy
 ```
 
 `start.sh` doet automatisch `git fetch` + `git reset --hard origin/<branch>`. Lokale build-ruis (zoals `*.tsbuildinfo`) blokkeert deploy niet meer. **`.env` blijft altijd staan** — die staat in `.gitignore`.

@@ -122,6 +122,7 @@ git_sync_production() {
   fi
 
   git reset --hard "${upstream}"
+  chmod +x start.sh start-containers.sh scripts/*.sh 2>/dev/null || true
   ok "Repository = ${upstream} ($(git rev-parse --short HEAD))"
 }
 
@@ -210,6 +211,25 @@ health_checks() {
   curl -sS -I "${base}/admin/" | head -n 5 || warn "Admin check mislukt"
   echo
 
+  local admin_js
+  admin_js="$(grep -oE '/admin/assets/[^"'\'' ]+\.js' apps/admin/dist/index.html | head -n1 || true)"
+  if [[ -n "$admin_js" ]]; then
+    echo "  curl -I ${base}${admin_js}"
+    if curl -sS -I "${base}${admin_js}" | head -n 1 | grep -q "200"; then
+      ok "Admin JS bundle laadt (${admin_js})"
+    else
+      warn "Admin JS bundle niet bereikbaar (${admin_js}) — nginx alias/try_files controleren"
+    fi
+    echo
+  fi
+
+  if curl -sS "${base}/admin/" | grep -q 'id="root"'; then
+    ok "Admin HTML bevat root mount"
+  else
+    warn "Admin HTML lijkt onjuist (geen #root)"
+  fi
+  echo
+
   echo "  curl ${base}/api/content | head -c 300"
   curl -sS "${base}/api/content" | head -c 300 || warn "API content check mislukt"
   echo
@@ -234,7 +254,7 @@ health_checks() {
 }
 
 run_production() {
-  TOTAL=12
+  TOTAL=13
   SERVER_IP="$(read_server_ip)"
 
   echo
@@ -301,6 +321,9 @@ run_production() {
   step "Production build (packages + web + admin + api)"
   export VITE_API_URL="${VITE_API_URL:-}"
   $PNPM build
+  [[ -f apps/web/dist/index.html ]] || fail "Web build ontbreekt: apps/web/dist/index.html"
+  [[ -f apps/admin/dist/index.html ]] || fail "Admin build ontbreekt: apps/admin/dist/index.html"
+  [[ -f apps/api/dist/main.js ]] || fail "API build ontbreekt: apps/api/dist/main.js"
   ok "Build voltooid"
 
   step "API proces controleren (poort 3100)"
@@ -310,8 +333,18 @@ run_production() {
   step "API herstarten"
   restart_api
 
-  step "Nginx herladen"
+  step "Nginx config + reload"
   if command -v nginx >/dev/null 2>&1; then
+    if [[ -f deploy/nginx-tresamigos.conf ]]; then
+      if [[ -d /etc/nginx/sites-available ]]; then
+        cp deploy/nginx-tresamigos.conf /etc/nginx/sites-available/tresamigos
+        ln -sf /etc/nginx/sites-available/tresamigos /etc/nginx/sites-enabled/tresamigos
+        rm -f /etc/nginx/sites-enabled/default
+        ok "Nginx config gekopieerd naar sites-available/tresamigos"
+      else
+        warn "Geen /etc/nginx/sites-available — pas deploy/nginx-tresamigos.conf handmatig toe"
+      fi
+    fi
     nginx -t
     systemctl reload nginx
     ok "Nginx herladen"

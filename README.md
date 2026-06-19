@@ -38,7 +38,10 @@ Volledige handleiding: **[DEPLOY-UBUNTU.md](./DEPLOY-UBUNTU.md)**
 
 ```bash
 cd /var/www/tresamigos
-./start.sh production
+git fetch origin
+git reset --hard origin/main
+chmod +x start.sh start-containers.sh
+bash start.sh production
 ```
 
 | Route | Doel |
