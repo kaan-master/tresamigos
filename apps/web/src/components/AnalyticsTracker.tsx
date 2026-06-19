@@ -1,14 +1,37 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { getAnalyticsSessionId } from "../lib/analyticsSession";
 import { apiUrl } from "../lib/api";
 
-function sessionId() {
-  const key = "tres_amigos_sid";
-  const existing = sessionStorage.getItem(key);
-  if (existing) return existing;
-  const next = crypto.randomUUID();
-  sessionStorage.setItem(key, next);
-  return next;
+async function sendAnalyticsPing(path: string) {
+  const sessionId = getAnalyticsSessionId();
+  const body = JSON.stringify({ sessionId, path });
+  const getUrl = apiUrl(
+    `/api/analytics/ping?sid=${encodeURIComponent(sessionId)}&path=${encodeURIComponent(path)}`
+  );
+
+  try {
+    const response = await fetch(apiUrl("/api/analytics/ping"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true
+    });
+    if (!response.ok) throw new Error("ping failed");
+  } catch {
+    try {
+      if (typeof navigator.sendBeacon === "function") {
+        const blob = new Blob([body], { type: "application/json" });
+        if (!navigator.sendBeacon(apiUrl("/api/analytics/ping"), blob)) {
+          await fetch(getUrl, { method: "GET", keepalive: true });
+        }
+      } else {
+        await fetch(getUrl, { method: "GET", keepalive: true });
+      }
+    } catch {
+      // best-effort
+    }
+  }
 }
 
 export function AnalyticsTracker() {
@@ -17,35 +40,27 @@ export function AnalyticsTracker() {
   useEffect(() => {
     let active = true;
 
-    async function ping() {
+    function ping() {
       if (!active || document.visibilityState === "hidden") return;
-      try {
-        await fetch(apiUrl("/api/analytics/ping"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId: sessionId(), path: location.pathname }),
-          keepalive: true
-        });
-        window.dispatchEvent(new CustomEvent("ta-analytics-ping"));
-      } catch {
-        // analytics is best-effort
-      }
+      void sendAnalyticsPing(location.pathname);
     }
 
     function onVisible() {
-      if (document.visibilityState === "visible") void ping();
+      if (document.visibilityState === "visible") ping();
     }
 
-    void ping();
-    const interval = window.setInterval(() => void ping(), 5_000);
+    ping();
+    const interval = window.setInterval(ping, 3_000);
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
+    window.addEventListener("pageshow", onVisible);
 
     return () => {
       active = false;
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
+      window.removeEventListener("pageshow", onVisible);
     };
   }, [location.pathname]);
 

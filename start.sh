@@ -165,6 +165,18 @@ health_checks() {
   echo "  ss -tulpn | grep :3100"
   ss -tulpn 2>/dev/null | grep ':3100 ' || warn "Geen proces op poort 3100"
   echo
+
+  echo "  Analytics ping (POST + stats)"
+  if curl -sS -X POST "http://127.0.0.1:3100/api/analytics/ping" \
+    -H "Content-Type: application/json" \
+    -d '{"sessionId":"deploy-healthcheck","path":"/"}' | grep -q '"ok"'; then
+    ok "Analytics ping POST werkt"
+  else
+    warn "Analytics ping POST mislukt — live bezoekers tellen niet"
+  fi
+  curl -sS "http://127.0.0.1:3100/api/analytics/stats" | head -c 220 || warn "Analytics stats mislukt"
+  echo
+  echo
 }
 
 run_production() {
@@ -181,7 +193,7 @@ run_production() {
   echo "  API   → http://${SERVER_IP}/api/ (intern :3100)"
   echo
 
-  step "Git pull"
+  step "Git pullx"
   git pull --ff-only
   ok "Repository up-to-date"
 

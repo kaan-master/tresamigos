@@ -35,7 +35,7 @@ export function OverviewPanel() {
     }
 
     void load();
-    const interval = window.setInterval(() => void load(), 2_000);
+    const interval = window.setInterval(() => void load(), 1_500);
     return () => {
       active = false;
       window.clearInterval(interval);
@@ -82,7 +82,7 @@ export function OverviewPanel() {
         <div className="ta-analytics-live-copy">
           <strong>{liveNow}</strong>
           <span>{liveNow === 1 ? "bezoeker live op de website" : "bezoekers live op de website"}</span>
-          <small>Direct zichtbaar · ververst elke 2 sec · site stuurt elke 5 sec een ping</small>
+          <small>Direct zichtbaar · ververst elke 1,5 sec · site ping elke 3 sec</small>
         </div>
         <IconEye className="ta-analytics-live-icon" width={36} height={36} />
       </div>

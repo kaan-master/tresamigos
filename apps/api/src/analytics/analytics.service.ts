@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { AnalyticsDailyEntry, AnalyticsPingInput, AnalyticsSnapshot, PublicAnalyticsStats } from "@tresamigos/types";
 import { RedisService } from "../redis/redis.module";
 
-const LIVE_WINDOW_MS = 45_000;
+const LIVE_WINDOW_MS = 60_000;
 const KEY_TTL_SECONDS = 60 * 60 * 24 * 14;
 const DAILY_LOG_DAYS = 14;
 
@@ -65,17 +65,21 @@ export class AnalyticsService {
     const today = this.todayKey();
 
     if (this.redis.isAvailable()) {
-      const client = this.redis.client;
-      const uniqueDayKey = `analytics:unique:${today}`;
-      const uniquePageKey = `analytics:unique:page:${today}:${path}`;
+      try {
+        const client = this.redis.client;
+        const uniqueDayKey = `analytics:unique:${today}`;
+        const uniquePageKey = `analytics:unique:page:${today}:${path}`;
 
-      await client.zadd("analytics:live", now, sessionId);
-      await client.zremrangebyscore("analytics:live", 0, now - LIVE_WINDOW_MS);
-      await client.sadd(uniqueDayKey, visitorId);
-      await client.sadd(uniquePageKey, visitorId);
-      await client.expire(uniqueDayKey, KEY_TTL_SECONDS);
-      await client.expire(uniquePageKey, KEY_TTL_SECONDS);
-      return { ok: true };
+        await client.zadd("analytics:live", now, sessionId);
+        await client.zremrangebyscore("analytics:live", 0, now - LIVE_WINDOW_MS);
+        await client.sadd(uniqueDayKey, visitorId);
+        await client.sadd(uniquePageKey, visitorId);
+        await client.expire(uniqueDayKey, KEY_TTL_SECONDS);
+        await client.expire(uniquePageKey, KEY_TTL_SECONDS);
+        return { ok: true };
+      } catch {
+        // Redis hiccup — val terug op geheugen voor deze ping
+      }
     }
 
     if (this.memoryDayKey !== today) {
