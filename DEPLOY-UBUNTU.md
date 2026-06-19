@@ -178,31 +178,27 @@ chmod +x start.sh
 
 Op `/var/www/tresamigos` detecteert `./start.sh` automatisch productiemodus.
 
-## 8. Deploy update
+## 10. Deploy update
+
+Na een push naar git:
 
 ```bash
 cd /var/www/tresamigos
-git pull
 ./start.sh production
 ```
 
-Of expliciet:
+`start.sh` doet automatisch `git fetch` + `git reset --hard origin/<branch>`. Lokale build-ruis (zoals `*.tsbuildinfo`) blokkeert deploy niet meer. **`.env` blijft altijd staan** — die staat in `.gitignore`.
+
+**Eenmalig** als pull al vastloopt vóór je deze fix hebt:
 
 ```bash
-./start.sh production   # git pull, build, restart API, reload nginx, health checks
-./start.sh development  # lokaal: docker + pnpm dev
+cd /var/www/tresamigos
+git fetch origin
+git reset --hard origin/main   # of: origin/master / jouw branch
+./start.sh production
 ```
 
-`start.sh` productie:
-
-- `git pull`
-- `pnpm install`
-- Prisma generate + migraties + seed
-- `pnpm build` (met lege `VITE_API_URL`)
-- **Geen** `pnpm dev`, **geen** Vite dev servers
-- Herstart API via `systemctl restart tresamigos-api` (of stop oude proces op 3100)
-- `nginx -t && systemctl reload nginx`
-- Health checks
+`start.sh` productie voert ook uit: `pnpm install`, Prisma generate + migraties + seed, `pnpm build`, API restart, nginx reload, health checks.
 
 ## 9. Health checks (handmatig)
 

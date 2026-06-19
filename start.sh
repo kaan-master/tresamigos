@@ -75,6 +75,72 @@ read_server_ip() {
   hostname -I 2>/dev/null | awk '{print $1}' || echo "127.0.0.1"
 }
 
+# Verwijder lokale TypeScript build-cache (wordt bij elke build opnieuw gemaakt).
+clean_tsbuildinfo_drift() {
+  local f
+  for f in apps/web/tsconfig.tsbuildinfo apps/admin/tsconfig.tsbuildinfo apps/api/tsconfig.tsbuildinfo; do
+    if [[ -f "$f" ]] && git ls-files --error-unmatch "$f" >/dev/null 2>&1; then
+      git checkout -- "$f" 2>/dev/null || true
+    fi
+  done
+}
+
+resolve_upstream_ref() {
+  local branch="$1"
+  local ref="origin/${branch}"
+  if git rev-parse --verify "${ref}" >/dev/null 2>&1; then
+    echo "${ref}"
+    return
+  fi
+  if git rev-parse --verify origin/main >/dev/null 2>&1; then
+    echo "origin/main"
+    return
+  fi
+  if git rev-parse --verify origin/master >/dev/null 2>&1; then
+    echo "origin/master"
+    return
+  fi
+  fail "Geen remote branch gevonden (fetch origin/main of origin/${branch})"
+}
+
+# Productie: server volgt altijd remote — .env blijft staan (gitignored).
+git_sync_production() {
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || fail "Geen git repository"
+
+  local branch upstream
+  branch="$(git rev-parse --abbrev-ref HEAD)"
+  echo "  · branch: ${branch}"
+  echo "  · git fetch origin..."
+  git fetch origin
+
+  upstream="$(resolve_upstream_ref "${branch}")"
+  clean_tsbuildinfo_drift
+
+  if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo "  · lokale wijzigingen gedetecteerd — reset naar ${upstream}"
+    git status --short | sed 's/^/    /' || true
+  fi
+
+  git reset --hard "${upstream}"
+  ok "Repository = ${upstream} ($(git rev-parse --short HEAD))"
+}
+
+# Development: zachte pull, autostash als nodig.
+git_sync_development() {
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
+
+  clean_tsbuildinfo_drift
+
+  if git pull --ff-only --autostash; then
+    ok "Repository bijgewerkt"
+    return
+  fi
+
+  warn "Pull met autostash mislukt — reset tracked files en opnieuw"
+  git reset --hard "@{u}" 2>/dev/null || git pull --ff-only --autostash || warn "Git pull overgeslagen"
+  ok "Repository bijgewerkt"
+}
+
 port_3100_pids() {
   if command -v ss >/dev/null 2>&1; then
     ss -tulpn 2>/dev/null | grep ':3100 ' || true
@@ -165,18 +231,6 @@ health_checks() {
   echo "  ss -tulpn | grep :3100"
   ss -tulpn 2>/dev/null | grep ':3100 ' || warn "Geen proces op poort 3100"
   echo
-
-  echo "  Analytics ping (POST + stats)"
-  if curl -sS -X POST "http://127.0.0.1:3100/api/analytics/ping" \
-    -H "Content-Type: application/json" \
-    -d '{"sessionId":"deploy-healthcheck","path":"/"}' | grep -q '"ok"'; then
-    ok "Analytics ping POST werkt"
-  else
-    warn "Analytics ping POST mislukt — live bezoekers tellen niet"
-  fi
-  curl -sS "http://127.0.0.1:3100/api/analytics/stats" | head -c 220 || warn "Analytics stats mislukt"
-  echo
-  echo
 }
 
 run_production() {
@@ -193,9 +247,8 @@ run_production() {
   echo "  API   → http://${SERVER_IP}/api/ (intern :3100)"
   echo
 
-  step "Git pullx"
-  git pull --ff-only
-  ok "Repository up-to-date"
+  step "Git sync (production)"
+  git_sync_production
 
   step "Dependencies installeren"
   $PNPM install
@@ -288,9 +341,8 @@ run_development() {
   echo
 
   if [[ "${SKIP_PULL:-}" != "1" ]] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    step "Git pull"
-    git pull --ff-only || warn "Git pull overgeslagen (merge/conflict of geen remote)"
-    ok "Repository bijgewerkt"
+    step "Git sync"
+    git_sync_development
   fi
 
   step "Docker controleren"
