@@ -13,9 +13,8 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { mkdir, writeFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { AdminGuard } from "../auth/admin.guard";
+import { UPLOADS_DIR } from "../paths";
 import { MediaService } from "./media.service";
-
-const uploadsDir = join(__dirname, "../../../assets/uploads");
 
 function safeFilename(originalName: string) {
   const ext = extname(originalName).toLowerCase();
@@ -44,9 +43,9 @@ export class MediaController {
       throw new BadRequestException("Geen bestand ontvangen.");
     }
 
-    await mkdir(uploadsDir, { recursive: true });
+    await mkdir(UPLOADS_DIR, { recursive: true });
     const filename = safeFilename(file.originalname);
-    await writeFile(join(uploadsDir, filename), file.buffer);
+    await writeFile(join(UPLOADS_DIR, filename), file.buffer);
     const asset = await this.mediaService.registerUpload(filename, file.size);
     return { asset, message: "Upload voltooid." };
   }

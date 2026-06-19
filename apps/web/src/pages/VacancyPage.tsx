@@ -2,18 +2,20 @@ import { useMemo, useState } from "react";
 import type { SiteContent, VacancyJob } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { ApplicationWizardModal } from "../components/ApplicationWizardModal";
+import { useLanguage } from "../i18n/LanguageProvider";
 import { assetUrl } from "../lib/api";
 import { pageSeo } from "../lib/seo";
 
 export function VacancyPage({ content }: { content: SiteContent }) {
+  const { t, lang } = useLanguage();
   const vacancy = content.site.vacancy;
   const seo = pageSeo(content, "vacancy");
   const enabledJobs = useMemo(() => vacancy.jobs.filter((job) => job.enabled !== false), [vacancy.jobs]);
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [applyJob, setApplyJob] = useState<VacancyJob | null>(null);
 
-  function startApply(job: VacancyJob) {
-    setApplyJob(job);
+  function applyLabel(job: VacancyJob) {
+    return lang === "en" ? job.applyLabel || t("vacancy.apply") : t("vacancy.apply");
   }
 
   return (
@@ -22,12 +24,12 @@ export function VacancyPage({ content }: { content: SiteContent }) {
       <header className="page-head vacancy-hero">
         <div className="shell vacancy-hero-grid">
           <div>
-            <div className="eyebrow">Work with us</div>
+            <div className="eyebrow">{t("vacancy.eyebrow")}</div>
             <h1>{vacancy.heroTitle}</h1>
             <p>{vacancy.heroIntro}</p>
           </div>
           <div className="vacancy-hero-photo">
-            <img src={assetUrl(vacancy.heroImage)} alt="Tres Amigos team" loading="lazy" />
+            <img src={assetUrl(vacancy.heroImage)} alt={t("vacancy.teamAlt")} loading="lazy" />
           </div>
         </div>
       </header>
@@ -46,7 +48,7 @@ export function VacancyPage({ content }: { content: SiteContent }) {
                     <p>{job.summary}</p>
                     {job.requirements.length ? (
                       <div className="vacancy-job-requirements">
-                        <h3>Requirements</h3>
+                        <h3>{t("vacancy.requirements")}</h3>
                         <ul>
                           {job.requirements.map((item) => (
                             <li key={item}>{item}</li>
@@ -56,7 +58,7 @@ export function VacancyPage({ content }: { content: SiteContent }) {
                     ) : null}
                     {expandedJob === job.id ? (
                       <div className="vacancy-job-full">
-                        <h3>Volledige omschrijving</h3>
+                        <h3>{t("vacancy.fullDescription")}</h3>
                         <p>{job.fullDescription}</p>
                       </div>
                     ) : null}
@@ -66,17 +68,17 @@ export function VacancyPage({ content }: { content: SiteContent }) {
                         type="button"
                         onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
                       >
-                        {expandedJob === job.id ? "Verberg omschrijving" : "Volledige omschrijving"}
+                        {expandedJob === job.id ? t("vacancy.hideDescription") : t("vacancy.fullDescription")}
                       </button>
-                      <button className="btn primary" type="button" onClick={() => startApply(job)}>
-                        {job.applyLabel}
+                      <button className="btn primary" type="button" onClick={() => setApplyJob(job)}>
+                        {applyLabel(job)}
                       </button>
                     </div>
                   </div>
                 </article>
               ))
             ) : (
-              <div className="notice">Er zijn momenteel geen open vacatures.</div>
+              <div className="notice">{t("vacancy.noJobs")}</div>
             )}
           </section>
         </div>

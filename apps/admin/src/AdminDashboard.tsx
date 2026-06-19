@@ -7,10 +7,12 @@ import { LocationsPanel } from "./components/LocationsPanel";
 import { MediaLibraryPanel } from "./components/MediaLibraryPanel";
 import { ProductsPanel } from "./components/ProductsPanel";
 import { ApplicationsPanel } from "./components/ApplicationsPanel";
+import { HomePanel } from "./components/HomePanel";
 import { MediaField } from "./components/MediaPickerModal";
 import { SeoPanel } from "./components/SeoPanel";
 import { VideosPanel } from "./components/VideosPanel";
-import { OpeningHoursEditor, OurStoryEditor, PromoMailEditor, ReviewsEditor, ContactFormEditor } from "./components/SiteExtrasPanel";
+import { PromoMailEditor, ContactFormEditor } from "./components/SiteExtrasPanel";
+import { ReviewsPanel } from "./components/ReviewsPanel";
 
 const tabs = [
   ["overview", "Overzicht"],
@@ -19,7 +21,8 @@ const tabs = [
   ["products", "Producten"],
   ["videos", "Video's"],
   ["media", "Media"],
-  ["applications", "Aanvragen"],
+  ["applications", "Sollicitaties"],
+  ["reviews", "Reviews"],
   ["seo", "SEO"],
   ["footer", "Footer"]
 ] as const;
@@ -74,7 +77,7 @@ export function AdminDashboard({ onLogout }: Props) {
 
   async function loadAll() {
     setLoading(true);
-    setPopup({ title: "Dashboard laden", message: "Content en aanvragen ophalen...", tone: "loading" });
+    setPopup({ title: "Dashboard laden", message: "Content en sollicitaties ophalen...", tone: "loading" });
     try {
       const [contentData, applicationsData] = await Promise.all([
         api<SiteContent>("/api/admin/content"),
@@ -105,7 +108,7 @@ export function AdminDashboard({ onLogout }: Props) {
       ["Bestelknoppen", content.locations.reduce((total, location) => total + location.links.length, 0)],
       ["Producten", content.menu.reduce((total, category) => total + category.items.length, 0)],
       ["Video's", content.videos.filter((video) => video.active !== false).length],
-      ["Aanvragen", applications.length],
+      ["Sollicitaties", applications.length],
       ["Hero tags", content.site.hero.tags.length]
     ] as const;
   }, [content, applications.length]);
@@ -191,57 +194,11 @@ export function AdminDashboard({ onLogout }: Props) {
 
           {activeTab === "home" ? (
             <section className="ta-panel ta-fade-in">
-              <FieldGrid>
-                <Field label="Hero eyebrow">
-                  <input value={content.site.hero.eyebrow} onChange={(event) => setContent({ ...content, site: { ...content.site, hero: { ...content.site.hero, eyebrow: event.target.value } } })} />
-                </Field>
-                <Field label="Hero title">
-                  <input value={content.site.hero.title} onChange={(event) => setContent({ ...content, site: { ...content.site, hero: { ...content.site.hero, title: event.target.value } } })} />
-                </Field>
-                <Field label="Hero intro" wide>
-                  <input value={content.site.hero.intro} onChange={(event) => setContent({ ...content, site: { ...content.site, hero: { ...content.site.hero, intro: event.target.value } } })} />
-                </Field>
-                <Field label="Primary label">
-                  <input value={content.site.hero.primaryLabel} onChange={(event) => setContent({ ...content, site: { ...content.site, hero: { ...content.site.hero, primaryLabel: event.target.value } } })} />
-                </Field>
-                <Field label="Primary URL">
-                  <input value={content.site.hero.primaryUrl} onChange={(event) => setContent({ ...content, site: { ...content.site, hero: { ...content.site.hero, primaryUrl: event.target.value } } })} />
-                </Field>
-                <Field label="Secondary label">
-                  <input value={content.site.hero.secondaryLabel} onChange={(event) => setContent({ ...content, site: { ...content.site, hero: { ...content.site.hero, secondaryLabel: event.target.value } } })} />
-                </Field>
-                <Field label="Secondary URL">
-                  <input value={content.site.hero.secondaryUrl} onChange={(event) => setContent({ ...content, site: { ...content.site, hero: { ...content.site.hero, secondaryUrl: event.target.value } } })} />
-                </Field>
-                <Field label="Nav CTA label">
-                  <input value={content.site.navCta.label} onChange={(event) => setContent({ ...content, site: { ...content.site, navCta: { ...content.site.navCta, label: event.target.value } } })} />
-                </Field>
-                <Field label="Nav CTA URL">
-                  <input value={content.site.navCta.url} onChange={(event) => setContent({ ...content, site: { ...content.site, navCta: { ...content.site.navCta, url: event.target.value } } })} />
-                </Field>
-                <Field label="Hero tags (comma separated)" wide>
-                  <input
-                    value={content.site.hero.tags.join(", ")}
-                    onChange={(event) =>
-                      setContent({
-                        ...content,
-                        site: {
-                          ...content.site,
-                          hero: {
-                            ...content.site.hero,
-                            tags: event.target.value
-                              .split(",")
-                              .map((tag) => tag.trim())
-                              .filter(Boolean)
-                          }
-                        }
-                      })
-                    }
-                  />
-                </Field>
-              </FieldGrid>
-              <OpeningHoursEditor content={content} onChange={setContent} />
-              <OurStoryEditor content={content} onChange={setContent} />
+              <header className="ta-panel-head">
+                <h2>Home</h2>
+                <p>Hero, openingstijden en Our Story — per onderdeel bewerken met live preview waar het kan.</p>
+              </header>
+              <HomePanel content={content} onChange={setContent} />
             </section>
           ) : null}
 
@@ -298,7 +255,21 @@ export function AdminDashboard({ onLogout }: Props) {
 
           {activeTab === "applications" ? (
             <section className="ta-panel ta-fade-in">
+              <header className="ta-panel-head">
+                <h2>Sollicitaties</h2>
+                <p>Inkomende sollicitaties bekijken, functies beheren en vacaturepagina instellen.</p>
+              </header>
               <ApplicationsPanel content={content} applications={applications} onChange={setContent} />
+            </section>
+          ) : null}
+
+          {activeTab === "reviews" ? (
+            <section className="ta-panel ta-fade-in">
+              <header className="ta-panel-head">
+                <h2>Reviews & Instagram</h2>
+                <p>Modereer ingezonden reviews, beheer vaste reviews en stel de Instagram-slider in.</p>
+              </header>
+              <ReviewsPanel content={content} onChange={setContent} />
             </section>
           ) : null}
 
@@ -336,7 +307,6 @@ export function AdminDashboard({ onLogout }: Props) {
               </FieldGrid>
               <PromoMailEditor content={content} onChange={setContent} />
               <ContactFormEditor content={content} onChange={setContent} />
-              <ReviewsEditor content={content} onChange={setContent} />
             </section>
           ) : null}
         </main>

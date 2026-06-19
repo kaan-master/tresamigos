@@ -1,9 +1,11 @@
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { LocationCard, OrderCard } from "../components/LocationCards";
+import { useLanguage } from "../i18n/LanguageProvider";
 import { pageSeo } from "../lib/seo";
 
 export function OrderPage({ content }: { content: SiteContent }) {
+  const { t } = useLanguage();
   const locations = content.locations.filter((location) => location.active !== false);
   const seo = pageSeo(content, "order");
 
@@ -12,9 +14,9 @@ export function OrderPage({ content }: { content: SiteContent }) {
       <Helmet title={seo.title} description={seo.description} />
       <header className="page-head compact">
         <div className="shell">
-          <div className="eyebrow">Order</div>
-          <h1>Choose your location</h1>
-          <p>Every shop has its own correct order links. Pick the closest Tres Amigos and order through Take Away, Delivery, Thuisbezorgd or Uber Eats.</p>
+          <div className="eyebrow">{t("order.eyebrow")}</div>
+          <h1>{t("order.title")}</h1>
+          <p>{t("order.intro")}</p>
         </div>
       </header>
       <main className="section">
@@ -29,6 +31,7 @@ export function OrderPage({ content }: { content: SiteContent }) {
 }
 
 export function LocationsPage({ content }: { content: SiteContent }) {
+  const { t } = useLanguage();
   const locations = content.locations.filter((location) => location.active !== false);
   const seo = pageSeo(content, "locations");
 
@@ -37,9 +40,9 @@ export function LocationsPage({ content }: { content: SiteContent }) {
       <Helmet title={seo.title} description={seo.description} />
       <header className="page-head compact">
         <div className="shell">
-          <div className="eyebrow">Locations</div>
-          <h1>Four Amsterdam shops</h1>
-          <p>Find your nearest Tres Amigos and use the correct order links per location.</p>
+          <div className="eyebrow">{t("locations.eyebrow")}</div>
+          <h1>{t("locations.title")}</h1>
+          <p>{t("locations.intro")}</p>
         </div>
       </header>
       <main className="section">

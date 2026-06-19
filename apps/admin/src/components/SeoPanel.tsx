@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { SEO_PAGE_KEYS, SEO_PAGE_LABELS, type PageSeo, type SeoPageKey, type SiteContent } from "@tresamigos/types";
 import { AdminListRow, AdminSearchBar } from "./AdminListUi";
+import { GoogleSerpPreview } from "./GoogleSerpPreview";
 
 interface Props {
   content: SiteContent;
@@ -66,6 +67,7 @@ export function SeoPanel({ content, onChange }: Props) {
             <textarea value={page.description} onChange={(event) => updatePage({ ...page, description: event.target.value })} rows={4} />
           </label>
         </div>
+        <GoogleSerpPreview pageKey={selectedKey} title={page.title} description={page.description} />
         <p className="ta-seo-hint">
           Tip: houd titels onder ~60 tekens en descriptions rond 140–160 tekens voor Google-previews.
         </p>

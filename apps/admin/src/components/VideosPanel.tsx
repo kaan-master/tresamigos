@@ -3,6 +3,7 @@ import type { SiteContent, Video } from "@tresamigos/types";
 import { AdminListRow, AdminSearchBar } from "./AdminListUi";
 import { MediaField } from "./MediaPickerModal";
 import { createSlugId } from "../lib/id";
+import { mediaAssetUrl } from "../lib/media";
 
 interface Props {
   content: SiteContent;
@@ -72,6 +73,7 @@ export function VideosPanel({ content, onChange }: Props) {
                 key={item.id}
                 title={item.title}
                 meta={item.src}
+                thumb={item.src ? mediaAssetUrl(item.src) : undefined}
                 badge={item.active !== false ? "Actief" : "Verborgen"}
                 active={item.id === selectedId}
                 onClick={() => setSelectedId(item.id)}
@@ -93,7 +95,7 @@ export function VideosPanel({ content, onChange }: Props) {
           </div>
 
           <video
-            src={video.src.startsWith("/") ? video.src : `/${video.src}`}
+            src={mediaAssetUrl(video.src)}
             muted
             playsInline
             preload="metadata"

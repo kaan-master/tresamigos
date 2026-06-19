@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { mkdir, readdir, stat, unlink } from "node:fs/promises";
 import { join, relative } from "node:path";
 import type { MediaAsset, MediaLibraryResponse } from "@tresamigos/types";
+import { ASSETS_ROOT, PUBLIC_ASSETS_ROOT, UPLOADS_DIR } from "../paths";
 
 const MEDIA_EXTENSIONS = new Set([
   ".jpg",
@@ -12,19 +13,18 @@ const MEDIA_EXTENSIONS = new Set([
   ".svg",
   ".mp4",
   ".webm",
-  ".mov"
+  ".mov",
+  ".ico"
 ]);
 
 @Injectable()
 export class MediaService {
-  private readonly assetsRoot = join(__dirname, "../../../assets");
-
-  private uploadsDir() {
-    return join(this.assetsRoot, "uploads");
-  }
-
-  private async walkSection(sectionDir: string, section: MediaAsset["section"], removable: boolean): Promise<MediaAsset[]> {
-    const assetsRoot = this.assetsRoot;
+  private async walkSection(
+    sectionDir: string,
+    section: MediaAsset["section"],
+    removable: boolean,
+    assetsRoot: string
+  ): Promise<MediaAsset[]> {
     const assets: MediaAsset[] = [];
 
     async function walk(currentDir: string) {
@@ -63,14 +63,21 @@ export class MediaService {
   }
 
   async list(): Promise<MediaLibraryResponse> {
-    await mkdir(this.uploadsDir(), { recursive: true });
-    const [site, brand, uploads] = await Promise.all([
-      this.walkSection(join(this.assetsRoot, "site"), "site", false),
-      this.walkSection(join(this.assetsRoot, "brand"), "brand", false),
-      this.walkSection(this.uploadsDir(), "uploads", true)
+    await mkdir(UPLOADS_DIR, { recursive: true });
+    const [site, brand, uploads, publicSite, publicBrand] = await Promise.all([
+      this.walkSection(join(ASSETS_ROOT, "site"), "site", false, ASSETS_ROOT),
+      this.walkSection(join(ASSETS_ROOT, "brand"), "brand", false, ASSETS_ROOT),
+      this.walkSection(UPLOADS_DIR, "uploads", true, ASSETS_ROOT),
+      this.walkSection(join(PUBLIC_ASSETS_ROOT, "site"), "site", false, PUBLIC_ASSETS_ROOT),
+      this.walkSection(join(PUBLIC_ASSETS_ROOT, "brand"), "brand", false, PUBLIC_ASSETS_ROOT)
     ]);
 
-    return { assets: [...uploads, ...site, ...brand] };
+    const merged = new Map<string, MediaAsset>();
+    for (const asset of [...uploads, ...site, ...brand, ...publicSite, ...publicBrand]) {
+      merged.set(asset.url, asset);
+    }
+
+    return { assets: [...merged.values()] };
   }
 
   async registerUpload(filename: string, size: number): Promise<MediaAsset> {
@@ -90,7 +97,7 @@ export class MediaService {
     }
 
     const relativePath = url.replace(/^\/assets\//, "");
-    const fullPath = join(this.assetsRoot, relativePath);
+    const fullPath = join(ASSETS_ROOT, relativePath);
     try {
       await unlink(fullPath);
     } catch {
@@ -101,6 +108,6 @@ export class MediaService {
   }
 
   getUploadsDir() {
-    return this.uploadsDir();
+    return UPLOADS_DIR;
   }
 }

@@ -1,12 +1,12 @@
 # Tres Amigos op Hetzner VPS
 
-Deze opzet houdt de publieke website, admin en API licht:
+> **Linux start-script:** zie [START-LINUX.md](./START-LINUX.md) voor `./start.sh`, nginx met upload-limiet en migratie van de oude statische site.
 
-- Nginx ontvangt HTTPS verkeer.
-- Node serveert de website, admin en `/api`.
-- Beheerbare content staat in `data/site-content.json`.
-- Admin-wachtwoord staat alleen in `.env`.
-- Er staan geen databasegegevens of wachtwoorden in de frontend.
+Deze opzet gebruikt de **monorepo** (React + NestJS + PostgreSQL + Redis):
+
+- Nginx serveert de web- en admin-build en proxy't `/api/` naar NestJS.
+- Content en sollicitaties gaan via PostgreSQL (niet meer alleen `data/site-content.json`).
+- Admin-wachtwoord staat in `.env`.
 
 ## 1. Server basis
 
@@ -87,7 +87,9 @@ sudo systemctl status tresamigos
 
 ## 5. Nginx
 
-Voorbeeld `/etc/nginx/sites-available/tresamigos`:
+Volledige config (inclusief `client_max_body_size` voor CV-uploads): **[START-LINUX.md § Nginx](./START-LINUX.md#4-nginx-website--admin--api)**.
+
+Kort voorbeeld:
 
 ```nginx
 server {

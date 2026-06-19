@@ -2,7 +2,9 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import type { SiteContent } from "@tresamigos/types";
 import { assetUrl, pageUrl } from "../lib/api";
 import { usePageMotion } from "../hooks/usePageMotion";
+import { useLanguage } from "../i18n/LanguageProvider";
 import { AnalyticsTracker } from "./AnalyticsTracker";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { PromoPopup } from "./PromoPopup";
 
 interface LayoutProps {
@@ -12,6 +14,7 @@ interface LayoutProps {
 export function Layout({ content }: LayoutProps) {
   const { site, locations } = content;
   const location = useLocation();
+  const { t } = useLanguage();
   usePageMotion();
 
   return (
@@ -31,17 +34,18 @@ export function Layout({ content }: LayoutProps) {
             </span>
           </Link>
           <button className="mobile-toggle" type="button" data-menu-toggle>
-            Menu
+            {t("common.menu")}
           </button>
           <div className="nav-links">
             <NavLink to="/" end>
-              Home
+              {t("nav.home")}
             </NavLink>
-            <NavLink to="/menu">Menu</NavLink>
-            <NavLink to="/locations">Locations</NavLink>
-            <NavLink to="/our-story">Our Story</NavLink>
-            <NavLink to="/vacancy">Work With Us</NavLink>
-            <NavLink to="/contact">Contact</NavLink>
+            <NavLink to="/menu">{t("nav.menu")}</NavLink>
+            <NavLink to="/locations">{t("nav.locations")}</NavLink>
+            <NavLink to="/our-story">{t("nav.ourStory")}</NavLink>
+            <NavLink to="/vacancy">{t("nav.vacancy")}</NavLink>
+            <NavLink to="/contact">{t("nav.contact")}</NavLink>
+            <LanguageSwitcher />
             <Link className="nav-cta" to={pageUrl(site.navCta.url)}>
               {site.navCta.label}
             </Link>
@@ -58,7 +62,7 @@ export function Layout({ content }: LayoutProps) {
             <p className="lead">{site.footer.intro}</p>
           </div>
           <div>
-            <h3>Opening hours</h3>
+            <h3>{t("footer.openingHours")}</h3>
             <p className="footer-hours-summary">{site.openingHours.summary}</p>
             {site.openingHours.groups.map((group) => (
               <p key={`${group.label}-${group.hours}`}>
@@ -67,7 +71,7 @@ export function Layout({ content }: LayoutProps) {
             ))}
           </div>
           <div>
-            <h3>Locations</h3>
+            <h3>{t("footer.locations")}</h3>
             {locations
               .filter((location) => location.active !== false)
               .map((location) => {
@@ -86,12 +90,12 @@ export function Layout({ content }: LayoutProps) {
               })}
           </div>
           <div>
-            <h3>Contact</h3>
+            <h3>{t("footer.contact")}</h3>
             <p>
               <a href={`mailto:${site.footer.email}`}>{site.footer.email}</a>
             </p>
             <p>
-              <Link to="/order">All order links</Link>
+              <Link to="/order">{t("footer.allOrderLinks")}</Link>
               <br />
               {site.footer.instagramUrl ? (
                 <a href={site.footer.instagramUrl} target="_blank" rel="noreferrer">

@@ -1,19 +1,26 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { VacancyJob } from "@tresamigos/types";
-import { WEEK_DAYS } from "@tresamigos/types";
+import { APPLICATION_ATTACHMENT_EXTENSIONS, APPLICATION_ATTACHMENT_MAX_BYTES, WEEK_DAYS } from "@tresamigos/types";
+import { useLanguage } from "../i18n/LanguageProvider";
+import { DAY_I18N_KEYS, DAY_SHORT_I18N_KEYS } from "../i18n/translations";
 import { assetUrl, submitApplication } from "../lib/api";
 
-const DAY_SHORT: Record<(typeof WEEK_DAYS)[number], string> = {
-  Maandag: "Ma",
-  Dinsdag: "Di",
-  Woensdag: "Wo",
-  Donderdag: "Do",
-  Vrijdag: "Vr",
-  Zaterdag: "Za",
-  Zondag: "Zo"
-};
-
 const TOTAL_STEPS = 5;
+
+const ATTACHMENT_ACCEPT = ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+function isAllowedAttachment(file: File) {
+  const lower = file.name.toLowerCase();
+  const extOk = APPLICATION_ATTACHMENT_EXTENSIONS.some((ext) => lower.endsWith(ext));
+  const mimeOk =
+    !file.type ||
+    file.type === "application/pdf" ||
+    file.type === "application/msword" ||
+    file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    file.type === "application/octet-stream";
+  return extOk && mimeOk && file.size <= APPLICATION_ATTACHMENT_MAX_BYTES;
+}
 
 interface FormState {
   name: string;
@@ -45,6 +52,8 @@ interface Props {
 }
 
 export function ApplicationWizardModal({ open, job, formImage, onClose }: Props) {
+  const { t } = useLanguage();
+  const overlayRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(1);
   const [message, setMessage] = useState("");
@@ -65,10 +74,24 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
 
   useEffect(() => {
     if (!open) return;
-    const previous = document.body.style.overflow;
+    overlayRef.current?.scrollTo(0, 0);
+  }, [open, job?.id, step]);
+
+  useEffect(() => {
+    if (!open) return;
+    const scrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = previous;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.overflow = "";
+      window.scrollTo(0, scrollY);
     };
   }, [open]);
 
@@ -83,6 +106,16 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
 
   if (!open || !job) return null;
 
+  function dayShort(day: string) {
+    const key = DAY_SHORT_I18N_KEYS[day];
+    return key ? t(key) : day.slice(0, 2);
+  }
+
+  function dayLong(day: string) {
+    const key = DAY_I18N_KEYS[day];
+    return key ? t(key) : day;
+  }
+
   function toggleDay(day: string) {
     setForm((current) => ({
       ...current,
@@ -96,43 +129,40 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
 
     if (currentStep === 1) {
       if (!form.name.trim()) {
-        setMessage("Vul je naam in.");
+        setMessage(t("apply.errorName"));
         setMessageType("error");
         return false;
       }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-        setMessage("Vul een geldig e-mailadres in.");
+        setMessage(t("apply.errorEmail"));
         setMessageType("error");
         return false;
       }
     }
 
     if (currentStep === 2 && !form.days.length) {
-      setMessage("Selecteer minimaal één beschikbare dag.");
+      setMessage(t("apply.errorDays"));
       setMessageType("error");
       return false;
     }
 
     if (currentStep === 3) {
       if (form.experience.trim().length < 20) {
-        setMessage("Beschrijf je ervaring in minimaal een paar zinnen.");
+        setMessage(t("apply.errorExperience"));
         setMessageType("error");
         return false;
       }
       if (form.motivation.trim().length < 20) {
-        setMessage("Schrijf waarom je bij Tres Amigos wilt werken.");
+        setMessage(t("apply.errorMotivation"));
         setMessageType("error");
         return false;
       }
     }
 
-    if (currentStep === 4 && form.pdf) {
-      const isPdf = form.pdf.type === "application/pdf" || form.pdf.name.toLowerCase().endsWith(".pdf");
-      if (!isPdf || form.pdf.size > 4_000_000) {
-        setMessage("Upload een PDF van maximaal 4 MB.");
-        setMessageType("error");
-        return false;
-      }
+    if (currentStep === 4 && form.pdf && !isAllowedAttachment(form.pdf)) {
+      setMessage(t("apply.errorFile"));
+      setMessageType("error");
+      return false;
     }
 
     return true;
@@ -143,7 +173,7 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
     return new Promise<{ name: string; size: number; data: string }>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve({ name: file.name, size: file.size, data: String(reader.result || "") });
-      reader.onerror = () => reject(new Error("PDF kon niet gelezen worden."));
+      reader.onerror = () => reject(new Error(t("apply.errorSend")));
       reader.readAsDataURL(file);
     });
   }
@@ -172,11 +202,11 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
         motivation: form.motivation.trim(),
         pdf
       });
-      setMessage("Je sollicitatie is ontvangen. We nemen contact met je op.");
+      setMessage(t("apply.success"));
       setMessageType("success");
       setStep(TOTAL_STEPS);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Verzenden mislukt.");
+      setMessage(error instanceof Error ? error.message : t("apply.errorSend"));
       setMessageType("error");
     } finally {
       setSubmitting(false);
@@ -187,14 +217,18 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
     if (validateStep(step)) setStep((current) => Math.min(TOTAL_STEPS, current + 1));
   }
 
-  return (
-    <div className="application-modal" role="dialog" aria-modal="true" aria-label={`Solliciteren als ${job.title}`}>
-      <button className="application-modal-backdrop" type="button" aria-label="Sluiten" onClick={onClose} disabled={submitting} />
-      <div className="application-modal-panel">
-        <button className="application-modal-close" type="button" aria-label="Sluiten" onClick={onClose} disabled={submitting}>
-          ×
-        </button>
+  const daysSummary = form.days.map((day) => dayLong(day)).join(", ");
 
+  return createPortal(
+    <div
+      className="application-modal"
+      ref={overlayRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("apply.applyAs", { role: job.title })}
+    >
+      <button className="application-modal-backdrop" type="button" aria-label={t("common.close")} onClick={onClose} disabled={submitting} />
+      <div className="application-modal-panel">
         <div className="application-modal-grid">
           <aside className="application-modal-visual" aria-hidden="true">
             <img src={assetUrl(formImage)} alt="" loading="lazy" />
@@ -204,29 +238,43 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
             <div className="application-progress">
               <div style={{ width: `${progress}%` }} />
             </div>
-            <p className="application-meta">
-              <span>Stap {Math.min(step, TOTAL_STEPS)} van {TOTAL_STEPS}</span>
-              <strong className="application-role">{job.title}</strong>
-            </p>
+
+            <header className="application-modal-head">
+              <div className="application-modal-head-row">
+                <span className="application-step-label">
+                  {t("apply.step", { current: Math.min(step, TOTAL_STEPS), total: TOTAL_STEPS })}
+                </span>
+                <button
+                  className="application-modal-close"
+                  type="button"
+                  aria-label={t("common.close")}
+                  onClick={onClose}
+                  disabled={submitting}
+                >
+                  ×
+                </button>
+              </div>
+              <h2 className="application-modal-role">{job.title}</h2>
+            </header>
 
             <form className="application-form application-form-modal" onSubmit={handleSubmit}>
               {messageType === "success" && step === TOTAL_STEPS ? (
                 <div className="application-step active application-success">
-                  <h2>Bedankt!</h2>
+                  <h2>{t("apply.thanks")}</h2>
                   <p>{message}</p>
                   <button className="btn primary" type="button" onClick={onClose}>
-                    Sluiten
+                    {t("common.close")}
                   </button>
                 </div>
               ) : (
                 <>
                   {step === 1 ? (
                     <div className="application-step active">
-                      <h2>Contact</h2>
-                      <p>We gebruiken deze gegevens om je te bereiken over je sollicitatie.</p>
+                      <h2>{t("apply.contact.title")}</h2>
+                      <p>{t("apply.contact.intro")}</p>
                       <div className="form-row">
                         <label className="form-field">
-                          <span>Naam *</span>
+                          <span>{t("apply.name")} *</span>
                           <input
                             value={form.name}
                             onChange={(event) => setForm({ ...form, name: event.target.value })}
@@ -235,7 +283,7 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
                           />
                         </label>
                         <label className="form-field">
-                          <span>E-mail *</span>
+                          <span>{t("apply.email")} *</span>
                           <input
                             type="email"
                             value={form.email}
@@ -245,7 +293,7 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
                           />
                         </label>
                         <label className="form-field">
-                          <span>Telefoon</span>
+                          <span>{t("apply.phone")}</span>
                           <input
                             value={form.phone}
                             onChange={(event) => setForm({ ...form, phone: event.target.value })}
@@ -258,22 +306,22 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
 
                   {step === 2 ? (
                     <div className="application-step active">
-                      <h2>Beschikbaarheid</h2>
-                      <p>Kies de dagen waarop je kunt werken.</p>
+                      <h2>{t("apply.availability.title")}</h2>
+                      <p>{t("apply.availability.intro")}</p>
                       <div className="day-picker">
                         {WEEK_DAYS.map((day) => (
-                          <label key={day} title={day}>
+                          <label key={day} title={dayLong(day)}>
                             <input type="checkbox" checked={form.days.includes(day)} onChange={() => toggleDay(day)} />
-                            <span>{DAY_SHORT[day]}</span>
+                            <span>{dayShort(day)}</span>
                           </label>
                         ))}
                       </div>
                       <label className="form-field">
-                        <span>Opmerking</span>
+                        <span>{t("apply.availability.note")}</span>
                         <textarea
                           value={form.availabilityNote}
                           onChange={(event) => setForm({ ...form, availabilityNote: event.target.value })}
-                          placeholder="Bijv. alleen ochtenden, geen zondagen…"
+                          placeholder={t("apply.availability.notePlaceholder")}
                         />
                       </label>
                     </div>
@@ -281,23 +329,23 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
 
                   {step === 3 ? (
                     <div className="application-step active">
-                      <h2>Ervaring & motivatie</h2>
-                      <p>Vertel kort wie je bent en waarom je past bij ons team.</p>
+                      <h2>{t("apply.experience.title")}</h2>
+                      <p>{t("apply.experience.intro")}</p>
                       <label className="form-field">
-                        <span>Ervaring *</span>
+                        <span>{t("apply.experience.field")} *</span>
                         <textarea
                           value={form.experience}
                           onChange={(event) => setForm({ ...form, experience: event.target.value })}
-                          placeholder="Relevante horeca- of keukenervaring…"
+                          placeholder={t("apply.experience.placeholder")}
                           rows={5}
                         />
                       </label>
                       <label className="form-field">
-                        <span>Motivatie *</span>
+                        <span>{t("apply.motivation.field")} *</span>
                         <textarea
                           value={form.motivation}
                           onChange={(event) => setForm({ ...form, motivation: event.target.value })}
-                          placeholder="Waarom Tres Amigos en deze functie?"
+                          placeholder={t("apply.motivation.placeholder")}
                           rows={5}
                         />
                       </label>
@@ -306,23 +354,23 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
 
                   {step === 4 ? (
                     <div className="application-step active">
-                      <h2>CV / PDF</h2>
-                      <p>Voeg optioneel je CV toe als PDF (max. 4 MB).</p>
+                      <h2>{t("apply.cv.title")}</h2>
+                      <p>{t("apply.cv.intro")}</p>
                       <div className="pdf-upload">
                         <input
                           ref={fileRef}
                           type="file"
-                          accept="application/pdf,.pdf"
+                          accept={ATTACHMENT_ACCEPT}
                           hidden
                           onChange={(event) => setForm({ ...form, pdf: event.target.files?.[0] || null })}
                         />
                         <button className="pdf-dropzone" type="button" onClick={() => fileRef.current?.click()}>
-                          <strong>{form.pdf?.name || "Kies een PDF"}</strong>
-                          <small>{form.pdf ? "Klik om een ander bestand te kiezen" : "Sleep hierheen of klik om te uploaden"}</small>
+                          <strong>{form.pdf?.name || t("apply.cv.choose")}</strong>
+                          <small>{form.pdf ? t("apply.cv.change") : t("apply.cv.hint")}</small>
                         </button>
                         {form.pdf ? (
                           <button className="text-link pdf-clear" type="button" onClick={() => setForm({ ...form, pdf: null })}>
-                            Verwijder PDF
+                            {t("apply.cv.remove")}
                           </button>
                         ) : null}
                       </div>
@@ -331,35 +379,41 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
 
                   {step === 5 ? (
                     <div className="application-step active">
-                      <h2>Controleer & verstuur</h2>
-                      <p>Check je gegevens voordat je solliciteert.</p>
+                      <h2>{t("apply.review.title")}</h2>
+                      <p>{t("apply.review.intro")}</p>
                       <div className="application-summary">
                         <div>
-                          <span>Functie</span>
+                          <span>{t("apply.review.role")}</span>
                           <strong>{job.title}</strong>
                         </div>
                         <div>
-                          <span>Contact</span>
+                          <span>{t("apply.review.contact")}</span>
                           <strong>
                             {form.name} · {form.email}
                             {form.phone ? ` · ${form.phone}` : ""}
                           </strong>
                         </div>
                         <div>
-                          <span>Dagen</span>
-                          <strong>{form.days.join(", ")}</strong>
+                          <span>{t("apply.review.days")}</span>
+                          <strong>{daysSummary}</strong>
                         </div>
                         <div>
-                          <span>Ervaring</span>
-                          <strong>{form.experience.slice(0, 120)}{form.experience.length > 120 ? "…" : ""}</strong>
+                          <span>{t("apply.review.experience")}</span>
+                          <strong>
+                            {form.experience.slice(0, 120)}
+                            {form.experience.length > 120 ? "…" : ""}
+                          </strong>
                         </div>
                         <div>
-                          <span>Motivatie</span>
-                          <strong>{form.motivation.slice(0, 120)}{form.motivation.length > 120 ? "…" : ""}</strong>
+                          <span>{t("apply.review.motivation")}</span>
+                          <strong>
+                            {form.motivation.slice(0, 120)}
+                            {form.motivation.length > 120 ? "…" : ""}
+                          </strong>
                         </div>
                         <div>
-                          <span>PDF</span>
-                          <strong>{form.pdf?.name || "Geen PDF toegevoegd"}</strong>
+                          <span>{t("apply.review.attachment")}</span>
+                          <strong>{form.pdf?.name || t("apply.review.noAttachment")}</strong>
                         </div>
                       </div>
                     </div>
@@ -370,18 +424,18 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
                   <div className="application-actions">
                     {step > 1 ? (
                       <button className="btn alt" type="button" onClick={() => setStep((current) => Math.max(1, current - 1))} disabled={submitting}>
-                        Terug
+                        {t("common.back")}
                       </button>
                     ) : (
                       <span />
                     )}
                     {step < TOTAL_STEPS ? (
                       <button className="btn primary" type="button" onClick={nextStep}>
-                        Volgende
+                        {t("common.next")}
                       </button>
                     ) : (
                       <button className="btn primary" type="submit" disabled={submitting}>
-                        {submitting ? "Versturen…" : "Sollicitatie versturen"}
+                        {submitting ? t("common.submitting") : t("apply.submit")}
                       </button>
                     )}
                   </div>
@@ -391,6 +445,7 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

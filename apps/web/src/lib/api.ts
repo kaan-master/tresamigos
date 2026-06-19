@@ -38,7 +38,10 @@ export async function submitApplication(body: unknown) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
-  const data = await response.json();
+  if (response.status === 413) {
+    throw new Error("Bestand is te groot. Gebruik een PDF- of Word-bestand van maximaal 10 MB.");
+  }
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.message || "Verzenden mislukt.");
   return data;
 }

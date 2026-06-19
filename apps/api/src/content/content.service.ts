@@ -78,6 +78,10 @@ export class ContentService {
           site.reviews && typeof site.reviews === "object" && !Array.isArray(site.reviews)
             ? (site.reviews as unknown as SiteContent["site"]["reviews"])
             : undefined,
+        instagram:
+          site.instagramFeed && typeof site.instagramFeed === "object" && !Array.isArray(site.instagramFeed)
+            ? (site.instagramFeed as unknown as SiteContent["site"]["instagram"])
+            : undefined,
         promoPopup:
           site.promoPopup && typeof site.promoPopup === "object" && !Array.isArray(site.promoPopup)
             ? (site.promoPopup as unknown as SiteContent["site"]["promoPopup"])
@@ -163,6 +167,7 @@ export class ContentService {
           openingHours: content.site.openingHours as unknown as Prisma.InputJsonValue,
           ourStory: content.site.ourStory as unknown as Prisma.InputJsonValue,
           reviews: content.site.reviews as unknown as Prisma.InputJsonValue,
+          instagramFeed: content.site.instagram as unknown as Prisma.InputJsonValue,
           promoPopup: content.site.promoPopup as unknown as Prisma.InputJsonValue,
           mailRelay: content.site.mailRelay as unknown as Prisma.InputJsonValue,
           contactForm: content.site.contactForm as unknown as Prisma.InputJsonValue
@@ -197,6 +202,7 @@ export class ContentService {
           openingHours: content.site.openingHours as unknown as Prisma.InputJsonValue,
           ourStory: content.site.ourStory as unknown as Prisma.InputJsonValue,
           reviews: content.site.reviews as unknown as Prisma.InputJsonValue,
+          instagramFeed: content.site.instagram as unknown as Prisma.InputJsonValue,
           promoPopup: content.site.promoPopup as unknown as Prisma.InputJsonValue,
           mailRelay: content.site.mailRelay as unknown as Prisma.InputJsonValue,
           contactForm: content.site.contactForm as unknown as Prisma.InputJsonValue

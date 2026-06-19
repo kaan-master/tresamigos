@@ -1,4 +1,5 @@
 import { Helmet } from "../components/Helmet";
+import { InstagramSection } from "../components/InstagramSection";
 import { ReviewsSection } from "../components/ReviewsSection";
 import type { SiteContent } from "@tresamigos/types";
 import { assetUrl, pageUrl } from "../lib/api";
@@ -120,6 +121,8 @@ export function HomePage({ content }: { content: SiteContent }) {
         </section>
 
         <ReviewsSection settings={site.reviews} />
+
+        <InstagramSection settings={site.instagram} />
 
         <section className="section section-soft">
           <div className="shell">

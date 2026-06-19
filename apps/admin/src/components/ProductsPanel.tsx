@@ -3,14 +3,7 @@ import type { MenuCategory, MenuItem, SiteContent } from "@tresamigos/types";
 import { AdminListRow, AdminSearchBar } from "./AdminListUi";
 import { MediaField } from "./MediaPickerModal";
 import { createSlugId } from "../lib/id";
-
-const API_BASE = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "");
-
-function assetPreviewUrl(path: string) {
-  if (!path) return "";
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  return `${API_BASE}${normalized}`;
-}
+import { mediaAssetUrl } from "../lib/media";
 
 interface Props {
   content: SiteContent;
@@ -173,7 +166,7 @@ export function ProductsPanel({ content, onChange }: Props) {
                 title={row.product.name}
                 meta={`${row.categoryTitle} · ${row.product.price}`}
                 badge={row.product.active !== false ? "Actief" : "Verborgen"}
-                thumb={row.product.image ? assetPreviewUrl(row.product.image) : undefined}
+                thumb={row.product.image ? mediaAssetUrl(row.product.image) : undefined}
                 active={`${row.categoryId}:${row.product.id}` === selectedKey}
                 onClick={() => setSelectedKey(`${row.categoryId}:${row.product.id}`)}
               />

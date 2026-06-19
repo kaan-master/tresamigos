@@ -99,34 +99,90 @@
       "title": "What guests say",
       "minRating": 4,
       "googlePlaceId": "",
+      "submitEnabled": true,
+      "submitTitle": "Share your experience",
+      "submitIntro": "Had a great meal at Tres Amigos? Leave a review — we moderate every submission before it appears on the site.",
+      "submitSuccessMessage": "Thanks! Your review has been sent and will appear after approval.",
       "curated": [
         {
-          "id": "review-1",
-          "author": "Guest review",
+          "id": "review-leyre",
+          "author": "Leyre Martinez Valencia",
           "rating": 5,
-          "text": "¡Estos tacos están bien chidos! Every time I eat them, they leave me wanting more. The people here are super friendly and the vibe is always good.",
-          "relativeTime": "2 months ago"
+          "text": "¡Estos tacos están bien chidos! Every time I eat them, they leave me wanting more. The people here are super friendly and service is amazing. Definitely my favorite taco spot! ¡Andale wey!",
+          "publishedAt": "2025-06-26"
         },
         {
-          "id": "review-2",
-          "author": "Guest review",
+          "id": "review-andrea",
+          "author": "Tomaselli Andrea",
           "rating": 5,
-          "text": "As a mexican chef myself I have to say that this place surprised me. I'll surely come back!",
-          "relativeTime": "3 months ago"
+          "text": "As a mexican chef myself I have to say that this place surprised me I'll surely come back!",
+          "publishedAt": "2025-06-23"
         },
         {
-          "id": "review-3",
-          "author": "Guest review",
+          "id": "review-monteiro",
+          "author": "Tomaselli Monteiro",
           "rating": 5,
-          "text": "Amazing food and beautiful Spanish people. Fast service and great tacos.",
-          "relativeTime": "4 months ago"
+          "text": "Amazing food and beautiful Spanish people",
+          "publishedAt": "2025-06-23"
         },
         {
-          "id": "review-4",
-          "author": "Guest review",
+          "id": "review-sergio",
+          "author": "Sergio Ortiz Bellota",
           "rating": 5,
           "text": "Great food and great service. I highly recommend the XL Chicken Tacos, some of the best I've ever eat. Very recommended.",
-          "relativeTime": "5 months ago"
+          "publishedAt": "2025-06-18"
+        },
+        {
+          "id": "review-carlos",
+          "author": "Carlos",
+          "rating": 5,
+          "text": "This restaurant is an absolute gem! The food is delicious and full of flavor, yet surprisingly affordable. What really sets it apart, though, is the staff: the waiters are incredibly friendly, attentive, and make you feel genuinely welcome. Highly recommended!",
+          "publishedAt": "2025-06-17"
+        },
+        {
+          "id": "review-hamid",
+          "author": "Hamid Abdel",
+          "rating": 5,
+          "text": "Had a chicken burrito 🌯 — super tasty! The Spanish girl who helped me was really nice and attentive. Great vibe. Will be back!",
+          "publishedAt": "2025-06-15"
+        }
+      ]
+    },
+    "instagram": {
+      "enabled": true,
+      "handle": "tresamigosamsterdam",
+      "profileUrl": "https://www.instagram.com/tresamigosamsterdam/",
+      "eyebrow": "Instagram",
+      "title": "Follow our kitchen",
+      "bio": "Mexican streetfood in Amsterdam",
+      "posts": [
+        {
+          "id": "ig-1",
+          "image": "assets/site/restaurant-interior.jpg",
+          "url": "https://www.instagram.com/tresamigosamsterdam/",
+          "caption": "Real Mexican street food",
+          "active": true
+        },
+        {
+          "id": "ig-2",
+          "image": "assets/site/quesadilla-drinks.webp",
+          "url": "https://www.instagram.com/tresamigosamsterdam/",
+          "caption": "Quesadillas & drinks",
+          "active": true
+        },
+        {
+          "id": "ig-3",
+          "image": "assets/brand/eat-like-a-mexican.png",
+          "url": "https://www.instagram.com/tresamigosamsterdam/",
+          "caption": "Eat like a Mexican",
+          "active": true
+        },
+        {
+          "id": "ig-4",
+          "image": "assets/brand/home-card.png",
+          "url": "https://www.instagram.com/tresamigosamsterdam/",
+          "caption": "Tres Amigos vibes",
+          "active": true
         }
       ]
     },

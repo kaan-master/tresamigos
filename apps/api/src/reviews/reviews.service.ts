@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import type { GoogleReview, ReviewsResponse } from "@tresamigos/types";
 import { ContentService } from "../content/content.service";
 import { RedisService } from "../redis/redis.module";
+import { ReviewSubmissionsService } from "./review-submissions.service";
 
 interface GooglePlaceReview {
   author_name?: string;
@@ -17,7 +18,8 @@ export class ReviewsService {
 
   constructor(
     private readonly contentService: ContentService,
-    private readonly redis: RedisService
+    private readonly redis: RedisService,
+    private readonly submissions: ReviewSubmissionsService
   ) {}
 
   async getPublicReviews(): Promise<ReviewsResponse> {
@@ -28,21 +30,30 @@ export class ReviewsService {
       return { reviews: [], source: "curated", updatedAt: new Date().toISOString() };
     }
 
-    const cacheKey = `reviews:${settings.googlePlaceId || "curated"}:${settings.minRating}`;
+    const cacheKey = `reviews:public:${settings.googlePlaceId || "curated"}:${settings.minRating}`;
     const cached = await this.redis.client.get(cacheKey);
     if (cached) {
       return JSON.parse(cached) as ReviewsResponse;
     }
 
     const googleReviews = await this.fetchGoogleReviews(settings.googlePlaceId, settings.minRating);
-    const reviews =
-      googleReviews.length > 0
-        ? googleReviews
-        : settings.curated.filter((review) => review.rating >= settings.minRating).slice(0, 12);
+    const approvedSubmissions = await this.submissions.listApprovedPublic(settings.minRating);
+    const curated = settings.curated.filter((review) => review.rating >= settings.minRating);
+
+    let reviews: GoogleReview[];
+    let source: ReviewsResponse["source"];
+
+    if (googleReviews.length > 0) {
+      reviews = googleReviews;
+      source = "google";
+    } else {
+      reviews = mergeReviews(curated, approvedSubmissions);
+      source = approvedSubmissions.length ? "mixed" : "curated";
+    }
 
     const payload: ReviewsResponse = {
-      reviews,
-      source: googleReviews.length > 0 ? "google" : "curated",
+      reviews: reviews.slice(0, 24),
+      source,
       updatedAt: new Date().toISOString()
     };
 
@@ -84,6 +95,19 @@ export class ReviewsService {
       return [];
     }
   }
+}
+
+function mergeReviews(curated: GoogleReview[], approved: GoogleReview[]) {
+  const merged = new Map<string, GoogleReview>();
+  for (const review of [...curated, ...approved]) {
+    merged.set(review.id, review);
+  }
+
+  return [...merged.values()].sort((left, right) => {
+    const leftDate = left.publishedAt || "";
+    const rightDate = right.publishedAt || "";
+    return rightDate.localeCompare(leftDate);
+  });
 }
 
 function cleanText(value: unknown, fallback = "", max = 1200) {

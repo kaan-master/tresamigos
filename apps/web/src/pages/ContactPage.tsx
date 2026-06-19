@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
+import { useLanguage } from "../i18n/LanguageProvider";
 import { assetUrl, submitContact } from "../lib/api";
 import { pageSeo } from "../lib/seo";
 
@@ -11,6 +12,7 @@ function formatAddress(address: string) {
 }
 
 export function ContactPage({ content }: { content: SiteContent }) {
+  const { t } = useLanguage();
   const locations = content.locations.filter((location) => location.active !== false);
   const seo = pageSeo(content, "contact");
   const formSettings = content.site.contactForm;
@@ -21,17 +23,17 @@ export function ContactPage({ content }: { content: SiteContent }) {
 
   function validateForm() {
     if (!form.name.trim()) {
-      setMessage("Vul je naam in.");
+      setMessage(t("contact.errorName"));
       setMessageType("error");
       return false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      setMessage("Vul een geldig e-mailadres in.");
+      setMessage(t("contact.errorEmail"));
       setMessageType("error");
       return false;
     }
     if (!form.message.trim()) {
-      setMessage("Schrijf een bericht.");
+      setMessage(t("contact.errorMessage"));
       setMessageType("error");
       return false;
     }
@@ -56,7 +58,7 @@ export function ContactPage({ content }: { content: SiteContent }) {
       setMessageType("success");
       setForm({ name: "", email: "", subject: "", message: "" });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Verzenden mislukt.");
+      setMessage(error instanceof Error ? error.message : t("contact.errorSend"));
       setMessageType("error");
     } finally {
       setSubmitting(false);
@@ -68,9 +70,9 @@ export function ContactPage({ content }: { content: SiteContent }) {
       <Helmet title={seo.title} description={seo.description} />
       <header className="page-head compact contact-head">
         <div className="shell">
-          <div className="eyebrow">Contact</div>
-          <h1>Get in touch</h1>
-          <p>Questions about locations, catering or the brand? Reach out and we will get back to you.</p>
+          <div className="eyebrow">{t("contact.eyebrow")}</div>
+          <h1>{t("contact.title")}</h1>
+          <p>{t("contact.intro")}</p>
         </div>
       </header>
 
@@ -78,8 +80,8 @@ export function ContactPage({ content }: { content: SiteContent }) {
         <div className="shell">
           <section className="contact-locations-strip">
             <div className="contact-locations-head">
-              <h2 className="section-title">Locations</h2>
-              <p className="lead">Four spots across Amsterdam — pick the one closest to you.</p>
+              <h2 className="section-title">{t("contact.locationsTitle")}</h2>
+              <p className="lead">{t("contact.locationsIntro")}</p>
             </div>
             <div className="contact-locations-grid">
               {locations.map((location) => {
@@ -112,9 +114,9 @@ export function ContactPage({ content }: { content: SiteContent }) {
 
               <div className="contact-app-panel">
                 <div className="contact-app-intro">
-                  <h2>{formSettings.enabled ? formSettings.title : "Email"}</h2>
+                  <h2>{formSettings.enabled ? formSettings.title : t("contact.email")}</h2>
                   <p>
-                    {formSettings.enabled ? formSettings.intro : "Reach us directly at"}{" "}
+                    {formSettings.enabled ? formSettings.intro : t("contact.reachUs")}{" "}
                     <a href={`mailto:${content.site.footer.email}`}>{content.site.footer.email}</a>
                   </p>
                 </div>
@@ -123,7 +125,7 @@ export function ContactPage({ content }: { content: SiteContent }) {
                   <form className="contact-app-form" onSubmit={handleSubmit}>
                     <div className="form-row contact-form-row">
                       <label className="form-field">
-                        <span>Naam *</span>
+                        <span>{t("contact.name")} *</span>
                         <input
                           value={form.name}
                           onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
@@ -132,7 +134,7 @@ export function ContactPage({ content }: { content: SiteContent }) {
                         />
                       </label>
                       <label className="form-field">
-                        <span>E-mail *</span>
+                        <span>{t("contact.emailField")} *</span>
                         <input
                           type="email"
                           value={form.email}
@@ -143,32 +145,32 @@ export function ContactPage({ content }: { content: SiteContent }) {
                       </label>
                     </div>
                     <label className="form-field">
-                      <span>Onderwerp</span>
+                      <span>{t("contact.subject")}</span>
                       <input
                         value={form.subject}
                         onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
-                        placeholder="Waar gaat je vraag over?"
+                        placeholder={t("contact.subjectPlaceholder")}
                       />
                     </label>
                     <label className="form-field">
-                      <span>Bericht *</span>
+                      <span>{t("contact.message")} *</span>
                       <textarea
                         value={form.message}
                         onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))}
                         rows={6}
-                        placeholder="Stel je vraag of vertel wat je nodig hebt…"
+                        placeholder={t("contact.messagePlaceholder")}
                         required
                       />
                     </label>
                     <button className="btn primary" type="submit" disabled={submitting}>
-                      {submitting ? "Versturen…" : "Bericht versturen"}
+                      {submitting ? t("common.submitting") : t("contact.send")}
                     </button>
                     {message ? <p className={`form-message ${messageType}`.trim()}>{message}</p> : null}
                   </form>
                 ) : null}
 
                 <div className="contact-social">
-                  <h3>Follow us</h3>
+                  <h3>{t("contact.followUs")}</h3>
                   <p>
                     {content.site.footer.instagramUrl ? (
                       <a href={content.site.footer.instagramUrl} target="_blank" rel="noreferrer">

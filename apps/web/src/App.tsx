@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
+import { useLanguage } from "./i18n/LanguageProvider";
 import { useSiteContent } from "./hooks/useSiteContent";
 import { ContactPage } from "./pages/ContactPage";
 import { HomePage } from "./pages/HomePage";
@@ -10,6 +11,7 @@ import { OurStoryPage } from "./pages/OurStoryPage";
 import { VacancyPage } from "./pages/VacancyPage";
 
 function ShellRoutes() {
+  const { t } = useLanguage();
   const { data, isLoading, error } = useSiteContent();
 
   useEffect(() => {
@@ -23,11 +25,11 @@ function ShellRoutes() {
   }, []);
 
   if (isLoading) {
-    return <div className="shell" style={{ padding: "80px 0" }}>Content laden...</div>;
+    return <div className="shell" style={{ padding: "80px 0" }}>{t("common.loading")}</div>;
   }
 
   if (error || !data) {
-    return <div className="shell" style={{ padding: "80px 0" }}>Website kon niet geladen worden.</div>;
+    return <div className="shell" style={{ padding: "80px 0" }}>{t("common.error")}</div>;
   }
 
   return (

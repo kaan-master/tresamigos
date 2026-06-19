@@ -28,14 +28,10 @@ export function OrderPlatformLinks({
             key={`${link.label}-${link.url}`}
             target={link.url.startsWith("http") ? "_blank" : undefined}
             rel={link.url.startsWith("http") ? "noreferrer" : undefined}
-            aria-label={`${link.label} bestellen`}
-            title={link.label}
+            aria-label={`Bestel via ${link.label}`}
           >
-            {logo ? (
-              <img src={assetUrl(logo)} alt={link.label} loading="lazy" />
-            ) : (
-              <span>{link.label}</span>
-            )}
+            {logo ? <img src={assetUrl(logo)} alt="" loading="lazy" aria-hidden="true" /> : null}
+            <span className="platform-link-label">{link.label}</span>
           </a>
         );
       })}
@@ -52,8 +48,8 @@ export function LocationCard({
     <article className="location-card">
       <h3>{location.area}</h3>
       <div className="meta">
-        <span>{location.address}</span>
-        {location.note ? <span className="location-note">{location.note}</span> : null}
+        <p className="location-address">{location.address}</p>
+        {location.note ? <p className="location-note">{location.note}</p> : null}
       </div>
       <OrderPlatformLinks links={location.links} />
     </article>

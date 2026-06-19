@@ -81,16 +81,17 @@ pnpm dev
 | GET/PUT | `/api/admin/content` | Bearer token |
 | GET | `/api/admin/applications` | Bearer token |
 
-## Deployment (Hetzner)
+## Deployment (Hetzner / Linux)
+
+Volledige gids: **[START-LINUX.md](./START-LINUX.md)** (`./start.sh`, nginx, systemd, migratie oude site).
 
 1. Docker Compose voor PostgreSQL + Redis op de server
-2. `pnpm build` in CI of op server
-3. `pnpm db:deploy && pnpm db:seed` voor database
-4. Nginx:
-   - `/` → web build (`apps/web/dist`)
-   - `/admin/` → admin build (`apps/admin/dist`)
-   - `/api/` → NestJS op poort 3100
-   - `/assets/` → statische assets map
+2. `pnpm build` op server of in CI
+3. `pnpm db:deploy && pnpm db:seed`
+4. Nginx: `/` → `apps/web/dist`, `/admin/` → `apps/admin/dist`, `/api/` → NestJS, `/assets/` → `assets/`
+5. **`client_max_body_size 15M`** in nginx (sollicitaties met CV)
+
+Windows lokaal: `start-all.bat` · Linux lokaal: `./start.sh`
 
 ## Legacy
 

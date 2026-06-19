@@ -47,6 +47,7 @@ async function upsertSite(content: SiteContent) {
       openingHours: site.openingHours as object,
       ourStory: site.ourStory as object,
       reviews: site.reviews as object,
+      instagramFeed: site.instagram as object,
       promoPopup: site.promoPopup as object,
       mailRelay: site.mailRelay as object,
       contactForm: site.contactForm as object
@@ -81,6 +82,7 @@ async function upsertSite(content: SiteContent) {
       openingHours: site.openingHours as object,
       ourStory: site.ourStory as object,
       reviews: site.reviews as object,
+      instagramFeed: site.instagram as object,
       promoPopup: site.promoPopup as object,
       mailRelay: site.mailRelay as object,
       contactForm: site.contactForm as object

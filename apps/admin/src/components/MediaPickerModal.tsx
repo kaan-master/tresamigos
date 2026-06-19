@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { MediaAsset } from "@tresamigos/types";
 import { listMedia } from "../lib/api";
+import { mediaAssetUrl } from "../lib/media";
 import { AdminSearchBar } from "./AdminListUi";
 
 interface Props {
@@ -18,14 +19,22 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open) return;
     let active = true;
     setLoading(true);
+    setError("");
     void listMedia()
       .then((data) => {
         if (active) setAssets(data.assets);
+      })
+      .catch((loadError) => {
+        if (active) {
+          setError(loadError instanceof Error ? loadError.message : "Media laden mislukt.");
+          setAssets([]);
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -63,6 +72,8 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
 
         <AdminSearchBar value={query} onChange={setQuery} placeholder="Zoek bestandsnaam..." />
 
+        {error ? <div className="ta-alert is-error">{error}</div> : null}
+
         {loading ? (
           <div className="ta-empty">Media laden...</div>
         ) : filtered.length ? (
@@ -76,9 +87,9 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
               >
                 <div className="ta-media-preview">
                   {asset.kind === "video" ? (
-                    <video src={asset.url} muted playsInline preload="metadata" />
+                    <video src={mediaAssetUrl(asset.url)} muted playsInline preload="metadata" />
                   ) : (
-                    <img src={asset.url} alt={asset.label || asset.filename} loading="lazy" />
+                    <img src={mediaAssetUrl(asset.url)} alt={asset.label || asset.filename} loading="lazy" />
                   )}
                 </div>
                 <span>{asset.label || asset.filename}</span>
@@ -103,7 +114,7 @@ interface FieldProps {
 
 export function MediaField({ label, value, onChange, placeholder, filter = "image" }: FieldProps) {
   const [open, setOpen] = useState(false);
-  const preview = value ? (value.startsWith("/") ? value : `/${value}`) : "";
+  const preview = mediaAssetUrl(value);
 
   return (
     <>

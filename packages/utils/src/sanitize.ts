@@ -223,34 +223,91 @@ const DEFAULT_REVIEWS: SiteContent["site"]["reviews"] = {
   title: "What guests say",
   minRating: 4,
   googlePlaceId: "",
+  submitEnabled: true,
+  submitTitle: "Share your experience",
+  submitIntro: "Had a great meal at Tres Amigos? Leave a review — we moderate every submission before it appears on the site.",
+  submitSuccessMessage: "Thanks! Your review has been sent and will appear after approval.",
   curated: [
     {
-      id: "review-1",
-      author: "Guest review",
+      id: "review-leyre",
+      author: "Leyre Martinez Valencia",
       rating: 5,
-      text: "¡Estos tacos están bien chidos! Every time I eat them, they leave me wanting more. The people here are super friendly and the vibe is always good.",
-      relativeTime: "2 months ago"
+      text: "¡Estos tacos están bien chidos! Every time I eat them, they leave me wanting more. The people here are super friendly and service is amazing. Definitely my favorite taco spot! ¡Andale wey!",
+      publishedAt: "2025-06-26"
     },
     {
-      id: "review-2",
-      author: "Guest review",
+      id: "review-andrea",
+      author: "Tomaselli Andrea",
       rating: 5,
-      text: "As a mexican chef myself I have to say that this place surprised me. I'll surely come back!",
-      relativeTime: "3 months ago"
+      text: "As a mexican chef myself I have to say that this place surprised me I'll surely come back!",
+      publishedAt: "2025-06-23"
     },
     {
-      id: "review-3",
-      author: "Guest review",
+      id: "review-monteiro",
+      author: "Tomaselli Monteiro",
       rating: 5,
-      text: "Amazing food and beautiful Spanish people. Fast service and great tacos.",
-      relativeTime: "4 months ago"
+      text: "Amazing food and beautiful Spanish people",
+      publishedAt: "2025-06-23"
     },
     {
-      id: "review-4",
-      author: "Guest review",
+      id: "review-sergio",
+      author: "Sergio Ortiz Bellota",
       rating: 5,
       text: "Great food and great service. I highly recommend the XL Chicken Tacos, some of the best I've ever eat. Very recommended.",
-      relativeTime: "5 months ago"
+      publishedAt: "2025-06-18"
+    },
+    {
+      id: "review-carlos",
+      author: "Carlos",
+      rating: 5,
+      text: "This restaurant is an absolute gem! The food is delicious and full of flavor, yet surprisingly affordable. What really sets it apart, though, is the staff: the waiters are incredibly friendly, attentive, and make you feel genuinely welcome. Highly recommended!",
+      publishedAt: "2025-06-17"
+    },
+    {
+      id: "review-hamid",
+      author: "Hamid Abdel",
+      rating: 5,
+      text: "Had a chicken burrito 🌯 — super tasty! The Spanish girl who helped me was really nice and attentive. Great vibe. Will be back!",
+      publishedAt: "2025-06-15"
+    }
+  ]
+};
+
+const DEFAULT_INSTAGRAM: SiteContent["site"]["instagram"] = {
+  enabled: true,
+  handle: "tresamigosamsterdam",
+  profileUrl: "https://www.instagram.com/tresamigosamsterdam/",
+  eyebrow: "Instagram",
+  title: "Follow our kitchen",
+  bio: "Mexican streetfood in Amsterdam",
+  posts: [
+    {
+      id: "ig-1",
+      image: "assets/site/restaurant-interior.jpg",
+      url: "https://www.instagram.com/tresamigosamsterdam/",
+      caption: "Real Mexican street food",
+      active: true
+    },
+    {
+      id: "ig-2",
+      image: "assets/site/quesadilla-drinks.webp",
+      url: "https://www.instagram.com/tresamigosamsterdam/",
+      caption: "Quesadillas & drinks",
+      active: true
+    },
+    {
+      id: "ig-3",
+      image: "assets/brand/eat-like-a-mexican.png",
+      url: "https://www.instagram.com/tresamigosamsterdam/",
+      caption: "Eat like a Mexican",
+      active: true
+    },
+    {
+      id: "ig-4",
+      image: "assets/brand/home-card.png",
+      url: "https://www.instagram.com/tresamigosamsterdam/",
+      caption: "Tres Amigos vibes",
+      active: true
     }
   ]
 };
@@ -347,7 +404,37 @@ function sanitizeReviews(value: SiteContent["site"]["reviews"] | undefined) {
     title: cleanText(raw.title, DEFAULT_REVIEWS.title, 120),
     minRating,
     googlePlaceId: cleanText(raw.googlePlaceId, "", 120),
+    submitEnabled: raw.submitEnabled !== false,
+    submitTitle: cleanText(raw.submitTitle, DEFAULT_REVIEWS.submitTitle, 120),
+    submitIntro: cleanText(raw.submitIntro, DEFAULT_REVIEWS.submitIntro, 400),
+    submitSuccessMessage: cleanText(raw.submitSuccessMessage, DEFAULT_REVIEWS.submitSuccessMessage, 240),
     curated: curated.length ? curated : DEFAULT_REVIEWS.curated
+  };
+}
+
+function sanitizeInstagram(value: SiteContent["site"]["instagram"] | undefined) {
+  const raw = value || DEFAULT_INSTAGRAM;
+  const posts = Array.isArray(raw.posts)
+    ? raw.posts
+        .slice(0, 24)
+        .map((post, index) => ({
+          id: cleanSlug(post?.id, `ig-${index + 1}`),
+          image: cleanUrl(post?.image) || DEFAULT_INSTAGRAM.posts[0]?.image || "",
+          url: cleanUrl(post?.url) || DEFAULT_INSTAGRAM.profileUrl,
+          caption: cleanText(post?.caption, "", 240),
+          active: post?.active !== false
+        }))
+        .filter((post) => post.image)
+    : DEFAULT_INSTAGRAM.posts;
+
+  return {
+    enabled: raw.enabled !== false,
+    handle: cleanText(raw.handle, DEFAULT_INSTAGRAM.handle, 80).replace(/^@/, ""),
+    profileUrl: cleanUrl(raw.profileUrl) || DEFAULT_INSTAGRAM.profileUrl,
+    eyebrow: cleanText(raw.eyebrow, DEFAULT_INSTAGRAM.eyebrow, 80),
+    title: cleanText(raw.title, DEFAULT_INSTAGRAM.title, 120),
+    bio: cleanText(raw.bio, DEFAULT_INSTAGRAM.bio, 240),
+    posts: posts.length ? posts : DEFAULT_INSTAGRAM.posts
   };
 }
 
@@ -451,10 +538,24 @@ function sanitizeSeoPages(seo: SiteContent["site"]["seo"]): Record<SeoPageKey, P
   );
 }
 
+const APPLICATION_ATTACHMENT_DATA_PREFIXES = [
+  "data:application/pdf;base64,",
+  "data:application/msword;base64,",
+  "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,",
+  "data:application/octet-stream;base64,"
+];
+
+function isAllowedApplicationAttachment(name: string, data: string) {
+  const lower = name.toLowerCase();
+  const extOk = lower.endsWith(".pdf") || lower.endsWith(".doc") || lower.endsWith(".docx");
+  if (!extOk) return false;
+  return APPLICATION_ATTACHMENT_DATA_PREFIXES.some((prefix) => data.startsWith(prefix));
+}
+
 export function sanitizeApplication(input: CreateApplicationInput | Application): Application {
   const pdf = input?.pdf && typeof input.pdf === "object" ? input.pdf : null;
   const pdfName = cleanText(pdf?.name, "", 180);
-  const pdfData = cleanText(pdf?.data, "", 6_000_000);
+  const pdfData = cleanText(pdf?.data, "", 16_000_000);
 
   return {
     id: cleanText(input?.id, crypto.randomUUID(), 80),
@@ -469,7 +570,7 @@ export function sanitizeApplication(input: CreateApplicationInput | Application)
     experience: cleanText(input?.experience, "", 1600),
     motivation: cleanText(input?.motivation, "", 1600),
     pdf:
-      pdfName && pdfData.startsWith("data:application/pdf;base64,")
+      pdfName && isAllowedApplicationAttachment(pdfName, pdfData)
         ? {
             name: pdfName,
             size: Number(pdf?.size || 0),
@@ -491,6 +592,7 @@ export function sanitizeContent(input: unknown): SiteContent {
   const openingHours = site.openingHours;
   const ourStory = site.ourStory;
   const reviews = site.reviews;
+  const instagram = site.instagram;
   const promoPopup = site.promoPopup;
   const mailRelay = site.mailRelay;
   const contactForm = site.contactForm;
@@ -607,6 +709,7 @@ export function sanitizeContent(input: unknown): SiteContent {
       openingHours: sanitizeOpeningHours(openingHours),
       ourStory: sanitizeOurStory(ourStory),
       reviews: sanitizeReviews(reviews),
+      instagram: sanitizeInstagram(instagram),
       promoPopup: sanitizePromoPopup(promoPopup),
       mailRelay: sanitizeMailRelay(mailRelay),
       contactForm: sanitizeContactForm(contactForm),
@@ -615,6 +718,34 @@ export function sanitizeContent(input: unknown): SiteContent {
     videos,
     menu,
     locations
+  };
+}
+
+export function sanitizeReviewSubmission(input: unknown): import("@tresamigos/types").ReviewSubmission {
+  const raw = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+  const statusRaw = cleanText(raw.status, "pending", 20);
+  const status =
+    statusRaw === "approved" || statusRaw === "spam" || statusRaw === "pending" ? statusRaw : "pending";
+
+  return {
+    id: cleanText(raw.id, crypto.randomUUID(), 80),
+    createdAt: cleanText(raw.createdAt, new Date().toISOString(), 40),
+    status,
+    author: cleanText(raw.author, "Guest", 120),
+    email: cleanText(raw.email, "", 180),
+    rating: Math.min(5, Math.max(1, Number(raw.rating) || 5)),
+    text: cleanText(raw.text, "", 1200),
+    publishedAt: cleanText(raw.publishedAt, "", 40)
+  };
+}
+
+export function sanitizeCreateReviewInput(input: unknown): import("@tresamigos/types").CreateReviewInput {
+  const raw = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+  return {
+    author: cleanText(raw.author, "", 120),
+    email: cleanText(raw.email, "", 180),
+    rating: Math.min(5, Math.max(1, Number(raw.rating) || 5)),
+    text: cleanText(raw.text, "", 1200)
   };
 }
 

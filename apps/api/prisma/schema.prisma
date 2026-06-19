@@ -38,6 +38,7 @@ model SiteSettings {
   openingHours       Json     @default("{}")
   ourStory           Json     @default("{}")
   reviews            Json     @default("{}")
+  instagramFeed      Json     @default("{}")
   promoPopup         Json     @default("{}")
   mailRelay          Json     @default("{}")
   contactForm        Json     @default("{}")
@@ -108,6 +109,17 @@ model MenuItem {
   featured    Boolean      @default(false)
   active      Boolean      @default(true)
   sortOrder   Int          @default(0)
+}
+
+model ReviewSubmission {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  status      String   @default("pending")
+  author      String
+  email       String   @default("")
+  rating      Int      @default(5)
+  text        String
+  publishedAt String   @default("")
 }
 
 model Application {

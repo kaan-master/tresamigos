@@ -145,7 +145,72 @@ export interface ReviewsSettings {
   title: string;
   minRating: number;
   googlePlaceId: string;
+  submitEnabled: boolean;
+  submitTitle: string;
+  submitIntro: string;
+  submitSuccessMessage: string;
   curated: GoogleReview[];
+}
+
+export interface InstagramPost {
+  id: string;
+  image: string;
+  url: string;
+  caption: string;
+  active?: boolean;
+}
+
+export interface InstagramFeedPost {
+  id: string;
+  image: string;
+  url: string;
+  caption: string;
+  isVideo?: boolean;
+}
+
+export interface InstagramFeedResponse {
+  enabled: boolean;
+  handle: string;
+  profileUrl: string;
+  bio: string;
+  profileImage?: string;
+  posts: InstagramFeedPost[];
+  source: "instagram" | "fallback";
+  updatedAt: string;
+}
+
+export interface InstagramSettings {
+  enabled: boolean;
+  handle: string;
+  profileUrl: string;
+  eyebrow: string;
+  title: string;
+  bio: string;
+  posts: InstagramPost[];
+}
+
+export type ReviewSubmissionStatus = "pending" | "approved" | "spam";
+
+export interface ReviewSubmission {
+  id: string;
+  createdAt: string;
+  status: ReviewSubmissionStatus;
+  author: string;
+  email: string;
+  rating: number;
+  text: string;
+  publishedAt: string;
+}
+
+export interface CreateReviewInput {
+  author: string;
+  email?: string;
+  rating: number;
+  text: string;
+}
+
+export interface UpdateReviewSubmissionInput {
+  status: ReviewSubmissionStatus;
 }
 
 export interface PromoPopupSettings {
@@ -251,6 +316,7 @@ export interface SiteSettings {
   openingHours: OpeningHoursSettings;
   ourStory: OurStorySettings;
   reviews: ReviewsSettings;
+  instagram: InstagramSettings;
   promoPopup: PromoPopupSettings;
   mailRelay: MailRelaySettings;
   contactForm: ContactFormSettings;
@@ -259,7 +325,7 @@ export interface SiteSettings {
 
 export interface ReviewsResponse {
   reviews: GoogleReview[];
-  source: "google" | "curated";
+  source: "google" | "curated" | "mixed";
   updatedAt: string;
 }
 
@@ -275,6 +341,10 @@ export interface SiteContent {
   menu: MenuCategory[];
   locations: Location[];
 }
+
+export const APPLICATION_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
+
+export const APPLICATION_ATTACHMENT_EXTENSIONS = [".pdf", ".doc", ".docx"] as const;
 
 export interface ApplicationPdf {
   name: string;

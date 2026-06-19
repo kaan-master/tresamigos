@@ -7,6 +7,7 @@ import { AuthModule } from "./auth/auth.module";
 import { ContactModule } from "./contact/contact.module";
 import { ContentModule } from "./content/content.module";
 import { HealthController } from "./health/health.controller";
+import { InstagramModule } from "./instagram/instagram.module";
 import { MediaModule } from "./media/media.module";
 import { PromoModule } from "./promo/promo.module";
 import { PrismaModule } from "./prisma/prisma.module";
@@ -28,7 +29,8 @@ import { ReviewsModule } from "./reviews/reviews.module";
     AnalyticsModule,
     PromoModule,
     ReviewsModule,
-    ContactModule
+    ContactModule,
+    InstagramModule
   ],
   controllers: [HealthController]
 })
