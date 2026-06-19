@@ -2,7 +2,11 @@ node_modules/
 dist/
 packages/*/dist/
 .env
+.env.*
+!.env.example
+.DS_Store
 *.log
+uploads/tmp/
 data/*.tmp
 legacy/
 .turbo/
