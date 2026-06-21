@@ -12,19 +12,16 @@ Productie: **Nginx** (poort 80) · **systemd** (API op 3100) · **Docker Compose
 
 ## Lokaal ontwikkelen
 
+Gebruik **alleen** `./start-containers.sh` — start idempotent (stopt oude dev-processen op 3100/5180/5181, daarna docker + migraties + `pnpm dev`).
+
 ```bash
 pnpm install
 cp .env.example .env   # vul ADMIN_PASSWORD in
 chmod +x start-containers.sh start.sh
-./start-containers.sh   # git pull + docker + migraties + pnpm dev
+./start-containers.sh
 ```
 
-Of:
-
-```bash
-./start.sh development
-pnpm dev
-```
+Niet daarnaast nog `pnpm dev`, `pnpm --filter @tresamigos/api dev` of losse `node dist/main.js` draaien.
 
 - Website: http://localhost:5180
 - Admin: http://localhost:5181/admin/
@@ -36,12 +33,14 @@ Lokaal optioneel in `.env`: `VITE_API_URL=http://localhost:3100` (zonder `/api` 
 
 Volledige handleiding: **[DEPLOY-UBUNTU.md](./DEPLOY-UBUNTU.md)**
 
+Gebruik **alleen** `./start.sh production` — geen `start-containers.sh` of `pnpm dev` op productie.
+
 ```bash
 cd /var/www/tresamigos
 git fetch origin
 git reset --hard origin/main
 chmod +x start.sh start-containers.sh
-bash start.sh production
+./start.sh production
 ```
 
 | Route | Doel |

@@ -142,6 +142,43 @@ git_sync_development() {
   ok "Repository bijgewerkt"
 }
 
+# Development: stop oude dev-processen en maak poorten 3100/5180/5181 vrij.
+stop_conflicting_dev_processes() {
+  echo "  · oude dev-processen stoppen..."
+
+  pkill -f "pnpm -r --parallel" 2>/dev/null || true
+  pkill -f "@tresamigos/api.*dev" 2>/dev/null || true
+  pkill -f "@tresamigos/web.*dev" 2>/dev/null || true
+  pkill -f "@tresamigos/admin.*dev" 2>/dev/null || true
+
+  for port in 3100 5180 5181; do
+    if command -v fuser >/dev/null 2>&1; then
+      fuser -k "${port}/tcp" 2>/dev/null || true
+    elif command -v lsof >/dev/null 2>&1; then
+      local pids
+      pids="$(lsof -ti tcp:"${port}" 2>/dev/null || true)"
+      if [[ -n "$pids" ]]; then
+        echo "  · poort ${port} → PID ${pids}"
+        kill -9 ${pids} 2>/dev/null || true
+      fi
+    fi
+  done
+
+  sleep 2
+
+  if ! command -v ss >/dev/null 2>&1; then
+    fail "ss niet gevonden — kan poorten 3100/5180/5181 niet controleren"
+  fi
+
+  for port in 3100 5180 5181; do
+    if ss -tulpn | grep -q ":${port} "; then
+      echo "Poort ${port} is nog bezet:"
+      ss -tulpn | grep ":${port} "
+      exit 1
+    fi
+  done
+}
+
 port_3100_pids() {
   if command -v ss >/dev/null 2>&1; then
     ss -tulpn 2>/dev/null | grep ':3100 ' || true
@@ -378,25 +415,14 @@ run_development() {
     git_sync_development
   fi
 
+  step "Oude dev-processen stoppen (3100, 5180, 5181)"
+  stop_conflicting_dev_processes
+  ok "Poorten vrij — geen botsende dev-processen"
+
   step "Docker controleren"
   command -v docker >/dev/null 2>&1 || fail "Docker niet gevonden. Installeer Docker Engine."
   docker info >/dev/null 2>&1 || fail "Docker daemon draait niet. Start Docker en probeer opnieuw."
   ok "Docker actief"
-
-  step "Poorten vrijmaken (3100, 5180, 5181)"
-  for port in 3100 5180 5181; do
-    if command -v fuser >/dev/null 2>&1; then
-      fuser -k "${port}/tcp" 2>/dev/null && echo "  · poort ${port} vrijgemaakt" || true
-    elif command -v lsof >/dev/null 2>&1; then
-      pids=$(lsof -ti tcp:"${port}" 2>/dev/null || true)
-      if [ -n "${pids}" ]; then
-        echo "  · poort ${port} → PID ${pids}"
-        kill -9 ${pids} 2>/dev/null || true
-      fi
-    fi
-  done
-  sleep 1
-  ok "Poorten vrij"
 
   step "PostgreSQL + Redis containers starten"
   docker compose up -d
@@ -445,6 +471,8 @@ run_development() {
   echo "╚══════════════════════════════════════════════════╝"
   echo "  Ctrl+C om alles te stoppen"
   echo
+
+  stop_conflicting_dev_processes
 
   exec $PNPM dev
 }
