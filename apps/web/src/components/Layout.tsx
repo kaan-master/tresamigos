@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import type { SiteContent } from "@tresamigos/types";
-import { assetUrl, pageUrl } from "../lib/api";
+import { assetUrl } from "../lib/api";
 import { usePageMotion } from "../hooks/usePageMotion";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { AnalyticsTracker } from "./AnalyticsTracker";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { PromoPopup } from "./PromoPopup";
+import { IconLocation, IconLogin } from "./NavIcons";
+import { SocialLinks } from "./SocialLinks";
+import { SiteHead } from "./Helmet";
 
 interface LayoutProps {
   content: SiteContent;
@@ -20,6 +22,12 @@ function HamburgerIcon({ open }: { open: boolean }) {
       <path className="hamburger-line hamburger-line-bot" d="M4 17h16" />
     </svg>
   );
+}
+
+function formatCopyright(template: string) {
+  const year = new Date().getFullYear();
+  if (/\d{4}/.test(template)) return template.replace(/\d{4}/, String(year));
+  return `© ${year} ${template.replace(/^©\s*/, "").trim()}`;
 }
 
 export function Layout({ content }: LayoutProps) {
@@ -40,20 +48,52 @@ export function Layout({ content }: LayoutProps) {
 
   return (
     <>
+      <SiteHead
+        googleSiteVerification={site.seo.googleSiteVerification}
+        bingSiteVerification={site.seo.bingSiteVerification}
+      />
       <AnalyticsTracker />
-      <PromoPopup settings={site.promoPopup} />
-      <nav className="nav">
-        <div className="shell nav-inner">
-          <Link className="brand" to="/">
-            <span className="brand-mark">
-              <img src={assetUrl("/assets/site/tres-amigos-logo-new.png")} alt="Tres Amigos logo" />
-            </span>
-            <span>
-              Tres
-              <br />
-              Amigos
-            </span>
-          </Link>
+      <nav className={`nav nav-split${menuOpen ? " is-open" : ""}`}>
+        <div className="shell shell-wide nav-inner">
+          <div className="nav-left">
+            <Link className="brand" to="/" aria-label="Tres Amigos home">
+              <span className="brand-mark">
+                <img src={assetUrl("/assets/site/tres-amigos-logo-new.png")} alt="Tres Amigos" />
+              </span>
+            </Link>
+            <div className={`nav-links nav-links-main${menuOpen ? " open" : ""}`} id="site-nav-links">
+              <NavLink to="/menu">{t("nav.menu")}</NavLink>
+              <NavLink to="/locations">{t("nav.locations")}</NavLink>
+              <NavLink to="/our-story">{t("nav.ourStory")}</NavLink>
+              <NavLink to="/our-value">{t("nav.ourValue")}</NavLink>
+              <NavLink to="/vacancy">{t("nav.vacancy")}</NavLink>
+              <NavLink to="/contact">{t("nav.contact")}</NavLink>
+              <Link className="nav-text-link nav-mobile-only" to="/locations">
+                <IconLocation />
+                <span>{t("nav.findTresAmigos")}</span>
+              </Link>
+              <Link className="nav-text-link nav-mobile-only" to="/login">
+                <IconLogin />
+                <span>{t("nav.login")}</span>
+              </Link>
+              <div className="nav-mobile-only nav-mobile-lang">
+                <LanguageSwitcher />
+              </div>
+            </div>
+          </div>
+
+          <div className={`nav-right nav-desktop-only${menuOpen ? " open" : ""}`}>
+            <Link className="nav-text-link" to="/locations">
+              <IconLocation />
+              <span>{t("nav.findTresAmigos")}</span>
+            </Link>
+            <Link className="nav-text-link" to="/login">
+              <IconLogin />
+              <span>{t("nav.login")}</span>
+            </Link>
+            <LanguageSwitcher />
+          </div>
+
           <button
             className={`mobile-toggle${menuOpen ? " is-open" : ""}`}
             type="button"
@@ -65,20 +105,6 @@ export function Layout({ content }: LayoutProps) {
             <HamburgerIcon open={menuOpen} />
             <span className="mobile-toggle-label">{menuOpen ? t("common.close") : t("common.menu")}</span>
           </button>
-          <div className={`nav-links${menuOpen ? " open" : ""}`} id="site-nav-links">
-            <NavLink to="/" end>
-              {t("nav.home")}
-            </NavLink>
-            <NavLink to="/menu">{t("nav.menu")}</NavLink>
-            <NavLink to="/locations">{t("nav.locations")}</NavLink>
-            <NavLink to="/our-story">{t("nav.ourStory")}</NavLink>
-            <NavLink to="/vacancy">{t("nav.vacancy")}</NavLink>
-            <NavLink to="/contact">{t("nav.contact")}</NavLink>
-            <LanguageSwitcher />
-            <Link className="nav-cta" to={pageUrl(site.navCta.url)}>
-              {site.navCta.label}
-            </Link>
-          </div>
         </div>
         {menuOpen ? <button className="nav-backdrop" type="button" aria-label={t("common.closeMenu")} onClick={() => setMenuOpen(false)} /> : null}
       </nav>
@@ -88,6 +114,9 @@ export function Layout({ content }: LayoutProps) {
       <footer className="footer">
         <div className="shell footer-grid">
           <div>
+            <Link className="footer-brand" to="/">
+              Tres Amigos
+            </Link>
             <h2>{site.footer.title}</h2>
             <p className="lead">{site.footer.intro}</p>
           </div>
@@ -126,22 +155,11 @@ export function Layout({ content }: LayoutProps) {
             </p>
             <p>
               <Link to="/order">{t("footer.allOrderLinks")}</Link>
-              <br />
-              {site.footer.instagramUrl ? (
-                <a href={site.footer.instagramUrl} target="_blank" rel="noreferrer">
-                  Instagram
-                </a>
-              ) : null}
-              <br />
-              {site.footer.tiktokUrl ? (
-                <a href={site.footer.tiktokUrl} target="_blank" rel="noreferrer">
-                  TikTok
-                </a>
-              ) : null}
             </p>
+            <SocialLinks instagramUrl={site.footer.instagramUrl} tiktokUrl={site.footer.tiktokUrl} />
           </div>
         </div>
-        <div className="shell copyright">{site.footer.copyright}</div>
+        <div className="shell copyright">{formatCopyright(site.footer.copyright)}</div>
       </footer>
     </>
   );

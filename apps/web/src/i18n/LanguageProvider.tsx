@@ -13,8 +13,7 @@ function readInitialLang(): Lang {
   if (typeof window === "undefined") return "en";
   const stored = window.localStorage.getItem(LANG_STORAGE_KEY);
   if (stored === "en" || stored === "nl") return stored;
-  const browser = navigator.language.toLowerCase();
-  return browser.startsWith("nl") ? "nl" : "en";
+  return "en";
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {

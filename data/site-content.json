@@ -2,6 +2,9 @@
   "site": {
     "seo": {
       "image": "assets/site/restaurant-interior.jpg",
+      "siteUrl": "https://tresamigos.nl",
+      "googleSiteVerification": "",
+      "bingSiteVerification": "",
       "pages": {
         "home": {
           "title": "Tres Amigos | Mexican Street Food Amsterdam",
@@ -26,6 +29,10 @@
         "ourStory": {
           "title": "Our Story | Tres Amigos",
           "description": "Het verhaal achter Tres Amigos Amsterdam: real Mexican street food by real Mexicans."
+        },
+        "ourValue": {
+          "title": "Our Value | Tres Amigos",
+          "description": "Ontdek de waarden van Tres Amigos: kwaliteit, gastvrijheid en echte Mexicaanse smaken in Amsterdam."
         },
         "vacancy": {
           "title": "Work With Us | Tres Amigos",
@@ -92,6 +99,19 @@
       "scheduleSummary": "Open 7 Days a week · Sun–Thu: 11 am–10:30 pm · Fri–Sat: 11 am–1 am",
       "heroImage": "assets/site/restaurant-interior.jpg",
       "sideImage": "assets/brand/home-card.png"
+    },
+    "ourValue": {
+      "eyebrow": "Our value",
+      "title": "Quality, warmth and real flavour.",
+      "intro": "Everything we do at Tres Amigos comes back to a few simple promises: honest ingredients, a welcoming atmosphere and food that tastes like it should.",
+      "paragraphs": [
+        "We believe great street food starts with respect — for the recipe, for the guest and for the team behind the counter. That means fresh prep, consistent portions and flavours that stay true to Mexican roots.",
+        "Hospitality is not an extra step for us; it is part of the product. Whether you dine in, take away or order delivery, you should feel the same Tres Amigos energy: upbeat, personal and unpretentious.",
+        "We keep our prices fair because good food should be for everyone. Our goal is simple: leave you satisfied, not just full — and make you want to come back with friends."
+      ],
+      "scheduleSummary": "Four Amsterdam locations · Open 7 days a week",
+      "heroImage": "assets/brand/real-mexican.png",
+      "sideImage": "assets/brand/with-love.png"
     },
     "reviews": {
       "enabled": true,
@@ -187,7 +207,7 @@
       ]
     },
     "promoPopup": {
-      "enabled": true,
+      "enabled": false,
       "delaySeconds": 18,
       "title": "You've got 10% off",
       "subtitle": "Enter your details to receive your discount code by email.",
@@ -311,6 +331,7 @@
           "name": "XL Pulled Beef tacos",
           "description": "Three big soft shell slow cooked pulled beef tacos with pickled red onions, cilantro and Mexican cheese.",
           "price": "€15,95",
+          "image": "assets/menu/pulled-beef-taco-150x150.jpg",
           "active": true
         },
         {
@@ -318,6 +339,7 @@
           "name": "XL Pulled Chicken tacos",
           "description": "Three big soft shell slow cooked pulled chicken tacos with red onions, chipotle sauce, cilantro and Mexican cheese.",
           "price": "€14,95",
+          "image": "assets/menu/pulled-chicken-taco-3-150x150.jpg",
           "active": true
         },
         {
@@ -325,6 +347,7 @@
           "name": "XL Jackfruit tacos",
           "description": "Three soft shell tacos filled with homemade BBQ jackfruit, cheese and cilantro.",
           "price": "€13,95",
+          "image": "assets/menu/jackfruit-taco-150x150.jpg",
           "active": true
         },
         {
@@ -332,6 +355,7 @@
           "name": "Fried fish tacos",
           "description": "Three soft shell tacos with fried white fish, lettuce, pico de gallo, red onions, lime sauce, guacamole and cilantro.",
           "price": "€15,95",
+          "image": "assets/menu/fried-fish-taco-150x150.jpg",
           "active": true
         }
       ]
@@ -347,6 +371,7 @@
           "name": "Pulled chicken burrito",
           "description": "Pulled chicken, cheese, rice, pinto and black beans, chipotle, red onions and coriander.",
           "price": "€15,95",
+          "image": "assets/menu/pulled-chicken-burrito-150x150.jpg",
           "active": true
         },
         {
@@ -354,6 +379,7 @@
           "name": "Ground beef burrito",
           "description": "Ground beef, rice, pinto and black beans, chipotle, cheese and cilantro.",
           "price": "€15,95",
+          "image": "assets/menu/beef-burrito-2-150x150.jpg",
           "active": true
         },
         {
@@ -361,6 +387,7 @@
           "name": "White fish burrito",
           "description": "White fish of the day with lime sauce, rice, tomato, red onion, slaw and guacamole.",
           "price": "€17,95",
+          "image": "assets/menu/whitefish-burrito-150x150.jpg",
           "active": true
         },
         {
@@ -368,6 +395,7 @@
           "name": "Jackfruit burrito",
           "description": "Homemade BBQ jackfruit, beans, cheese and rice.",
           "price": "€15,45",
+          "image": "assets/menu/Jackfruit-burrito-150x150.jpg",
           "active": true
         },
         {
@@ -375,6 +403,7 @@
           "name": "Vegan burrito",
           "description": "Beans, rice, sweet corn, fresh lime juice, red onions, cilantro, guacamole and lettuce.",
           "price": "€14,95",
+          "image": "assets/menu/vegan-burrito-150x150.jpg",
           "active": true
         }
       ]
@@ -390,6 +419,7 @@
           "name": "Pulled chicken quesadilla",
           "description": "Mexican pulled chicken, homemade chipotle sauce, cheese, red onions and bell pepper.",
           "price": "€9,50",
+          "image": "assets/menu/pulled-chicken-quesadilla-2-150x150.jpg",
           "active": true
         },
         {
@@ -397,6 +427,7 @@
           "name": "Ground beef quesadilla",
           "description": "Ground beef, homemade chipotle sauce, cheese, red onions and bell pepper.",
           "price": "€9,50",
+          "image": "assets/menu/beef-quesdilla-2-150x150.jpg",
           "active": true
         },
         {
@@ -404,6 +435,7 @@
           "name": "Cheese quesadilla",
           "description": "Mozzarella, homemade chipotle sauce, cheddar cheese, red onions and bell peppers.",
           "price": "€6,95",
+          "image": "assets/menu/cheese-quesedilla-2-150x150.jpg",
           "active": true
         }
       ]
@@ -419,6 +451,7 @@
           "name": "Spicy pulled chicken bowl",
           "description": "Rice base, chipotle pulled chicken, kidney beans, bell peppers, red onion, jalapeno and spicy chipotle sauce.",
           "price": "€17,00",
+          "image": "assets/menu/Spicy-chicken-bowl-2-e1751149480798-150x150.jpg",
           "active": true
         },
         {
@@ -426,6 +459,7 @@
           "name": "Vegan Jackfruit bowl",
           "description": "Savory jackfruit, kidney beans, crisp bell peppers, red onion and creamy guacamole.",
           "price": "€17,00",
+          "image": "assets/menu/Jackfruit-bowl-2-e1751149625253-150x150.jpg",
           "active": true
         },
         {
@@ -433,6 +467,7 @@
           "name": "Chili con carne bowl",
           "description": "Kidney beans, ground beef, sweet corn, pico de gallo, sour cream and homemade garlic sauce.",
           "price": "€17,00",
+          "image": "assets/menu/Chilli-con-carne-bowl-2-e1751149645451-150x150.jpg",
           "active": true
         }
       ]
@@ -448,6 +483,7 @@
           "name": "Mozzarella sticks",
           "description": "Portion of 5 cheese sticks filled with mozzarella cheese.",
           "price": "€9,50",
+          "image": "assets/menu/mozzarella-sticks-2-e1751148061721-150x150.jpg",
           "active": true
         },
         {
@@ -455,6 +491,7 @@
           "name": "Twister fries",
           "description": "Big portion seasoned curly fries.",
           "price": "€5,49",
+          "image": "assets/menu/twister-fries-2-e1751148206457-150x150.jpg",
           "active": true
         },
         {
@@ -462,6 +499,7 @@
           "name": "Chili cheese nuggets",
           "description": "Portion of 6 nuggets filled with bell pepper and cheese.",
           "price": "€5,95",
+          "image": "assets/menu/chilli-cheese-nuggets-2-e1751148300610-150x150.jpg",
           "active": true
         },
         {
@@ -469,6 +507,7 @@
           "name": "Fries",
           "description": "Big portion seasoned fries.",
           "price": "€4,95",
+          "image": "assets/menu/friese-2-150x150.jpg",
           "active": true
         }
       ]
@@ -484,6 +523,7 @@
           "name": "Cheesecake",
           "description": "New York style cheesecake.",
           "price": "€7,00",
+          "image": "assets/menu/cheese-cake-2-e1751148971314-150x150.jpg",
           "active": true
         },
         {
@@ -491,6 +531,7 @@
           "name": "XL Chocolate chip cookie",
           "description": "Homemade chocolate chip cookie baked golden with gooey chocolate chunks.",
           "price": "€3,00",
+          "image": "assets/menu/home-made-XL-choclate-chip-cookie-2-150x150.jpg",
           "active": true
         },
         {
@@ -498,6 +539,7 @@
           "name": "Fudge brownie",
           "description": "Rich homemade fudge brownie with intense chocolate.",
           "price": "€4,00",
+          "image": "assets/menu/home-made-brownie-2-e1751148991100-150x150.jpg",
           "active": true
         }
       ]

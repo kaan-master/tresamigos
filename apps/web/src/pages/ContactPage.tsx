@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
+import { SocialLinks } from "../components/SocialLinks";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { assetUrl, submitContact } from "../lib/api";
 import { pageSeo } from "../lib/seo";
@@ -70,39 +71,8 @@ export function ContactPage({ content }: { content: SiteContent }) {
       <Helmet title={seo.title} description={seo.description} />
       <header className="page-head compact contact-head">
         <div className="shell">
-          <div className="eyebrow">{t("contact.eyebrow")}</div>
           <h1>{t("contact.title")}</h1>
           <p>{t("contact.intro")}</p>
-        </div>
-      </header>
-
-      <main className="section contact-page">
-        <div className="shell">
-          <section className="contact-locations-strip">
-            <div className="contact-locations-head">
-              <h2 className="section-title">{t("contact.locationsTitle")}</h2>
-              <p className="lead">{t("contact.locationsIntro")}</p>
-            </div>
-            <div className="contact-locations-grid">
-              {locations.map((location) => {
-                const formatted = formatAddress(location.address);
-                return (
-                  <article className="contact-location-card" key={location.id}>
-                    <h3>{location.area}</h3>
-                    {typeof formatted === "string" ? (
-                      <p>{formatted}</p>
-                    ) : (
-                      <p>
-                        {formatted.street}
-                        <br />
-                        {formatted.rest}
-                      </p>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          </section>
 
           <section className="contact-app">
             <div className="contact-app-shell">
@@ -178,21 +148,42 @@ export function ContactPage({ content }: { content: SiteContent }) {
 
                 <div className="contact-social">
                   <h3>{t("contact.followUs")}</h3>
-                  <p>
-                    {content.site.footer.instagramUrl ? (
-                      <a href={content.site.footer.instagramUrl} target="_blank" rel="noreferrer">
-                        Instagram
-                      </a>
-                    ) : null}
-                    {content.site.footer.instagramUrl && content.site.footer.tiktokUrl ? " · " : null}
-                    {content.site.footer.tiktokUrl ? (
-                      <a href={content.site.footer.tiktokUrl} target="_blank" rel="noreferrer">
-                        TikTok
-                      </a>
-                    ) : null}
-                  </p>
+                  <SocialLinks
+                    instagramUrl={content.site.footer.instagramUrl}
+                    tiktokUrl={content.site.footer.tiktokUrl}
+                  />
                 </div>
               </div>
+            </div>
+          </section>
+        </div>
+      </header>
+
+      <main className="section contact-page">
+        <div className="shell">
+          <section className="contact-locations-strip">
+            <div className="contact-locations-head">
+              <h2 className="section-title">{t("contact.locationsTitle")}</h2>
+              <p className="lead">{t("contact.locationsIntro")}</p>
+            </div>
+            <div className="contact-locations-grid">
+              {locations.map((location) => {
+                const formatted = formatAddress(location.address);
+                return (
+                  <article className="contact-location-card" key={location.id}>
+                    <h3>{location.area}</h3>
+                    {typeof formatted === "string" ? (
+                      <p>{formatted}</p>
+                    ) : (
+                      <p>
+                        {formatted.street}
+                        <br />
+                        {formatted.rest}
+                      </p>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           </section>
         </div>

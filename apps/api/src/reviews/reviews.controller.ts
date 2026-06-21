@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import type { CreateReviewInput, UpdateReviewSubmissionInput } from "@tresamigos/types";
 import { AdminGuard } from "../auth/admin.guard";
+import { PermissionsGuard } from "../auth/permissions.guard";
+import { RequirePermissions } from "../auth/permissions.decorator";
 import { ReviewSubmissionsService } from "./review-submissions.service";
 import { ReviewsService } from "./reviews.service";
 
@@ -23,7 +25,8 @@ export class PublicReviewsController {
 }
 
 @Controller("api/admin/review-submissions")
-@UseGuards(AdminGuard)
+@UseGuards(AdminGuard, PermissionsGuard)
+@RequirePermissions("reviews")
 export class AdminReviewSubmissionsController {
   constructor(private readonly submissionsService: ReviewSubmissionsService) {}
 

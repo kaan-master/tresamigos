@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReviewSubmission, SiteContent } from "@tresamigos/types";
 import { api } from "../lib/api";
 import { AdminFilterChips, AdminListRow, AdminSearchBar } from "./AdminListUi";
+import { FormSaveBar, type PanelSaveProps } from "./FormSaveBar";
 import { MediaField } from "./MediaPickerModal";
 import { createSlugId } from "../lib/id";
 
@@ -9,6 +10,8 @@ interface Props {
   content: SiteContent;
   onChange: (content: SiteContent) => void;
 }
+
+type ReviewsPanelProps = Props & PanelSaveProps;
 
 type PanelView = "moderation" | "settings" | "instagram";
 
@@ -376,11 +379,11 @@ function InstagramView({ content, onChange }: Props) {
   );
 }
 
-export function ReviewsPanel({ content, onChange }: Props) {
+export function ReviewsPanel({ content, onChange, onSave, saving }: ReviewsPanelProps) {
   const [view, setView] = useState<PanelView>("moderation");
 
   return (
-    <div>
+    <div className="ta-stack-panel">
       <AdminFilterChips
         value={view}
         onChange={(value) => setView(value as PanelView)}
@@ -392,8 +395,18 @@ export function ReviewsPanel({ content, onChange }: Props) {
       />
 
       {view === "moderation" ? <ModerationView /> : null}
-      {view === "settings" ? <SettingsView content={content} onChange={onChange} /> : null}
-      {view === "instagram" ? <InstagramView content={content} onChange={onChange} /> : null}
+      {view === "settings" ? (
+        <>
+          <SettingsView content={content} onChange={onChange} />
+          <FormSaveBar onSave={onSave} saving={saving} />
+        </>
+      ) : null}
+      {view === "instagram" ? (
+        <>
+          <InstagramView content={content} onChange={onChange} />
+          <FormSaveBar onSave={onSave} saving={saving} />
+        </>
+      ) : null}
     </div>
   );
 }

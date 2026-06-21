@@ -3,6 +3,7 @@ import type { AnalyticsSnapshot } from "@tresamigos/types";
 import { api } from "../lib/api";
 import { IconEye, IconOverview, IconUsers } from "./AdminIcons";
 import { BarChart, DonutChart, chartColors } from "./DonutChart";
+import { VisitorCalendar } from "./VisitorCalendar";
 
 function formatPath(path: string) {
   if (path === "/") return "Home";
@@ -78,11 +79,17 @@ export function OverviewPanel() {
       {error ? <div className="ta-alert is-error">{error}</div> : null}
 
       <div className={`ta-analytics-live${liveNow > 0 ? " is-hot" : ""}${pulse ? " is-pulse" : ""}`}>
-        <span className="ta-live-dot" aria-hidden="true" />
+        <span className={`ta-live-dot${liveNow === 0 ? " is-idle" : ""}`} aria-hidden="true" />
         <div className="ta-analytics-live-copy">
           <strong>{liveNow}</strong>
-          <span>{liveNow === 1 ? "bezoeker live op de website" : "bezoekers live op de website"}</span>
-          <small>Direct zichtbaar · ververst elke 1,5 sec · site ping elke 3 sec</small>
+          <span>
+            {liveNow === 0
+              ? "niemand live — bezoekers verdwijnen ~12 sec na laatste ping"
+              : liveNow === 1
+                ? "bezoeker live op de website"
+                : "bezoekers live op de website"}
+          </span>
+          <small>Direct zichtbaar · ververst elke 1,5 sec · vertrek binnen ~12 sec</small>
         </div>
         <IconEye className="ta-analytics-live-icon" width={36} height={36} />
       </div>
@@ -92,7 +99,7 @@ export function OverviewPanel() {
           <IconUsers width={20} height={20} />
           <span>Unieke bezoekers vandaag</span>
           <strong>{stats?.viewsToday ?? 0}</strong>
-          <small>Per IP-adres, max. 1x per dag</small>
+          <small>Per IP · blijft opgeslagen in kalender</small>
         </article>
         <article className="ta-kpi ta-kpi-icon">
           <IconOverview width={20} height={20} />
@@ -101,6 +108,8 @@ export function OverviewPanel() {
           <small>Samengesteld over de afgelopen week</small>
         </article>
       </div>
+
+      <VisitorCalendar dailyLog={stats?.dailyLog ?? []} viewsToday={stats?.viewsToday ?? 0} />
 
       <section className="ta-analytics-charts">
         <article className="ta-chart-card">
@@ -111,14 +120,14 @@ export function OverviewPanel() {
           {pageSegments.length ? (
             <DonutChart segments={pageSegments} centerLabel="BEZOEK" />
           ) : (
-            <div className="ta-empty">Nog geen paginabezoeken vandaag — open de site in een ander tabblad.</div>
+            <div className="ta-empty">Nog geen paginabezoeken vandaag.</div>
           )}
         </article>
 
         <article className="ta-chart-card">
           <header className="ta-chart-card-head">
             <h3 className="ta-section-title">Paginaverdeling</h3>
-            <p>Staafdiagram per route</p>
+            <p>Staafdiagram per route — vandaag</p>
           </header>
           {barData.length ? (
             <BarChart data={barData} />
@@ -127,21 +136,6 @@ export function OverviewPanel() {
           )}
         </article>
       </section>
-
-      {stats?.dailyLog?.length ? (
-        <section className="ta-location-editor">
-          <h3 className="ta-section-title">Bezoekers per dag</h3>
-          <p className="ta-seo-hint">Unieke bezoekers per IP — laatste 14 dagen</p>
-          <div className="ta-data-list">
-            {[...stats.dailyLog].reverse().map((day) => (
-              <div className="ta-data-row" key={day.date}>
-                <span>{new Date(`${day.date}T12:00:00`).toLocaleDateString("nl-NL")}</span>
-                <strong>{day.visitors}</strong>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
 
       {stats?.topPages.length ? (
         <section className="ta-location-editor">
@@ -158,9 +152,7 @@ export function OverviewPanel() {
       ) : null}
 
       {stats?.updatedAt ? (
-        <p className="ta-seo-hint">
-          Laatste update: {new Date(stats.updatedAt).toLocaleTimeString("nl-NL")} · live counter elke 2 sec
-        </p>
+        <p className="ta-seo-hint">Laatste update: {new Date(stats.updatedAt).toLocaleTimeString("nl-NL")}</p>
       ) : null}
     </div>
   );

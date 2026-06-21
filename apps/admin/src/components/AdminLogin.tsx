@@ -5,15 +5,16 @@ import { AdminButton } from "./AdminButton";
 interface Props {
   loading: boolean;
   message: string;
-  onSubmit: (password: string) => Promise<void>;
+  onSubmit: (email: string, password: string) => Promise<void>;
 }
 
 export function AdminLogin({ loading, message, onSubmit }: Props) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    await onSubmit(password);
+    await onSubmit(email, password);
   }
 
   return (
@@ -31,7 +32,18 @@ export function AdminLogin({ loading, message, onSubmit }: Props) {
         <form className="ta-login-card" onSubmit={handleSubmit}>
           <AdminBadge compact />
           <h2>Welkom terug</h2>
-          <p>Log in om content, bestelknoppen en aanvragen te beheren.</p>
+          <p>Log in met je e-mail en wachtwoord. Beheerder: <strong>admin@tresamigos.nl</strong></p>
+
+          <label className="ta-field">
+            <span>E-mail (medewerkers)</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              autoComplete="username"
+              placeholder="optioneel voor beheerder"
+            />
+          </label>
 
           <label className="ta-field">
             <span>Wachtwoord</span>

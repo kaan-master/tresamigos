@@ -71,7 +71,6 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
                 <img src={avatar} alt="" />
               </span>
               <div>
-                <span className="mini-label">{settings.eyebrow}</span>
                 <h2 className="section-title">@{handle}</h2>
                 {bio ? <p className="instagram-bio">{bio}</p> : null}
               </div>

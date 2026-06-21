@@ -24,7 +24,6 @@ export function VacancyPage({ content }: { content: SiteContent }) {
       <header className="page-head vacancy-hero">
         <div className="shell vacancy-hero-grid">
           <div>
-            <div className="eyebrow">{t("vacancy.eyebrow")}</div>
             <h1>{vacancy.heroTitle}</h1>
             <p>{vacancy.heroIntro}</p>
           </div>

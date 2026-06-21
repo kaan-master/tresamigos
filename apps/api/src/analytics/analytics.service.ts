@@ -2,9 +2,11 @@ import { Injectable } from "@nestjs/common";
 import type { AnalyticsDailyEntry, AnalyticsPingInput, AnalyticsSnapshot, PublicAnalyticsStats } from "@tresamigos/types";
 import { RedisService } from "../redis/redis.module";
 
-const LIVE_WINDOW_MS = 60_000;
-const KEY_TTL_SECONDS = 60 * 60 * 24 * 14;
-const DAILY_LOG_DAYS = 14;
+/** Geen ping meer binnen dit venster → niet meer "live". (site pingt elke 3s) */
+const LIVE_WINDOW_MS = 12_000;
+const KEY_TTL_SECONDS = 60 * 60 * 24 * 90;
+const DAILY_LOG_DAYS = 90;
+const TIMEZONE = "Europe/Amsterdam";
 
 @Injectable()
 export class AnalyticsService {
@@ -16,30 +18,28 @@ export class AnalyticsService {
 
   constructor(private readonly redis: RedisService) {}
 
+  private dateKey(date = new Date()) {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE }).format(date);
+  }
+
   private todayKey() {
-    return new Date().toISOString().slice(0, 10);
+    return this.dateKey();
+  }
+
+  private shiftDateKey(base: string, offsetDays: number) {
+    const [year, month, day] = base.split("-").map(Number);
+    const shifted = new Date(Date.UTC(year, month - 1, day + offsetDays, 12));
+    return this.dateKey(shifted);
   }
 
   private weekKeys() {
-    const keys: string[] = [];
-    const now = new Date();
-    for (let index = 0; index < 7; index += 1) {
-      const day = new Date(now);
-      day.setDate(now.getDate() - index);
-      keys.push(day.toISOString().slice(0, 10));
-    }
-    return keys;
+    const today = this.todayKey();
+    return Array.from({ length: 7 }, (_, index) => this.shiftDateKey(today, -index));
   }
 
   private dayKeys(days = DAILY_LOG_DAYS) {
-    const keys: string[] = [];
-    const now = new Date();
-    for (let index = days - 1; index >= 0; index -= 1) {
-      const day = new Date(now);
-      day.setDate(now.getDate() - index);
-      keys.push(day.toISOString().slice(0, 10));
-    }
-    return keys;
+    const today = this.todayKey();
+    return Array.from({ length: days }, (_, index) => this.shiftDateKey(today, -(days - 1 - index)));
   }
 
   private normalizePath(path: string) {
@@ -53,6 +53,33 @@ export class AnalyticsService {
     if (cleaned === "::1") return "127.0.0.1";
     if (cleaned.startsWith("::ffff:")) return cleaned.slice(7);
     return cleaned;
+  }
+
+  private pruneMemoryLive(now: number) {
+    for (const [id, seenAt] of this.memoryLive) {
+      if (seenAt < now - LIVE_WINDOW_MS) this.memoryLive.delete(id);
+    }
+  }
+
+  private async cleanupLiveSessions(now: number) {
+    if (this.redis.isAvailable()) {
+      try {
+        await this.redis.client.zremrangebyscore("analytics:live", 0, now - LIVE_WINDOW_MS);
+      } catch {
+        // ignore
+      }
+      return;
+    }
+    this.pruneMemoryLive(now);
+  }
+
+  private async countLiveSessions(now: number) {
+    await this.cleanupLiveSessions(now);
+    if (this.redis.isAvailable()) {
+      return Number(await this.redis.client.zcount("analytics:live", now - LIVE_WINDOW_MS, "+inf")) || 0;
+    }
+    this.pruneMemoryLive(now);
+    return this.memoryLive.size;
   }
 
   async ping(input: AnalyticsPingInput, ip: string) {
@@ -78,7 +105,7 @@ export class AnalyticsService {
         await client.expire(uniquePageKey, KEY_TTL_SECONDS);
         return { ok: true };
       } catch {
-        // Redis hiccup — val terug op geheugen voor deze ping
+        // Redis hiccup — val terug op geheugen
       }
     }
 
@@ -89,10 +116,7 @@ export class AnalyticsService {
     }
 
     this.memoryLive.set(sessionId, now);
-    for (const [id, seenAt] of this.memoryLive) {
-      if (seenAt < now - LIVE_WINDOW_MS) this.memoryLive.delete(id);
-    }
-
+    this.pruneMemoryLive(now);
     this.memoryUniqueToday.add(visitorId);
 
     if (!this.memoryUniqueWeek.has(today)) {
@@ -116,9 +140,7 @@ export class AnalyticsService {
 
     await client.del(tempKey);
     const existingKeys = (
-      await Promise.all(
-        sourceKeys.map(async (key) => ((await client.exists(key)) ? key : null))
-      )
+      await Promise.all(sourceKeys.map(async (key) => ((await client.exists(key)) ? key : null)))
     ).filter((key): key is string => Boolean(key));
 
     if (!existingKeys.length) return 0;
@@ -147,16 +169,19 @@ export class AnalyticsService {
         visitors: Number(await client.scard(`analytics:unique:${date}`)) || 0
       }))
     );
-    return counts;
+    return counts.filter((entry) => entry.visitors > 0);
   }
 
   private dailyLogMemory(days = DAILY_LOG_DAYS): AnalyticsDailyEntry[] {
-    return this.dayKeys(days).map((date) => ({
-      date,
-      visitors: date === this.todayKey()
-        ? this.memoryUniqueToday.size
-        : this.memoryUniqueWeek.get(date)?.size || 0
-    }));
+    return this.dayKeys(days)
+      .map((date) => ({
+        date,
+        visitors:
+          date === this.todayKey()
+            ? this.memoryUniqueToday.size
+            : this.memoryUniqueWeek.get(date)?.size || 0
+      }))
+      .filter((entry) => entry.visitors > 0);
   }
 
   async getPublicStats(): Promise<PublicAnalyticsStats> {
@@ -166,25 +191,21 @@ export class AnalyticsService {
     if (this.redis.isAvailable()) {
       const client = this.redis.client;
       const [liveNow, viewsToday, dailyLog] = await Promise.all([
-        client.zcount("analytics:live", now - LIVE_WINDOW_MS, "+inf"),
+        this.countLiveSessions(now),
         client.scard(`analytics:unique:${today}`),
         this.dailyLogRedis()
       ]);
 
       return {
-        liveNow: Number(liveNow) || 0,
+        liveNow,
         viewsToday: Number(viewsToday) || 0,
         dailyLog,
         updatedAt: new Date().toISOString()
       };
     }
 
-    for (const [id, seenAt] of this.memoryLive) {
-      if (seenAt < now - LIVE_WINDOW_MS) this.memoryLive.delete(id);
-    }
-
     return {
-      liveNow: this.memoryLive.size,
+      liveNow: await this.countLiveSessions(now),
       viewsToday: this.memoryUniqueToday.size,
       dailyLog: this.dailyLogMemory(),
       updatedAt: new Date().toISOString()
@@ -198,7 +219,7 @@ export class AnalyticsService {
     if (this.redis.isAvailable()) {
       const client = this.redis.client;
       const [liveNow, viewsToday, viewsWeek, pageKeys, dailyLog] = await Promise.all([
-        client.zcount("analytics:live", now - LIVE_WINDOW_MS, "+inf"),
+        this.countLiveSessions(now),
         client.scard(`analytics:unique:${today}`),
         this.uniqueWeekCountRedis(),
         client.keys(`analytics:unique:page:${today}:*`),
@@ -214,21 +235,17 @@ export class AnalyticsService {
       );
 
       return {
-        liveNow: Number(liveNow) || 0,
+        liveNow,
         viewsToday: Number(viewsToday) || 0,
-        viewsWeek: viewsWeek,
+        viewsWeek,
         topPages: pageCounts.sort((left, right) => right.views - left.views).slice(0, 8),
         dailyLog,
         updatedAt: new Date().toISOString()
       };
     }
 
-    for (const [id, seenAt] of this.memoryLive) {
-      if (seenAt < now - LIVE_WINDOW_MS) this.memoryLive.delete(id);
-    }
-
     return {
-      liveNow: this.memoryLive.size,
+      liveNow: await this.countLiveSessions(now),
       viewsToday: this.memoryUniqueToday.size,
       viewsWeek: this.uniqueWeekCountMemory(),
       topPages: [...this.memoryUniquePages.entries()]

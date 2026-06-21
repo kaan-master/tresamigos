@@ -58,6 +58,7 @@ export const SEO_PAGE_KEYS = [
   "order",
   "contact",
   "ourStory",
+  "ourValue",
   "vacancy"
 ] as const;
 
@@ -66,6 +67,7 @@ export type SeoPageKey = (typeof SEO_PAGE_KEYS)[number];
 export interface PageSeo {
   title: string;
   description: string;
+  noindex?: boolean;
 }
 
 export const SEO_PAGE_LABELS: Record<SeoPageKey, string> = {
@@ -75,8 +77,74 @@ export const SEO_PAGE_LABELS: Record<SeoPageKey, string> = {
   order: "Bestellen",
   contact: "Contact",
   ourStory: "Our Story",
+  ourValue: "Our Value",
   vacancy: "Vacatures"
 };
+
+export const ADMIN_TAB_IDS = [
+  "overview",
+  "home",
+  "locations",
+  "products",
+  "media",
+  "applications",
+  "reviews",
+  "seo",
+  "footer",
+  "users"
+] as const;
+
+export type AdminTabId = (typeof ADMIN_TAB_IDS)[number];
+
+export const ADMIN_TAB_LABELS: Record<AdminTabId, string> = {
+  overview: "Overzicht",
+  home: "Home",
+  locations: "Vestigingen",
+  products: "Producten",
+  media: "Media",
+  applications: "Sollicitaties",
+  reviews: "Reviews",
+  seo: "SEO",
+  footer: "Footer",
+  users: "Gebruikers"
+};
+
+export interface AdminUserRecord {
+  id: string;
+  email: string;
+  name: string;
+  permissions: AdminTabId[];
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminSessionUser {
+  id: string;
+  name: string;
+  email: string;
+  role: "master" | "employee";
+  permissions: AdminTabId[];
+}
+
+export interface AdminLoginResponse {
+  token: string;
+  user: AdminSessionUser;
+}
+
+export interface CreateAdminUserInput {
+  email: string;
+  name: string;
+  password: string;
+  permissions: AdminTabId[];
+}
+
+export interface UpdateAdminUserInput {
+  name?: string;
+  password?: string;
+  permissions?: AdminTabId[];
+  active?: boolean;
+}
 
 export interface VacancyJob {
   id: string;
@@ -129,6 +197,8 @@ export interface OurStorySettings {
   heroImage: string;
   sideImage: string;
 }
+
+export type OurValueSettings = OurStorySettings;
 
 export interface GoogleReview {
   id: string;
@@ -290,6 +360,9 @@ export interface AnalyticsPingInput {
 export interface SiteSettings {
   seo: {
     image: string;
+    siteUrl: string;
+    googleSiteVerification: string;
+    bingSiteVerification: string;
     pages: Record<SeoPageKey, PageSeo>;
     /** @deprecated gebruik seo.pages.home */
     title?: string;
@@ -329,6 +402,7 @@ export interface SiteSettings {
   };
   openingHours: OpeningHoursSettings;
   ourStory: OurStorySettings;
+  ourValue: OurValueSettings;
   reviews: ReviewsSettings;
   instagram: InstagramSettings;
   promoPopup: PromoPopupSettings;

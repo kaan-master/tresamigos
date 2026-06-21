@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import type { Application, SiteContent, VacancyJob } from "@tresamigos/types";
 import { AdminFilterChips, AdminListRow, AdminSearchBar } from "./AdminListUi";
+import { FormSaveBar, type PanelSaveProps } from "./FormSaveBar";
 import { MediaField } from "./MediaPickerModal";
 import { createSlugId } from "../lib/id";
 import { mediaAssetUrl } from "../lib/media";
 
-interface Props {
+interface Props extends PanelSaveProps {
   content: SiteContent;
   applications: Application[];
   onChange: (content: SiteContent) => void;
@@ -185,7 +186,15 @@ function IncomingView({
   );
 }
 
-function JobsView({ content, onChange }: { content: SiteContent; onChange: (content: SiteContent) => void }) {
+function JobsView({
+  content,
+  onChange,
+  onSave,
+  saving
+}: {
+  content: SiteContent;
+  onChange: (content: SiteContent) => void;
+} & PanelSaveProps) {
   const vacancy = content.site.vacancy;
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(vacancy.jobs[0]?.id || null);
@@ -305,6 +314,7 @@ function JobsView({ content, onChange }: { content: SiteContent; onChange: (cont
               <textarea value={job.fullDescription} rows={6} onChange={(event) => updateJob({ ...job, fullDescription: event.target.value })} />
             </label>
           </div>
+          <FormSaveBar onSave={onSave} saving={saving} />
         </div>
       ) : (
         <div className="ta-detail-pane ta-empty">Selecteer een functie of voeg een nieuwe toe.</div>
@@ -313,7 +323,15 @@ function JobsView({ content, onChange }: { content: SiteContent; onChange: (cont
   );
 }
 
-function PageView({ content, onChange }: { content: SiteContent; onChange: (content: SiteContent) => void }) {
+function PageView({
+  content,
+  onChange,
+  onSave,
+  saving
+}: {
+  content: SiteContent;
+  onChange: (content: SiteContent) => void;
+} & PanelSaveProps) {
   const vacancy = content.site.vacancy;
 
   return (
@@ -340,11 +358,12 @@ function PageView({ content, onChange }: { content: SiteContent; onChange: (cont
           onChange={(value) => onChange(updateVacancy(content, { formImage: value }))}
         />
       </div>
+      <FormSaveBar onSave={onSave} saving={saving} />
     </div>
   );
 }
 
-export function ApplicationsPanel({ content, applications, onChange }: Props) {
+export function ApplicationsPanel({ content, applications, onChange, onSave, saving }: Props) {
   const [view, setView] = useState<PanelView>("incoming");
 
   const viewOptions = useMemo(
@@ -361,8 +380,8 @@ export function ApplicationsPanel({ content, applications, onChange }: Props) {
       <AdminFilterChips value={view} onChange={(value) => setView(value as PanelView)} options={viewOptions} />
 
       {view === "incoming" ? <IncomingView content={content} applications={applications} /> : null}
-      {view === "jobs" ? <JobsView content={content} onChange={onChange} /> : null}
-      {view === "page" ? <PageView content={content} onChange={onChange} /> : null}
+      {view === "jobs" ? <JobsView content={content} onChange={onChange} onSave={onSave} saving={saving} /> : null}
+      {view === "page" ? <PageView content={content} onChange={onChange} onSave={onSave} saving={saving} /> : null}
     </div>
   );
 }

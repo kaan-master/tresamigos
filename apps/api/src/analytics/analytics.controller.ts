@@ -2,6 +2,8 @@ import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/comm
 import type { Request } from "express";
 import type { AnalyticsPingInput, AnalyticsSnapshot, PublicAnalyticsStats } from "@tresamigos/types";
 import { AdminGuard } from "../auth/admin.guard";
+import { PermissionsGuard } from "../auth/permissions.guard";
+import { RequirePermissions } from "../auth/permissions.decorator";
 import { AnalyticsService } from "./analytics.service";
 
 function clientIp(req: Request) {
@@ -36,7 +38,8 @@ export class PublicAnalyticsController {
 }
 
 @Controller("api/admin/analytics")
-@UseGuards(AdminGuard)
+@UseGuards(AdminGuard, PermissionsGuard)
+@RequirePermissions("overview")
 export class AdminAnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 

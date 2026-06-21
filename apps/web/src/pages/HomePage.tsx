@@ -26,7 +26,6 @@ export function HomePage({ content }: { content: SiteContent }) {
         <header className="hero hero-clean">
           <div className="shell hero-grid">
             <div className="hero-copy">
-              <div className="eyebrow">{site.hero.eyebrow}</div>
               <h1>{site.hero.title}</h1>
               <p>{site.hero.intro}</p>
               <div className="actions">
@@ -78,7 +77,6 @@ export function HomePage({ content }: { content: SiteContent }) {
           ) : null}
           <div className="shell video-showcase">
             <div className="video-copy">
-              <span className="mini-label">{site.videosSection.eyebrow}</span>
               <h2 className="section-title">{site.videosSection.title}</h2>
               <p className="lead">{site.videosSection.intro}</p>
             </div>
@@ -96,7 +94,6 @@ export function HomePage({ content }: { content: SiteContent }) {
                 <img src={assetUrl("/assets/site/quesadilla-drinks.webp")} alt="Tres Amigos quesadillas and drinks" />
               </div>
               <div className="showcase-panel">
-                <span className="mini-label">Popular choices</span>
                 <h2>Menu that stays easy to scan.</h2>
                 <div className="compact-menu-list">
                   {showcaseItems.map((item) => (
@@ -128,7 +125,6 @@ export function HomePage({ content }: { content: SiteContent }) {
           <div className="shell">
             <div className="section-heading">
               <div>
-                <span className="mini-label">Order flow</span>
                 <h2 className="section-title">Choose your spot.</h2>
               </div>
               <p className="lead">
@@ -157,7 +153,6 @@ export function HomePage({ content }: { content: SiteContent }) {
         <section className="section">
           <div className="shell feature-grid">
             <article className="feature-card">
-              <span className="mini-label">Our story</span>
               <h2>{site.ourStory.title}</h2>
               <p>{site.ourStory.intro}</p>
               <a className="text-link" href="/our-story">

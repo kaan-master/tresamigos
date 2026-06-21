@@ -7,6 +7,7 @@ const SEO_PAGE_PATHS: Record<SeoPageKey, string> = {
   order: "/order",
   contact: "/contact",
   ourStory: "/our-story",
+  ourValue: "/our-value",
   vacancy: "/vacancy"
 };
 

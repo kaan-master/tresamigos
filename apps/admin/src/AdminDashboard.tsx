@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Application, SiteContent } from "@tresamigos/types";
 import { api } from "./lib/api";
 import { randomSaveError, randomSaveLoading, randomSaveSuccess } from "./lib/saveMessages";
@@ -11,66 +11,34 @@ import { LocationsPanel } from "./components/LocationsPanel";
 import { MediaLibraryPanel } from "./components/MediaLibraryPanel";
 import { ProductsPanel } from "./components/ProductsPanel";
 import { ApplicationsPanel } from "./components/ApplicationsPanel";
+import { FooterPanel } from "./components/FooterPanel";
 import { HomePanel } from "./components/HomePanel";
-import { MediaField } from "./components/MediaPickerModal";
 import { SeoPanel } from "./components/SeoPanel";
-import { VideosPanel } from "./components/VideosPanel";
-import { PromoMailEditor, ContactFormEditor } from "./components/SiteExtrasPanel";
 import { ReviewsPanel } from "./components/ReviewsPanel";
+import { UsersPanel } from "./components/UsersPanel";
+import type { AdminSessionUser, AdminTabId } from "@tresamigos/types";
 
 const tabs = [
   ["overview", "Overzicht"],
   ["home", "Home"],
   ["locations", "Vestigingen"],
   ["products", "Producten"],
-  ["videos", "Video's"],
   ["media", "Media"],
   ["applications", "Sollicitaties"],
   ["reviews", "Reviews"],
   ["seo", "SEO"],
-  ["footer", "Footer"]
+  ["footer", "Footer"],
+  ["users", "Gebruikers"]
 ] as const;
 
 type TabId = (typeof tabs)[number][0];
 
 interface Props {
+  user: AdminSessionUser | null;
   onLogout: () => void;
 }
 
-function FieldGrid({
-  children,
-  className = "",
-  style
-}: {
-  children: ReactNode;
-  className?: string;
-  style?: CSSProperties;
-}) {
-  return (
-    <div className={`ta-grid ${className}`.trim()} style={style}>
-      {children}
-    </div>
-  );
-}
-
-function Field({
-  label,
-  wide,
-  children
-}: {
-  label: string;
-  wide?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <label className={`ta-field${wide ? " ta-grid-wide" : ""}`}>
-      <span>{label}</span>
-      {children}
-    </label>
-  );
-}
-
-export function AdminDashboard({ onLogout }: Props) {
+export function AdminDashboard({ user, onLogout }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [content, setContent] = useState<SiteContent | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -86,7 +54,7 @@ export function AdminDashboard({ onLogout }: Props) {
     try {
       const [contentData, applicationsData] = await Promise.all([
         api<SiteContent>("/api/admin/content"),
-        api<{ applications: Application[] }>("/api/admin/applications")
+        api<{ applications: Application[] }>("/api/admin/applications").catch(() => ({ applications: [] }))
       ]);
       setContent(contentData);
       setApplications(applicationsData.applications);
@@ -105,6 +73,24 @@ export function AdminDashboard({ onLogout }: Props) {
   useEffect(() => {
     void loadAll();
   }, []);
+
+  const visibleTabs = useMemo(() => {
+    if (!user || user.role === "master") return tabs;
+    return tabs.filter(([id]) => user.permissions.includes(id as AdminTabId));
+  }, [user]);
+
+  useEffect(() => {
+    if (!visibleTabs.some(([id]) => id === activeTab)) {
+      setActiveTab(visibleTabs[0]?.[0] || "overview");
+    }
+  }, [visibleTabs, activeTab]);
+
+  const canSaveContent = useMemo(() => {
+    if (!user || user.role === "master") return true;
+    return ["home", "locations", "products", "media", "seo", "footer"].some((tab) =>
+      user.permissions.includes(tab as AdminTabId)
+    );
+  }, [user]);
 
   const kpis = useMemo(() => {
     if (!content) return [];
@@ -165,7 +151,7 @@ export function AdminDashboard({ onLogout }: Props) {
           </div>
 
           <nav className="ta-nav">
-            {tabs.map(([id, label]) => {
+            {visibleTabs.map(([id, label]) => {
               const Icon = tabIcons[id];
               return (
                 <button
@@ -180,6 +166,12 @@ export function AdminDashboard({ onLogout }: Props) {
               );
             })}
           </nav>
+          {user ? (
+            <div className="ta-sidebar-user">
+              <strong>{user.name}</strong>
+              <span>{user.role === "master" ? "Beheerder" : user.email}</span>
+            </div>
+          ) : null}
         </aside>
 
         <main className="ta-main">
@@ -210,7 +202,7 @@ export function AdminDashboard({ onLogout }: Props) {
                 <h2>Home</h2>
                 <p>Hero, openingstijden en Our Story — per onderdeel bewerken met live preview waar het kan.</p>
               </header>
-              <HomePanel content={content} onChange={setContent} />
+              <HomePanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
             </section>
           ) : null}
 
@@ -220,28 +212,7 @@ export function AdminDashboard({ onLogout }: Props) {
                 <h2>Vestigingen</h2>
                 <p>Kies links een locatie. Rechts pas je gegevens en bestelknoppen aan — zonder geneste lijsten.</p>
               </header>
-              <LocationsPanel content={content} onChange={setContent} />
-            </section>
-          ) : null}
-
-          {activeTab === "videos" ? (
-            <section className="ta-panel ta-fade-in">
-              <header className="ta-panel-head">
-                <h2>Video&apos;s</h2>
-                <p>Beheer sfeervideo&apos;s voor home en video-sectie.</p>
-              </header>
-              <FieldGrid style={{ marginBottom: 18 }}>
-                <Field label="Videos eyebrow">
-                  <input value={content.site.videosSection.eyebrow} onChange={(event) => setContent({ ...content, site: { ...content.site, videosSection: { ...content.site.videosSection, eyebrow: event.target.value } } })} />
-                </Field>
-                <Field label="Videos title">
-                  <input value={content.site.videosSection.title} onChange={(event) => setContent({ ...content, site: { ...content.site, videosSection: { ...content.site.videosSection, title: event.target.value } } })} />
-                </Field>
-                <Field label="Videos intro" wide>
-                  <input value={content.site.videosSection.intro} onChange={(event) => setContent({ ...content, site: { ...content.site, videosSection: { ...content.site.videosSection, intro: event.target.value } } })} />
-                </Field>
-              </FieldGrid>
-              <VideosPanel content={content} onChange={setContent} />
+              <LocationsPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
             </section>
           ) : null}
 
@@ -249,9 +220,9 @@ export function AdminDashboard({ onLogout }: Props) {
             <section className="ta-panel ta-fade-in">
               <header className="ta-panel-head">
                 <h2>Producten</h2>
-                <p>Categorieën links, producten rechts. Voeg categorieën en producten toe of verwijder ze.</p>
+                <p>Kies een categorie, bewerk producten en afbeeldingen.</p>
               </header>
-              <ProductsPanel content={content} onChange={setContent} />
+              <ProductsPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
             </section>
           ) : null}
 
@@ -259,9 +230,9 @@ export function AdminDashboard({ onLogout }: Props) {
             <section className="ta-panel ta-fade-in">
               <header className="ta-panel-head">
                 <h2>Media plaza</h2>
-                <p>Upload afbeeldingen en video&apos;s. Gebruik &quot;Kies media&quot; bij producten en vacatures.</p>
+                <p>Upload afbeeldingen en video&apos;s, beheer homepage-video&apos;s en sectieteksten.</p>
               </header>
-              <MediaLibraryPanel content={content} />
+              <MediaLibraryPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
             </section>
           ) : null}
 
@@ -271,7 +242,7 @@ export function AdminDashboard({ onLogout }: Props) {
                 <h2>Sollicitaties</h2>
                 <p>Inkomende sollicitaties bekijken, functies beheren en vacaturepagina instellen.</p>
               </header>
-              <ApplicationsPanel content={content} applications={applications} onChange={setContent} />
+              <ApplicationsPanel content={content} applications={applications} onChange={setContent} onSave={saveContent} saving={saving} />
             </section>
           ) : null}
 
@@ -281,59 +252,54 @@ export function AdminDashboard({ onLogout }: Props) {
                 <h2>Reviews & Instagram</h2>
                 <p>Modereer ingezonden reviews, beheer vaste reviews en stel de Instagram-slider in.</p>
               </header>
-              <ReviewsPanel content={content} onChange={setContent} />
+              <ReviewsPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
             </section>
           ) : null}
 
           {activeTab === "seo" ? (
             <section className="ta-panel ta-fade-in">
               <header className="ta-panel-head">
-                <h2>SEO per pagina</h2>
-                <p>Kies links een pagina en stel titel en meta description in voor Google en social previews.</p>
+                <h2>SEO & Search Console</h2>
+                <p>Site-brede instellingen, verificatiecodes en SEO per pagina.</p>
               </header>
-              <FieldGrid style={{ marginBottom: 18 }}>
-                <MediaField
-                  label="Standaard SEO-afbeelding (Open Graph)"
-                  value={content.site.seo.image}
-                  onChange={(value) =>
-                    setContent({
-                      ...content,
-                      site: { ...content.site, seo: { ...content.site.seo, image: value } }
-                    })
-                  }
-                />
-              </FieldGrid>
-              <SeoPanel content={content} onChange={setContent} />
+              <SeoPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+            </section>
+          ) : null}
+
+          {activeTab === "users" ? (
+            <section className="ta-panel ta-fade-in">
+              <header className="ta-panel-head">
+                <h2>Medewerkers</h2>
+                <p>Subaccounts voor medewerkers met rechten per onderdeel.</p>
+              </header>
+              <UsersPanel />
             </section>
           ) : null}
 
           {activeTab === "footer" ? (
             <section className="ta-panel ta-fade-in">
-              <FieldGrid>
-                <Field label="Footer title"><input value={content.site.footer.title} onChange={(event) => setContent({ ...content, site: { ...content.site, footer: { ...content.site.footer, title: event.target.value } } })} /></Field>
-                <Field label="E-mail"><input value={content.site.footer.email} onChange={(event) => setContent({ ...content, site: { ...content.site, footer: { ...content.site.footer, email: event.target.value } } })} /></Field>
-                <Field label="Footer intro" wide><input value={content.site.footer.intro} onChange={(event) => setContent({ ...content, site: { ...content.site, footer: { ...content.site.footer, intro: event.target.value } } })} /></Field>
-                <Field label="Instagram URL"><input value={content.site.footer.instagramUrl} onChange={(event) => setContent({ ...content, site: { ...content.site, footer: { ...content.site.footer, instagramUrl: event.target.value } } })} /></Field>
-                <Field label="TikTok URL"><input value={content.site.footer.tiktokUrl} onChange={(event) => setContent({ ...content, site: { ...content.site, footer: { ...content.site.footer, tiktokUrl: event.target.value } } })} /></Field>
-                <Field label="Copyright"><input value={content.site.footer.copyright} onChange={(event) => setContent({ ...content, site: { ...content.site, footer: { ...content.site.footer, copyright: event.target.value } } })} /></Field>
-              </FieldGrid>
-              <PromoMailEditor content={content} onChange={setContent} />
-              <ContactFormEditor content={content} onChange={setContent} />
+              <header className="ta-panel-head">
+                <h2>Footer & extras</h2>
+                <p>Footer, promo-mail en contactformulier — per onderdeel bewerken.</p>
+              </header>
+              <FooterPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
             </section>
           ) : null}
         </main>
       </div>
 
       <div className="ta-action-dock">
-        <AdminButton
-          variant="primary"
-          icon={<IconSave width={16} height={16} />}
-          loading={saving}
-          loadingText="Opslaan..."
-          onClick={() => void saveContent()}
-        >
-          Opslaan
-        </AdminButton>
+        {canSaveContent ? (
+          <AdminButton
+            variant="primary"
+            icon={<IconSave width={16} height={16} />}
+            loading={saving}
+            loadingText="Opslaan..."
+            onClick={() => void saveContent()}
+          >
+            Opslaan
+          </AdminButton>
+        ) : null}
         <AdminButton variant="ghost" icon={<IconLogout width={16} height={16} />} onClick={onLogout}>
           Uitloggen
         </AdminButton>

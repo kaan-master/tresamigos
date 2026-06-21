@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MediaAsset } from "@tresamigos/types";
-import { listMedia } from "../lib/api";
+import { listMedia, uploadMedia } from "../lib/api";
 import { mediaAssetUrl } from "../lib/media";
+import { AdminButton } from "./AdminButton";
+import { IconUpload } from "./AdminIcons";
 import { AdminSearchBar } from "./AdminListUi";
 
 interface Props {
@@ -16,32 +18,31 @@ function normalizePick(url: string) {
 }
 
 export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: Props) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
+
+  async function loadAssets() {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await listMedia();
+      setAssets(data.assets);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Media laden mislukt.");
+      setAssets([]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
-    let active = true;
-    setLoading(true);
-    setError("");
-    void listMedia()
-      .then((data) => {
-        if (active) setAssets(data.assets);
-      })
-      .catch((loadError) => {
-        if (active) {
-          setError(loadError instanceof Error ? loadError.message : "Media laden mislukt.");
-          setAssets([]);
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+    void loadAssets();
   }, [open]);
 
   const filtered = useMemo(() => {
@@ -54,6 +55,27 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
     });
   }, [assets, query, filter]);
 
+  async function handleUpload(files: FileList | null) {
+    if (!files?.length) return;
+    setUploading(true);
+    setError("");
+    try {
+      let lastUrl = "";
+      for (const file of Array.from(files)) {
+        const result = await uploadMedia(file);
+        lastUrl = result.asset.url;
+      }
+      await loadAssets();
+      if (lastUrl) onSelect(normalizePick(lastUrl));
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "Upload mislukt.");
+    } finally {
+      setUploading(false);
+      setDragOver(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
   if (!open) return null;
 
   return (
@@ -63,12 +85,45 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
         <header className="ta-media-modal-head">
           <div>
             <h3>Media plaza</h3>
-            <p>Kies een afbeelding of video uit uploads, site of brand assets.</p>
+            <p>Kies uit de bibliotheek of upload direct een nieuw bestand.</p>
           </div>
           <button className="ta-btn ta-btn-ghost" type="button" onClick={onClose}>
             Sluiten
           </button>
         </header>
+
+        <div
+          className={`ta-media-dropzone ta-media-dropzone-compact${dragOver ? " is-dragover" : ""}${uploading ? " is-uploading" : ""}`}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            void handleUpload(event.dataTransfer.files);
+          }}
+        >
+          <IconUpload width={22} height={22} />
+          <span>Sleep hierheen of upload — daarna direct geselecteerd</span>
+          <AdminButton
+            variant="primary"
+            loading={uploading}
+            loadingText="Uploaden..."
+            icon={<IconUpload width={16} height={16} />}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Upload
+          </AdminButton>
+          <input
+            ref={fileInputRef}
+            type="file"
+            hidden
+            multiple
+            accept={filter === "video" ? "video/*" : filter === "image" ? "image/*" : "image/*,video/*"}
+            onChange={(event) => void handleUpload(event.target.files)}
+          />
+        </div>
 
         <AdminSearchBar value={query} onChange={setQuery} placeholder="Zoek bestandsnaam..." />
 
@@ -97,7 +152,7 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
             ))}
           </div>
         ) : (
-          <div className="ta-empty">Geen media gevonden.</div>
+          <div className="ta-empty">Geen media gevonden. Upload een bestand hierboven.</div>
         )}
       </div>
     </div>

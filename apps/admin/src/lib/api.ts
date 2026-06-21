@@ -1,4 +1,11 @@
 import { buildApiUrl, resolveApiBase } from "@tresamigos/utils/api-url";
+import type {
+  AdminLoginResponse,
+  AdminSessionUser,
+  AdminUserRecord,
+  CreateAdminUserInput,
+  UpdateAdminUserInput
+} from "@tresamigos/types";
 
 const base = import.meta.env.DEV ? "" : resolveApiBase(import.meta.env.VITE_API_URL);
 const tokenKey = "tres_amigos_admin_token";
@@ -31,11 +38,41 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   return data as T;
 }
 
-export async function login(password: string) {
-  return api<{ token: string }>("/api/admin/login", {
+export async function login(email: string, password: string) {
+  return api<AdminLoginResponse>("/api/admin/login", {
     method: "POST",
-    body: JSON.stringify({ password })
+    body: JSON.stringify({ email: email.trim() || undefined, password })
   });
+}
+
+export async function fetchMe() {
+  return api<{ user: AdminSessionUser }>("/api/admin/me");
+}
+
+export async function logoutApi() {
+  return api<{ message: string }>("/api/admin/logout", { method: "POST" });
+}
+
+export async function listAdminUsers() {
+  return api<{ users: AdminUserRecord[] }>("/api/admin/users");
+}
+
+export async function createAdminUser(input: CreateAdminUserInput) {
+  return api<{ user: AdminUserRecord; message: string }>("/api/admin/users", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export async function updateAdminUser(id: string, input: UpdateAdminUserInput) {
+  return api<{ user: AdminUserRecord; message: string }>(`/api/admin/users/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input)
+  });
+}
+
+export async function deleteAdminUser(id: string) {
+  return api<{ message: string }>(`/api/admin/users/${id}`, { method: "DELETE" });
 }
 
 export async function uploadMedia(file: File) {

@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { clearToken, login, setToken } from "./lib/api";
+import { useEffect, useState } from "react";
+import type { AdminSessionUser } from "@tresamigos/types";
+import { clearToken, fetchMe, login, logoutApi, setToken } from "./lib/api";
 import { AdminLogin } from "./components/AdminLogin";
 import { AdminDashboard } from "./AdminDashboard";
 
@@ -10,13 +11,26 @@ export default function App() {
   const [phase, setPhase] = useState<AuthPhase>(authed ? "dashboard" : "login");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<AdminSessionUser | null>(null);
 
-  async function handleLogin(password: string) {
+  useEffect(() => {
+    if (!authed) return;
+    void fetchMe()
+      .then((data) => setUser(data.user))
+      .catch(() => {
+        clearToken();
+        setAuthed(false);
+        setPhase("login");
+      });
+  }, [authed]);
+
+  async function handleLogin(email: string, password: string) {
     setLoading(true);
     setMessage("");
     try {
-      const data = await login(password);
+      const data = await login(email, password);
       setToken(data.token);
+      setUser(data.user);
       setPhase("leaving");
       window.setTimeout(() => {
         setAuthed(true);
@@ -29,8 +43,14 @@ export default function App() {
     }
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await logoutApi();
+    } catch {
+      // best-effort
+    }
     clearToken();
+    setUser(null);
     setAuthed(false);
     setPhase("login");
     setLoading(false);
@@ -46,7 +66,7 @@ export default function App() {
 
   return (
     <div className={`ta-auth-stage${phase === "entering" ? " is-entering" : ""}`}>
-      <AdminDashboard onLogout={handleLogout} />
+      <AdminDashboard user={user} onLogout={() => void handleLogout()} />
     </div>
   );
 }

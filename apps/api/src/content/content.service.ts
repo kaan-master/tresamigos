@@ -30,6 +30,9 @@ export class ContentService {
           menuTitle: site.seoMenuTitle,
           menuDescription: site.seoMenuDescription,
           image: site.seoImage,
+          siteUrl: site.seoSiteUrl,
+          googleSiteVerification: site.seoGoogleVerification,
+          bingSiteVerification: site.seoBingVerification,
           pages:
             site.seoPages && typeof site.seoPages === "object" && !Array.isArray(site.seoPages)
               ? (site.seoPages as unknown as Partial<Record<SeoPageKey, PageSeo>>)
@@ -73,6 +76,10 @@ export class ContentService {
         ourStory:
           site.ourStory && typeof site.ourStory === "object" && !Array.isArray(site.ourStory)
             ? (site.ourStory as unknown as SiteContent["site"]["ourStory"])
+            : undefined,
+        ourValue:
+          site.ourValue && typeof site.ourValue === "object" && !Array.isArray(site.ourValue)
+            ? (site.ourValue as unknown as SiteContent["site"]["ourValue"])
             : undefined,
         reviews:
           site.reviews && typeof site.reviews === "object" && !Array.isArray(site.reviews)
@@ -143,6 +150,9 @@ export class ContentService {
           seoMenuTitle: content.site.seo.pages.menu.title,
           seoMenuDescription: content.site.seo.pages.menu.description,
           seoImage: content.site.seo.image,
+          seoSiteUrl: content.site.seo.siteUrl,
+          seoGoogleVerification: content.site.seo.googleSiteVerification,
+          seoBingVerification: content.site.seo.bingSiteVerification,
           seoPages: content.site.seo.pages as unknown as Prisma.InputJsonValue,
           navCtaLabel: content.site.navCta.label,
           navCtaUrl: content.site.navCta.url,
@@ -166,6 +176,7 @@ export class ContentService {
           vacancyRoles: content.site.vacancy as unknown as Prisma.InputJsonValue,
           openingHours: content.site.openingHours as unknown as Prisma.InputJsonValue,
           ourStory: content.site.ourStory as unknown as Prisma.InputJsonValue,
+          ourValue: content.site.ourValue as unknown as Prisma.InputJsonValue,
           reviews: content.site.reviews as unknown as Prisma.InputJsonValue,
           instagramFeed: content.site.instagram as unknown as Prisma.InputJsonValue,
           promoPopup: content.site.promoPopup as unknown as Prisma.InputJsonValue,
@@ -178,6 +189,9 @@ export class ContentService {
           seoMenuTitle: content.site.seo.pages.menu.title,
           seoMenuDescription: content.site.seo.pages.menu.description,
           seoImage: content.site.seo.image,
+          seoSiteUrl: content.site.seo.siteUrl,
+          seoGoogleVerification: content.site.seo.googleSiteVerification,
+          seoBingVerification: content.site.seo.bingSiteVerification,
           seoPages: content.site.seo.pages as unknown as Prisma.InputJsonValue,
           navCtaLabel: content.site.navCta.label,
           navCtaUrl: content.site.navCta.url,
@@ -201,6 +215,7 @@ export class ContentService {
           vacancyRoles: content.site.vacancy as unknown as Prisma.InputJsonValue,
           openingHours: content.site.openingHours as unknown as Prisma.InputJsonValue,
           ourStory: content.site.ourStory as unknown as Prisma.InputJsonValue,
+          ourValue: content.site.ourValue as unknown as Prisma.InputJsonValue,
           reviews: content.site.reviews as unknown as Prisma.InputJsonValue,
           instagramFeed: content.site.instagram as unknown as Prisma.InputJsonValue,
           promoPopup: content.site.promoPopup as unknown as Prisma.InputJsonValue,

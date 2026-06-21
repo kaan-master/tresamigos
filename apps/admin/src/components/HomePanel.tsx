@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import type { SiteContent } from "@tresamigos/types";
 import { AdminFilterChips, AdminSearchBar } from "./AdminListUi";
+import { FormSaveBar, type PanelSaveProps } from "./FormSaveBar";
 import { MediaField } from "./MediaPickerModal";
 
-type HomeView = "hero" | "hours" | "story";
+type HomeView = "hero" | "hours" | "story" | "value";
 
 function updateSite(content: SiteContent, patch: Partial<SiteContent["site"]>) {
   return { ...content, site: { ...content.site, ...patch } };
@@ -386,24 +387,144 @@ function StorySection({ content, onChange }: { content: SiteContent; onChange: (
   );
 }
 
-export function HomePanel({ content, onChange }: { content: SiteContent; onChange: (c: SiteContent) => void }) {
+function ValueSection({ content, onChange }: { content: SiteContent; onChange: (c: SiteContent) => void }) {
+  const value = content.site.ourValue;
+  const [query, setQuery] = useState("");
+
+  const filteredIndexes = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return value.paragraphs
+      .map((paragraph, index) => ({ paragraph, index }))
+      .filter(({ paragraph }) => !normalized || paragraph.toLowerCase().includes(normalized));
+  }, [value.paragraphs, query]);
+
+  function patchValue(patch: Partial<typeof value>) {
+    onChange(updateSite(content, { ourValue: { ...value, ...patch } }));
+  }
+
+  return (
+    <div className="ta-home-stack">
+      <article className="ta-home-card">
+        <header className="ta-home-card-head">
+          <h3>Our Value — pagina</h3>
+          <p>Hero en intro van de waardenpagina.</p>
+        </header>
+        <div className="ta-grid">
+          <label className="ta-field">
+            <span>Eyebrow</span>
+            <input value={value.eyebrow} onChange={(event) => patchValue({ eyebrow: event.target.value })} />
+          </label>
+          <label className="ta-field">
+            <span>Titel</span>
+            <input value={value.title} onChange={(event) => patchValue({ title: event.target.value })} />
+          </label>
+          <label className="ta-field ta-grid-wide">
+            <span>Intro</span>
+            <textarea rows={3} value={value.intro} onChange={(event) => patchValue({ intro: event.target.value })} />
+          </label>
+          <label className="ta-field ta-grid-wide">
+            <span>Slotregel</span>
+            <input value={value.scheduleSummary} onChange={(event) => patchValue({ scheduleSummary: event.target.value })} />
+          </label>
+          <MediaField label="Hero afbeelding" value={value.heroImage} onChange={(heroImage) => patchValue({ heroImage })} />
+          <MediaField label="Zij-afbeelding" value={value.sideImage} onChange={(sideImage) => patchValue({ sideImage })} />
+        </div>
+      </article>
+
+      <article className="ta-home-card">
+        <header className="ta-home-card-head ta-home-card-head-row">
+          <div>
+            <h3>Alinea&apos;s</h3>
+            <p>{value.paragraphs.length} tekstblokken op de waardenpagina.</p>
+          </div>
+          <button className="ta-btn ta-btn-primary" type="button" onClick={() => patchValue({ paragraphs: [...value.paragraphs, ""] })}>
+            + Alinea
+          </button>
+        </header>
+        <AdminSearchBar value={query} onChange={setQuery} placeholder="Zoek in alinea's..." label="Zoeken" />
+        <div className="ta-story-paragraphs">
+          {filteredIndexes.length ? (
+            filteredIndexes.map(({ index }) => (
+              <div className="ta-story-paragraph" key={`value-p-${index}`}>
+                <div className="ta-story-paragraph-head">
+                  <strong>Alinea {index + 1}</strong>
+                  <button
+                    className="ta-btn ta-btn-ghost ta-btn-icon"
+                    type="button"
+                    aria-label="Alinea verwijderen"
+                    onClick={() => patchValue({ paragraphs: value.paragraphs.filter((_, i) => i !== index) })}
+                  >
+                    ×
+                  </button>
+                </div>
+                <textarea
+                  rows={4}
+                  value={value.paragraphs[index]}
+                  onChange={(event) => {
+                    const paragraphs = [...value.paragraphs];
+                    paragraphs[index] = event.target.value;
+                    patchValue({ paragraphs });
+                  }}
+                />
+              </div>
+            ))
+          ) : (
+            <div className="ta-empty">Geen alinea&apos;s gevonden.</div>
+          )}
+        </div>
+      </article>
+    </div>
+  );
+}
+
+export function HomePanel({
+  content,
+  onChange,
+  onSave,
+  saving
+}: {
+  content: SiteContent;
+  onChange: (c: SiteContent) => void;
+} & PanelSaveProps) {
   const [view, setView] = useState<HomeView>("hero");
 
   const options = useMemo(
     () => [
       { value: "hero", label: "Hero & navigatie" },
       { value: "hours", label: "Openingstijden" },
-      { value: "story", label: "Our Story" }
+      { value: "story", label: "Our Story" },
+      { value: "value", label: "Our Value" }
     ],
     []
   );
 
   return (
-    <div className="ta-home-panel">
+    <div className="ta-stack-panel">
       <AdminFilterChips value={view} onChange={(value) => setView(value as HomeView)} options={options} />
-      {view === "hero" ? <HeroSection content={content} onChange={onChange} /> : null}
-      {view === "hours" ? <OpeningHoursSection content={content} onChange={onChange} /> : null}
-      {view === "story" ? <StorySection content={content} onChange={onChange} /> : null}
+      {view === "hero" ? (
+        <>
+          <HeroSection content={content} onChange={onChange} />
+          <FormSaveBar onSave={onSave} saving={saving} />
+        </>
+      ) : null}
+      {view === "hours" ? (
+        <>
+          <OpeningHoursSection content={content} onChange={onChange} />
+          <FormSaveBar onSave={onSave} saving={saving} />
+        </>
+      ) : null}
+      {view === "story" ? (
+        <>
+          <StorySection content={content} onChange={onChange} />
+          <FormSaveBar onSave={onSave} saving={saving} />
+        </>
+      ) : null}
+      {view === "value" ? (
+        <>
+          <ValueSection content={content} onChange={onChange} />
+          <FormSaveBar onSave={onSave} saving={saving} />
+        </>
+      ) : null}
     </div>
   );
 }

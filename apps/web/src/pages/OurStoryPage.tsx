@@ -17,7 +17,6 @@ export function OurStoryPage({ content }: { content: SiteContent }) {
         style={{ backgroundImage: `linear-gradient(180deg,rgba(19,12,5,.25),rgba(19,12,5,.72)),url(${assetUrl(heroImage)})` }}
       >
         <div className="shell story-hero-inner">
-          <div className="eyebrow story-eyebrow">{story.eyebrow}</div>
           <h1>{story.title}</h1>
           <p>{story.intro}</p>
         </div>

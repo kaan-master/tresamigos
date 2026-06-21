@@ -20,8 +20,20 @@ async function bootstrap() {
     .map((origin) => origin.trim())
     .filter(Boolean);
   const isDev = process.env.NODE_ENV !== "production";
-  const lanOrigin =
-    /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/;
+
+  function isPrivateDevOrigin(origin: string) {
+    try {
+      const { hostname, protocol } = new URL(origin);
+      if (protocol !== "http:" && protocol !== "https:") return false;
+      if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]") return true;
+      if (/^10\.\d+\.\d+\.\d+$/.test(hostname)) return true;
+      if (/^192\.168\.\d+\.\d+$/.test(hostname)) return true;
+      if (/^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/.test(hostname)) return true;
+      return false;
+    } catch {
+      return false;
+    }
+  }
 
   app.enableCors({
     origin(origin, callback) {
@@ -29,11 +41,11 @@ async function bootstrap() {
         callback(null, true);
         return;
       }
-      if (isDev && lanOrigin.test(origin)) {
+      if (isDev && isPrivateDevOrigin(origin)) {
         callback(null, true);
         return;
       }
-      callback(new Error("Not allowed by CORS"), false);
+      callback(null, false);
     },
     credentials: true
   });

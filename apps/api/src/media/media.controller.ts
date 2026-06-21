@@ -13,6 +13,8 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { mkdir, writeFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { AdminGuard } from "../auth/admin.guard";
+import { PermissionsGuard } from "../auth/permissions.guard";
+import { RequirePermissions } from "../auth/permissions.decorator";
 import { UPLOADS_DIR } from "../paths";
 import { MediaService } from "./media.service";
 
@@ -27,7 +29,8 @@ function safeFilename(originalName: string) {
 }
 
 @Controller("api/admin/media")
-@UseGuards(AdminGuard)
+@UseGuards(AdminGuard, PermissionsGuard)
+@RequirePermissions("media")
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
 

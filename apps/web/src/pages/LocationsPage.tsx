@@ -14,7 +14,6 @@ export function OrderPage({ content }: { content: SiteContent }) {
       <Helmet title={seo.title} description={seo.description} />
       <header className="page-head compact">
         <div className="shell">
-          <div className="eyebrow">{t("order.eyebrow")}</div>
           <h1>{t("order.title")}</h1>
           <p>{t("order.intro")}</p>
         </div>
@@ -40,7 +39,6 @@ export function LocationsPage({ content }: { content: SiteContent }) {
       <Helmet title={seo.title} description={seo.description} />
       <header className="page-head compact">
         <div className="shell">
-          <div className="eyebrow">{t("locations.eyebrow")}</div>
           <h1>{t("locations.title")}</h1>
           <p>{t("locations.intro")}</p>
         </div>

@@ -6,7 +6,6 @@ export function OpeningHoursCard({ settings }: { settings: OpeningHoursSettings 
 
   return (
     <aside className="opening-hours-card" aria-label="Opening hours">
-      <span className="opening-hours-eyebrow">{settings.eyebrow}</span>
       <strong className="opening-hours-title">{settings.title}</strong>
       <div className="opening-hours-block">
         <span className="opening-hours-label">{settings.sectionLabel}</span>

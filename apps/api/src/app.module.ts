@@ -13,6 +13,8 @@ import { PromoModule } from "./promo/promo.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { RedisModule } from "./redis/redis.module";
 import { ReviewsModule } from "./reviews/reviews.module";
+import { SeoModule } from "./seo/seo.module";
+import { UsersModule } from "./users/users.module";
 
 @Module({
   imports: [
@@ -30,7 +32,9 @@ import { ReviewsModule } from "./reviews/reviews.module";
     PromoModule,
     ReviewsModule,
     ContactModule,
-    InstagramModule
+    InstagramModule,
+    UsersModule,
+    SeoModule
   ],
   controllers: [HealthController]
 })

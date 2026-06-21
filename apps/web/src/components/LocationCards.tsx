@@ -2,10 +2,10 @@ import type { SiteContent } from "@tresamigos/types";
 import { assetUrl } from "../lib/api";
 
 const PLATFORM_LOGOS: Record<string, string> = {
-  "take away": "/assets/uploads/takeaway.png",
+  "take away": "/assets/site/tres-amigos-logo-new.png",
   thuisbezorgd: "/assets/uploads/thuisbezorgd.png",
   "uber eats": "/assets/uploads/ubereats.png",
-  delivery: "/assets/uploads/takeaway.png"
+  delivery: "/assets/site/tres-amigos-logo-new.png"
 };
 
 function logoForLabel(label: string) {

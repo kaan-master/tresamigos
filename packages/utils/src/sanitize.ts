@@ -217,6 +217,21 @@ const DEFAULT_OUR_STORY: SiteContent["site"]["ourStory"] = {
   sideImage: "assets/brand/home-card.png"
 };
 
+const DEFAULT_OUR_VALUE: SiteContent["site"]["ourValue"] = {
+  eyebrow: "Our value",
+  title: "Quality, warmth and real flavour.",
+  intro:
+    "Everything we do at Tres Amigos comes back to a few simple promises: honest ingredients, a welcoming atmosphere and food that tastes like it should.",
+  paragraphs: [
+    "We believe great street food starts with respect — for the recipe, for the guest and for the team behind the counter. That means fresh prep, consistent portions and flavours that stay true to Mexican roots.",
+    "Hospitality is not an extra step for us; it is part of the product. Whether you dine in, take away or order delivery, you should feel the same Tres Amigos energy: upbeat, personal and unpretentious.",
+    "We keep our prices fair because good food should be for everyone. Our goal is simple: leave you satisfied, not just full — and make you want to come back with friends."
+  ],
+  scheduleSummary: "Four Amsterdam locations · Open 7 days a week",
+  heroImage: "assets/brand/real-mexican.png",
+  sideImage: "assets/brand/with-love.png"
+};
+
 const DEFAULT_REVIEWS: SiteContent["site"]["reviews"] = {
   enabled: true,
   eyebrow: "Testimonials",
@@ -313,7 +328,7 @@ const DEFAULT_INSTAGRAM: SiteContent["site"]["instagram"] = {
 };
 
 const DEFAULT_PROMO_POPUP: SiteContent["site"]["promoPopup"] = {
-  enabled: true,
+  enabled: false,
   delaySeconds: 18,
   title: "You've got 10% off",
   subtitle: "Enter your details to receive your discount code by email.",
@@ -378,6 +393,23 @@ function sanitizeOurStory(value: SiteContent["site"]["ourStory"] | undefined) {
     scheduleSummary: cleanText(raw.scheduleSummary, DEFAULT_OUR_STORY.scheduleSummary, 240),
     heroImage: cleanUrl(raw.heroImage) || DEFAULT_OUR_STORY.heroImage,
     sideImage: cleanUrl(raw.sideImage) || DEFAULT_OUR_STORY.sideImage
+  };
+}
+
+function sanitizeOurValue(value: SiteContent["site"]["ourValue"] | undefined) {
+  const raw = value || DEFAULT_OUR_VALUE;
+  const paragraphs = Array.isArray(raw.paragraphs)
+    ? raw.paragraphs.map((item) => cleanText(item, "", 1200)).filter(Boolean).slice(0, 8)
+    : DEFAULT_OUR_VALUE.paragraphs;
+
+  return {
+    eyebrow: cleanText(raw.eyebrow, DEFAULT_OUR_VALUE.eyebrow, 80),
+    title: cleanText(raw.title, DEFAULT_OUR_VALUE.title, 180),
+    intro: cleanText(raw.intro, DEFAULT_OUR_VALUE.intro, 600),
+    paragraphs: paragraphs.length ? paragraphs : DEFAULT_OUR_VALUE.paragraphs,
+    scheduleSummary: cleanText(raw.scheduleSummary, DEFAULT_OUR_VALUE.scheduleSummary, 240),
+    heroImage: cleanUrl(raw.heroImage) || DEFAULT_OUR_VALUE.heroImage,
+    sideImage: cleanUrl(raw.sideImage) || DEFAULT_OUR_VALUE.sideImage
   };
 }
 
@@ -502,6 +534,10 @@ const DEFAULT_SEO_PAGES: Record<SeoPageKey, PageSeo> = {
     title: "Our Story | Tres Amigos",
     description: "Het verhaal achter Tres Amigos Amsterdam: real Mexican street food by real Mexicans."
   },
+  ourValue: {
+    title: "Our Value | Tres Amigos",
+    description: "Ontdek de waarden van Tres Amigos: kwaliteit, gastvrijheid en echte Mexicaanse smaken in Amsterdam."
+  },
   vacancy: {
     title: "Work With Us | Tres Amigos",
     description: "Solliciteer bij Tres Amigos Amsterdam voor rollen in keuken, service en delivery."
@@ -530,7 +566,8 @@ function sanitizeSeoPages(seo: SiteContent["site"]["seo"]): Record<SeoPageKey, P
 
       pages[key] = {
         title: cleanText(page.title || legacyTitle, DEFAULT_SEO_PAGES[key].title, 180),
-        description: cleanText(page.description || legacyDescription, DEFAULT_SEO_PAGES[key].description, 300)
+        description: cleanText(page.description || legacyDescription, DEFAULT_SEO_PAGES[key].description, 300),
+        noindex: page.noindex === true
       };
       return pages;
     },
@@ -591,6 +628,7 @@ export function sanitizeContent(input: unknown): SiteContent {
   const vacancy = site.vacancy;
   const openingHours = site.openingHours;
   const ourStory = site.ourStory;
+  const ourValue = site.ourValue;
   const reviews = site.reviews;
   const instagram = site.instagram;
   const promoPopup = site.promoPopup;
@@ -671,6 +709,9 @@ export function sanitizeContent(input: unknown): SiteContent {
     site: {
       seo: {
         image: cleanUrl(seo.image),
+        siteUrl: cleanUrl(seo.siteUrl) || "https://tresamigos.nl",
+        googleSiteVerification: cleanText(seo.googleSiteVerification, "", 120),
+        bingSiteVerification: cleanText(seo.bingSiteVerification, "", 120),
         pages: sanitizeSeoPages(seo),
         title: cleanText(seo.title, DEFAULT_SEO_PAGES.home.title, 180),
         description: cleanText(seo.description, DEFAULT_SEO_PAGES.home.description, 300),
@@ -708,6 +749,7 @@ export function sanitizeContent(input: unknown): SiteContent {
       },
       openingHours: sanitizeOpeningHours(openingHours),
       ourStory: sanitizeOurStory(ourStory),
+      ourValue: sanitizeOurValue(ourValue),
       reviews: sanitizeReviews(reviews),
       instagram: sanitizeInstagram(instagram),
       promoPopup: sanitizePromoPopup(promoPopup),
@@ -772,4 +814,17 @@ export function passwordMatches(password: string, env: NodeJS.ProcessEnv): boole
 
 export function createSessionToken(): string {
   return crypto.randomBytes(32).toString("hex");
+}
+
+export function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${hash}`;
+}
+
+export function verifyPassword(password: string, stored: string): boolean {
+  if (!stored.includes(":")) return false;
+  const [salt, expected] = stored.split(":");
+  const actual = crypto.scryptSync(password, salt, 64).toString("hex");
+  return timingSafeStringEqual(actual, expected);
 }

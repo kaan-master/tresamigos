@@ -5,10 +5,15 @@ import { mediaAssetUrl } from "../lib/media";
 import { AdminButton } from "./AdminButton";
 import { IconCopy, IconRefresh, IconTrash, IconUpload } from "./AdminIcons";
 import { AdminFilterChips, AdminSearchBar } from "./AdminListUi";
+import { FormSaveBar, type PanelSaveProps } from "./FormSaveBar";
+import { VideosPanel } from "./VideosPanel";
 
-interface Props {
+interface Props extends PanelSaveProps {
   content: SiteContent;
+  onChange: (content: SiteContent) => void;
 }
+
+type MediaView = "library" | "videos";
 
 function normalizeMediaUrl(src: string) {
   if (!src) return "";
@@ -72,8 +77,9 @@ function kindLabel(kind: MediaAsset["kind"]) {
   return kind === "video" ? "Video" : "Afbeelding";
 }
 
-export function MediaLibraryPanel({ content }: Props) {
+export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [view, setView] = useState<MediaView>("library");
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
@@ -167,6 +173,68 @@ export function MediaLibraryPanel({ content }: Props) {
   }
 
   return (
+    <div className="ta-stack-panel">
+      <AdminFilterChips
+        value={view}
+        onChange={(value) => setView(value as MediaView)}
+        options={[
+          { value: "library", label: "Bibliotheek" },
+          { value: "videos", label: "Homepage video's" }
+        ]}
+      />
+
+      {view === "videos" ? (
+        <>
+          <article className="ta-home-card">
+            <header className="ta-home-card-head">
+              <h3>Video-sectie teksten</h3>
+              <p>Koppen boven de video&apos;s op de homepage.</p>
+            </header>
+            <div className="ta-grid">
+              <label className="ta-field">
+                <span>Eyebrow</span>
+                <input
+                  value={content.site.videosSection.eyebrow}
+                  onChange={(event) =>
+                    onChange({
+                      ...content,
+                      site: { ...content.site, videosSection: { ...content.site.videosSection, eyebrow: event.target.value } }
+                    })
+                  }
+                />
+              </label>
+              <label className="ta-field">
+                <span>Titel</span>
+                <input
+                  value={content.site.videosSection.title}
+                  onChange={(event) =>
+                    onChange({
+                      ...content,
+                      site: { ...content.site, videosSection: { ...content.site.videosSection, title: event.target.value } }
+                    })
+                  }
+                />
+              </label>
+              <label className="ta-field ta-grid-wide">
+                <span>Intro</span>
+                <input
+                  value={content.site.videosSection.intro}
+                  onChange={(event) =>
+                    onChange({
+                      ...content,
+                      site: { ...content.site, videosSection: { ...content.site.videosSection, intro: event.target.value } }
+                    })
+                  }
+                />
+              </label>
+            </div>
+          </article>
+          <VideosPanel content={content} onChange={onChange} />
+          <FormSaveBar onSave={onSave} saving={saving} />
+        </>
+      ) : null}
+
+      {view === "library" ? (
     <div className="ta-media-library">
       <div className="ta-media-stats">
         <article className="ta-media-stat">
@@ -222,7 +290,7 @@ export function MediaLibraryPanel({ content }: Props) {
 
       <div className="ta-toolbar ta-toolbar-spread">
         <p className="ta-toolbar-note">
-          {filtered.length} resultaten · CMS-video&apos;s komen uit het Video&apos;s-tabblad
+          {filtered.length} resultaten · CMS-video&apos;s beheer je onder Homepage video&apos;s
         </p>
         <AdminButton variant="ghost" icon={<IconRefresh width={16} height={16} />} onClick={() => void loadAssets()}>
           Ververs
@@ -277,6 +345,8 @@ export function MediaLibraryPanel({ content }: Props) {
       ) : (
         <div className="ta-empty">Geen media gevonden — upload je eerste taco-foto 🌮</div>
       )}
+    </div>
+      ) : null}
     </div>
   );
 }

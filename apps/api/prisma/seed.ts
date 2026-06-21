@@ -1,10 +1,22 @@
 import { PrismaClient } from "@prisma/client";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { SiteContent } from "@tresamigos/types";
-import { sanitizeContent } from "@tresamigos/utils";
+import { ADMIN_TAB_IDS, type SiteContent } from "@tresamigos/types";
+import { hashPassword, sanitizeContent } from "@tresamigos/utils";
 
 const prisma = new PrismaClient();
+const ADMIN_EMAIL = "admin@tresamigos.nl";
+const ADMIN_NAME = "Beheerder";
+
+function readAdminPassword() {
+  try {
+    const envPath = resolve(__dirname, "../../../.env");
+    const match = readFileSync(envPath, "utf8").match(/^ADMIN_PASSWORD=(.+)$/m);
+    return match?.[1]?.trim() || "239br!GHTENGIne";
+  } catch {
+    return "239br!GHTENGIne";
+  }
+}
 
 function loadSeedContent(): SiteContent {
   const seedPath = resolve(__dirname, "../../../data/site-content.json");
@@ -152,6 +164,7 @@ async function upsertMenu(content: SiteContent) {
             name: item.name,
             description: item.description,
             price: item.price,
+            image: item.image || "",
             featured: item.featured === true,
             active: item.active !== false,
             sortOrder: itemIndex
@@ -162,13 +175,35 @@ async function upsertMenu(content: SiteContent) {
   }
 }
 
+async function upsertAdminUser(password: string) {
+  await prisma.adminUser.upsert({
+    where: { email: ADMIN_EMAIL },
+    create: {
+      email: ADMIN_EMAIL,
+      name: ADMIN_NAME,
+      passwordHash: hashPassword(password),
+      permissions: [...ADMIN_TAB_IDS],
+      active: true
+    },
+    update: {
+      name: ADMIN_NAME,
+      passwordHash: hashPassword(password),
+      permissions: [...ADMIN_TAB_IDS],
+      active: true
+    }
+  });
+}
+
 async function main() {
   const content = loadSeedContent();
+  const adminPassword = readAdminPassword();
   await upsertSite(content);
   await upsertLocations(content);
   await upsertVideos(content);
   await upsertMenu(content);
+  await upsertAdminUser(adminPassword);
   console.log("Seed completed.");
+  console.log(`Admin login: ${ADMIN_EMAIL}`);
 }
 
 main()

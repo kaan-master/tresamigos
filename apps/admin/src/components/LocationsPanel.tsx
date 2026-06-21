@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import type { Location, SiteContent } from "@tresamigos/types";
 import { AdminListRow, AdminSearchBar } from "./AdminListUi";
+import { FormSaveBar, type PanelSaveProps } from "./FormSaveBar";
 import { createSlugId } from "../lib/id";
 
-interface Props {
+interface Props extends PanelSaveProps {
   content: SiteContent;
   onChange: (content: SiteContent) => void;
 }
@@ -20,7 +21,7 @@ function emptyLocation(): Location {
   };
 }
 
-export function LocationsPanel({ content, onChange }: Props) {
+export function LocationsPanel({ content, onChange, onSave, saving }: Props) {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(content.locations[0]?.id || null);
   const selectedIndex = content.locations.findIndex((location) => location.id === selectedId);
@@ -161,6 +162,7 @@ export function LocationsPanel({ content, onChange }: Props) {
               </div>
             ))}
           </div>
+          <FormSaveBar onSave={onSave} saving={saving} />
         </div>
       ) : (
         <div className="ta-detail-pane ta-empty">Selecteer een vestiging om te bewerken.</div>

@@ -83,7 +83,6 @@ export function ReviewsSection({ settings }: { settings: ReviewsSettings }) {
       <div className="shell">
         <div className="section-heading">
           <div>
-            <span className="mini-label">{settings.eyebrow}</span>
             <h2 className="section-title">{settings.title}</h2>
           </div>
         </div>

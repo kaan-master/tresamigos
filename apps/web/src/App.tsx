@@ -5,8 +5,10 @@ import { useSiteContent } from "./hooks/useSiteContent";
 import { ContactPage } from "./pages/ContactPage";
 import { HomePage } from "./pages/HomePage";
 import { LocationsPage, OrderPage } from "./pages/LocationsPage";
+import { LoginPage } from "./pages/LoginPage";
 import { MenuPage } from "./pages/MenuPage";
 import { OurStoryPage } from "./pages/OurStoryPage";
+import { OurValuePage } from "./pages/OurValuePage";
 import { VacancyPage } from "./pages/VacancyPage";
 
 function ShellRoutes() {
@@ -30,6 +32,7 @@ function ShellRoutes() {
         <Route path="locations" element={<LocationsPage content={data} />} />
         <Route path="contact" element={<ContactPage content={data} />} />
         <Route path="our-story" element={<OurStoryPage content={data} />} />
+        <Route path="our-value" element={<OurValuePage content={data} />} />
         <Route path="vacancy" element={<VacancyPage content={data} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
@@ -38,5 +41,10 @@ function ShellRoutes() {
 }
 
 export default function App() {
-  return <ShellRoutes />;
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/*" element={<ShellRoutes />} />
+    </Routes>
+  );
 }

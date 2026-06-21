@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import type { MenuCategory, MenuItem, SiteContent } from "@tresamigos/types";
 import { AdminListRow, AdminSearchBar } from "./AdminListUi";
+import { FormSaveBar, type PanelSaveProps } from "./FormSaveBar";
 import { MediaField } from "./MediaPickerModal";
 import { createSlugId } from "../lib/id";
 import { mediaAssetUrl } from "../lib/media";
 
-interface Props {
+interface Props extends PanelSaveProps {
   content: SiteContent;
   onChange: (content: SiteContent) => void;
 }
@@ -39,7 +40,7 @@ function emptyCategory(): MenuCategory {
   };
 }
 
-export function ProductsPanel({ content, onChange }: Props) {
+export function ProductsPanel({ content, onChange, onSave, saving }: Props) {
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -283,6 +284,7 @@ export function ProductsPanel({ content, onChange }: Props) {
               <span>Featured op home</span>
             </label>
           </div>
+          <FormSaveBar onSave={onSave} saving={saving} />
         </div>
       ) : (
         <div className="ta-detail-pane ta-empty">Selecteer een product uit de lijst om te bewerken.</div>
