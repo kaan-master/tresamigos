@@ -1,166 +1,172 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import type { CateringCartLine, CateringCategoryId } from "@tresamigos/types";
 import type { SiteContent } from "@tresamigos/types";
+import { CateringProductModal } from "../components/catering/CateringProductModal";
 import { Helmet } from "../components/Helmet";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { submitCatering } from "../lib/api";
 import {
-  CATERING_BOXES,
-  CATERING_DIET,
-  CATERING_PROTEINS,
-  CATERING_SALSAS,
-  CATERING_STEPS,
-  CATERING_TOPPINGS,
-  type CateringBoxId,
-  type FulfillmentMode
+  CATERING_CATEGORIES,
+  FulfillmentMode,
+  LARGE_GROUP_EMAIL,
+  buildSimpleLine,
+  cartItemCount,
+  cartSubtotal,
+  formatEuro,
+  fulfillmentHoursLabel,
+  isDeliveryAvailableToday,
+  isScheduledWithinHours,
+  productsByCategory
 } from "../lib/catering";
+import type { CateringProduct } from "../lib/catering/catalog";
 
-interface CateringForm {
-  boxId: CateringBoxId | "";
-  quantity: number;
-  proteins: string[];
-  toppings: string[];
-  salsas: string[];
-  diet: string[];
-  notes: string;
-  fulfillment: FulfillmentMode;
-  locationId: string;
-  address: string;
-  date: string;
-  time: string;
+type ShopView = "landing" | "shop" | "cart" | "checkout" | "success";
+
+interface CheckoutForm {
   name: string;
   email: string;
   phone: string;
   company: string;
+  notes: string;
+  locationId: string;
+  address: string;
+  date: string;
+  time: string;
 }
 
-const emptyForm = (): CateringForm => ({
-  boxId: "",
-  quantity: 10,
-  proteins: [],
-  toppings: [],
-  salsas: [],
-  diet: [],
-  notes: "",
-  fulfillment: "pickup",
-  locationId: "",
-  address: "",
-  date: "",
-  time: "",
+const emptyCheckout = (): CheckoutForm => ({
   name: "",
   email: "",
   phone: "",
-  company: ""
+  company: "",
+  notes: "",
+  locationId: "",
+  address: "",
+  date: "",
+  time: ""
 });
 
-function toggleItem(list: string[], item: string) {
-  return list.includes(item) ? list.filter((entry) => entry !== item) : [...list, item];
+function configSummary(line: CateringCartLine) {
+  const parts: string[] = [];
+  if (line.servings) parts.push(`${line.servings} servings`);
+  const config = line.configuration;
+  if (Array.isArray(config.proteins) && config.proteins.length) parts.push(`Proteins: ${(config.proteins as string[]).join(", ")}`);
+  if (Array.isArray(config.toppings) && config.toppings.length) parts.push(`Toppings: ${(config.toppings as string[]).join(", ")}`);
+  if (Array.isArray(config.sauces) && config.sauces.length) parts.push(`Sauces: ${(config.sauces as string[]).join(", ")}`);
+  if (Array.isArray(config.tortillas) && config.tortillas.length) parts.push(`Tortilla: ${(config.tortillas as string[]).join(", ")}`);
+  if (config.cream) parts.push(String(config.cream));
+  return parts.join(" · ");
 }
 
 export function CateringPage({ content }: { content: SiteContent }) {
   const { t } = useLanguage();
   const { locations } = content;
-  const [started, setStarted] = useState(false);
-  const [step, setStep] = useState(1);
-  const [done, setDone] = useState(false);
+  const activeLocations = locations.filter((location) => location.active !== false);
+
+  const [view, setView] = useState<ShopView>("landing");
+  const [fulfillment, setFulfillment] = useState<FulfillmentMode>("pickup");
+  const [category, setCategory] = useState<CateringCategoryId>("buffet");
+  const [cart, setCart] = useState<CateringCartLine[]>([]);
+  const [activeProduct, setActiveProduct] = useState<CateringProduct | null>(null);
+  const [checkout, setCheckout] = useState<CheckoutForm>(emptyCheckout);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState<CateringForm>(emptyForm);
+  const [orderNumber, setOrderNumber] = useState("");
 
-  const activeLocations = locations.filter((location) => location.active !== false);
-  const selectedBox = CATERING_BOXES.find((box) => box.id === form.boxId);
-  const progress = useMemo(() => Math.round((step / CATERING_STEPS) * 100), [step]);
-
-  const heroImage = selectedBox?.image ?? "/assets/brand/breakfast-lunch-dinner.png";
+  const deliveryAvailable = isDeliveryAvailableToday();
+  const subtotal = useMemo(() => cartSubtotal(cart), [cart]);
+  const itemCount = useMemo(() => cartItemCount(cart), [cart]);
+  const visibleProducts = useMemo(() => productsByCategory(category), [category]);
 
   useEffect(() => {
-    if (!started) return;
+    if (view === "landing") return;
     window.scrollTo({ top: 0, behavior: "auto" });
     document.querySelector(".catering-page")?.classList.add("in-view");
-  }, [started]);
+  }, [view]);
 
-  function validate(currentStep: number) {
+  useEffect(() => {
+    if (!deliveryAvailable && fulfillment === "delivery") {
+      setFulfillment("pickup");
+    }
+  }, [deliveryAvailable, fulfillment]);
+
+  function openProduct(product: CateringProduct) {
+    if (product.configurable) {
+      setActiveProduct(product);
+      return;
+    }
+    const line = buildSimpleLine(product, 1);
+    line.name = t(product.nameKey);
+    setCart((current) => [...current, line]);
+  }
+
+  function addLine(line: CateringCartLine) {
+    setCart((current) => [...current, line]);
+  }
+
+  function removeLine(id: string) {
+    setCart((current) => current.filter((line) => line.id !== id));
+  }
+
+  function validateCheckout() {
     setMessage("");
-
-    if (currentStep === 1 && !form.boxId) {
-      setMessage(t("catering.error.box"));
+    if (!cart.length) {
+      setMessage(t("catering.error.emptyCart"));
       return false;
     }
-    if (currentStep === 2 && (form.quantity < 5 || form.quantity > 200)) {
-      setMessage(t("catering.error.quantity"));
+    if (fulfillment === "pickup" && !checkout.locationId) {
+      setMessage(t("catering.error.location"));
       return false;
     }
-    if (currentStep === 3 && !form.proteins.length) {
-      setMessage(t("catering.error.customize"));
+    if (fulfillment === "delivery" && checkout.address.trim().length < 8) {
+      setMessage(t("catering.error.address"));
       return false;
     }
-    if (currentStep === 5) {
-      if (form.fulfillment === "pickup" && !form.locationId) {
-        setMessage(t("catering.error.location"));
-        return false;
-      }
-      if (form.fulfillment === "delivery" && form.address.trim().length < 8) {
-        setMessage(t("catering.error.address"));
-        return false;
-      }
-      if (!form.date || !form.time) {
-        setMessage(t("catering.error.datetime"));
-        return false;
-      }
+    if (!checkout.date || !checkout.time) {
+      setMessage(t("catering.error.datetime"));
+      return false;
     }
-    if (currentStep === 6) {
-      if (!form.name.trim()) {
-        setMessage(t("contact.errorName"));
-        return false;
-      }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-        setMessage(t("contact.errorEmail"));
-        return false;
-      }
+    if (!isScheduledWithinHours(fulfillment, checkout.date, checkout.time)) {
+      setMessage(
+        fulfillment === "pickup"
+          ? t("catering.error.pickupHours")
+          : t("catering.error.deliveryHours")
+      );
+      return false;
     }
-
+    if (!checkout.name.trim()) {
+      setMessage(t("contact.errorName"));
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(checkout.email.trim())) {
+      setMessage(t("contact.errorEmail"));
+      return false;
+    }
     return true;
   }
 
-  function goNext() {
-    if (!validate(step)) return;
-    if (step < CATERING_STEPS) {
-      setStep((current) => current + 1);
-      return;
-    }
-    setDone(true);
-  }
-
-  function goBack() {
-    setMessage("");
-    if (step > 1) setStep((current) => current - 1);
-  }
-
-  async function handlePay(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!validate(6) || submitting) return;
+    if (!validateCheckout() || submitting) return;
 
     setSubmitting(true);
-    setMessage("");
     try {
-      await submitCatering({
-        boxId: form.boxId,
-        quantity: form.quantity,
-        proteins: form.proteins,
-        toppings: form.toppings,
-        salsas: form.salsas,
-        diet: form.diet,
-        notes: form.notes,
-        fulfillment: form.fulfillment,
-        locationId: form.locationId,
-        address: form.address,
-        eventDate: form.date,
-        eventTime: form.time,
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        company: form.company
+      const response = await submitCatering({
+        items: cart.map((line) => ({ ...line, name: line.name.startsWith("catering.") ? t(line.name) : line.name })),
+        subtotalCents: subtotal,
+        fulfillment,
+        locationId: checkout.locationId,
+        address: checkout.address,
+        eventDate: checkout.date,
+        eventTime: checkout.time,
+        name: checkout.name,
+        email: checkout.email,
+        phone: checkout.phone,
+        company: checkout.company,
+        notes: checkout.notes
       });
-      setDone(true);
+      setOrderNumber(response.order?.orderNumber || "");
+      setView("success");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t("contact.errorSend"));
     } finally {
@@ -169,25 +175,24 @@ export function CateringPage({ content }: { content: SiteContent }) {
   }
 
   function restart() {
-    setStarted(false);
-    setStep(1);
-    setDone(false);
+    setView("landing");
+    setCart([]);
+    setCheckout(emptyCheckout());
+    setOrderNumber("");
     setMessage("");
-    setForm(emptyForm());
   }
 
-  return (
-    <>
-      <Helmet title={t("catering.seoTitle")} description={t("catering.seoDesc")} />
-
-      {!started ? (
+  if (view === "landing") {
+    return (
+      <>
+        <Helmet title={t("catering.seoTitle")} description={t("catering.seoDesc")} />
         <section className="catering-landing">
           <div className="shell catering-landing-grid">
             <div className="catering-landing-copy">
               <p className="eyebrow">{t("catering.eyebrow")}</p>
               <h1>{t("catering.title")}</h1>
               <p>{t("catering.intro")}</p>
-              <button type="button" className="btn primary" onClick={() => setStarted(true)}>
+              <button type="button" className="btn primary" onClick={() => setView("shop")}>
                 {t("catering.start")}
               </button>
             </div>
@@ -196,331 +201,244 @@ export function CateringPage({ content }: { content: SiteContent }) {
             </div>
           </div>
         </section>
-      ) : (
-        <section className="catering-page">
-          <div className="shell">
-            <div className="catering-app">
-              <div className="catering-app-visual">
-                <img src={heroImage} alt={selectedBox ? t(selectedBox.titleKey) : t("catering.title")} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Helmet title={t("catering.seoTitle")} description={t("catering.seoDesc")} />
+      <section className="catering-page catering-shop">
+        <div className="shell">
+          <div className="catering-shop-head">
+            <div>
+              <p className="eyebrow">{t("catering.eyebrow")}</p>
+              <h1>{t("catering.shopTitle")}</h1>
+              <p className="catering-hours">
+                {t("catering.pickupHours")}: {fulfillmentHoursLabel("pickup")} · {t("catering.deliveryHours")}:{" "}
+                {fulfillmentHoursLabel("delivery")}
+              </p>
+              {!deliveryAvailable ? <p className="catering-hint">{t("catering.deliveryUnavailable")}</p> : null}
+              <p className="catering-hint">
+                {t("catering.largeGroup")}{" "}
+                <a href={`mailto:${LARGE_GROUP_EMAIL}`}>{LARGE_GROUP_EMAIL}</a>
+              </p>
+            </div>
+            <button type="button" className="btn primary catering-cart-btn" onClick={() => setView("cart")}>
+              {t("catering.cart")} ({itemCount}) · {formatEuro(subtotal)}
+            </button>
+          </div>
+
+          {view === "success" ? (
+            <div className="catering-success">
+              <p className="eyebrow">{t("catering.success.eyebrow")}</p>
+              <h2>{t("catering.success.title")}</h2>
+              {orderNumber ? <p>{t("catering.success.orderNumber").replace("{number}", orderNumber)}</p> : null}
+              <p>{t("catering.success.body")}</p>
+              <button type="button" className="btn primary" onClick={restart}>
+                {t("catering.success.new")}
+              </button>
+            </div>
+          ) : null}
+
+          {view === "shop" ? (
+            <>
+              <div className="catering-mode-grid">
+                <button
+                  type="button"
+                  className={`catering-mode${fulfillment === "pickup" ? " is-selected" : ""}`}
+                  onClick={() => setFulfillment("pickup")}
+                >
+                  {t("catering.mode.pickup")}
+                </button>
+                <button
+                  type="button"
+                  className={`catering-mode${fulfillment === "delivery" ? " is-selected" : ""}`}
+                  disabled={!deliveryAvailable}
+                  onClick={() => setFulfillment("delivery")}
+                >
+                  {t("catering.mode.delivery")}
+                </button>
               </div>
 
-              <div className="catering-app-panel">
-                {done ? (
-                  <div className="catering-success">
-                    <p className="eyebrow">{t("catering.success.eyebrow")}</p>
-                    <h2>{t("catering.success.title")}</h2>
-                    <p>{t("catering.success.body")}</p>
-                    <div className="catering-actions">
-                      <button type="button" className="btn primary" onClick={restart}>
-                        {t("catering.success.new")}
+              <div className="catering-category-tabs">
+                {CATERING_CATEGORIES.map((entry) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    className={category === entry.id ? "active" : ""}
+                    onClick={() => setCategory(entry.id)}
+                  >
+                    {t(entry.labelKey)}
+                  </button>
+                ))}
+              </div>
+
+              <div className="catering-product-grid">
+                {visibleProducts.map((product) => (
+                  <button key={product.id} type="button" className="catering-product-card" onClick={() => openProduct(product)}>
+                    <img src={product.image} alt={t(product.nameKey)} loading="lazy" />
+                    <div>
+                      <strong>{t(product.nameKey)}</strong>
+                      <p>{t(product.descKey)}</p>
+                      <span>{formatEuro(product.basePriceCents)}+</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : null}
+
+          {view === "cart" ? (
+            <div className="catering-cart-panel">
+              <h2>{t("catering.cartReview")}</h2>
+              {cart.length ? (
+                <div className="catering-cart-lines">
+                  {cart.map((line) => (
+                    <article key={line.id} className="catering-cart-line">
+                      <div>
+                        <strong>{line.name.startsWith("catering.") ? t(line.name) : line.name}</strong>
+                        <p>{configSummary(line)}</p>
+                        <span>
+                          {line.quantity}× · {formatEuro(line.lineTotalCents)}
+                        </span>
+                      </div>
+                      <button type="button" className="btn alt" onClick={() => removeLine(line.id)}>
+                        {t("catering.remove")}
                       </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="catering-head">
-                      <p className="application-step-label">
-                        {t("apply.step")
-                          .replace("{current}", String(step))
-                          .replace("{total}", String(CATERING_STEPS))}
-                      </p>
-                      <div className="application-progress" aria-hidden="true">
-                        <span style={{ width: `${progress}%` }} />
-                      </div>
-                    </div>
-
-                    {step === 1 ? (
-                      <div className="catering-step">
-                        <h2>{t("catering.step.type")}</h2>
-                        <p>{t("catering.step.typeIntro")}</p>
-                        <div className="catering-box-grid">
-                          {CATERING_BOXES.map((box) => (
-                            <button
-                              key={box.id}
-                              type="button"
-                              className={`catering-box-card${form.boxId === box.id ? " is-selected" : ""}`}
-                              onClick={() => setForm((current) => ({ ...current, boxId: box.id }))}
-                            >
-                              <img src={box.image} alt={t(box.titleKey)} />
-                              <strong>{t(box.titleKey)}</strong>
-                              <span>{t(box.descKey)}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {step === 2 ? (
-                      <div className="catering-step">
-                        <h2>{t("catering.step.quantity")}</h2>
-                        <p>{t("catering.step.quantityIntro")}</p>
-                        <label className="form-field">
-                          <span>{t("catering.field.persons")}</span>
-                          <input
-                            type="number"
-                            min={5}
-                            max={200}
-                            value={form.quantity}
-                            onChange={(event) =>
-                              setForm((current) => ({ ...current, quantity: Number(event.target.value) || 0 }))
-                            }
-                          />
-                        </label>
-                        <p className="catering-hint">{t("catering.quantityHint")}</p>
-                      </div>
-                    ) : null}
-
-                    {step === 3 ? (
-                      <div className="catering-step">
-                        <h2>{t("catering.step.customize")}</h2>
-                        <p>{t("catering.step.customizeIntro")}</p>
-
-                        <h3 className="catering-group-label">{t("catering.group.proteins")}</h3>
-                        <div className="catering-chip-grid">
-                          {CATERING_PROTEINS.map((item) => (
-                            <label key={item} className="catering-chip">
-                              <input
-                                type="checkbox"
-                                checked={form.proteins.includes(item)}
-                                onChange={() => setForm((current) => ({ ...current, proteins: toggleItem(current.proteins, item) }))}
-                              />
-                              <span>{item}</span>
-                            </label>
-                          ))}
-                        </div>
-
-                        <h3 className="catering-group-label">{t("catering.group.toppings")}</h3>
-                        <div className="catering-chip-grid">
-                          {CATERING_TOPPINGS.map((item) => (
-                            <label key={item} className="catering-chip">
-                              <input
-                                type="checkbox"
-                                checked={form.toppings.includes(item)}
-                                onChange={() => setForm((current) => ({ ...current, toppings: toggleItem(current.toppings, item) }))}
-                              />
-                              <span>{item}</span>
-                            </label>
-                          ))}
-                        </div>
-
-                        <h3 className="catering-group-label">{t("catering.group.salsas")}</h3>
-                        <div className="catering-chip-grid">
-                          {CATERING_SALSAS.map((item) => (
-                            <label key={item} className="catering-chip">
-                              <input
-                                type="checkbox"
-                                checked={form.salsas.includes(item)}
-                                onChange={() => setForm((current) => ({ ...current, salsas: toggleItem(current.salsas, item) }))}
-                              />
-                              <span>{item}</span>
-                            </label>
-                          ))}
-                        </div>
-
-                        <h3 className="catering-group-label">{t("catering.group.diet")}</h3>
-                        <div className="catering-chip-grid">
-                          {CATERING_DIET.map((item) => (
-                            <label key={item} className="catering-chip">
-                              <input
-                                type="checkbox"
-                                checked={form.diet.includes(item)}
-                                onChange={() => setForm((current) => ({ ...current, diet: toggleItem(current.diet, item) }))}
-                              />
-                              <span>{item}</span>
-                            </label>
-                          ))}
-                        </div>
-
-                        <label className="form-field">
-                          <span>{t("catering.field.notes")}</span>
-                          <textarea
-                            value={form.notes}
-                            onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-                            placeholder={t("catering.field.notesPlaceholder")}
-                          />
-                        </label>
-                      </div>
-                    ) : null}
-
-                    {step === 4 ? (
-                      <div className="catering-step">
-                        <h2>{t("catering.step.review")}</h2>
-                        <p>{t("catering.step.reviewIntro")}</p>
-                        <dl className="catering-summary">
-                          <div>
-                            <dt>{t("catering.summary.box")}</dt>
-                            <dd>{selectedBox ? t(selectedBox.titleKey) : "—"}</dd>
-                          </div>
-                          <div>
-                            <dt>{t("catering.field.persons")}</dt>
-                            <dd>{form.quantity}</dd>
-                          </div>
-                          <div>
-                            <dt>{t("catering.group.proteins")}</dt>
-                            <dd>{form.proteins.join(", ") || "—"}</dd>
-                          </div>
-                          <div>
-                            <dt>{t("catering.group.toppings")}</dt>
-                            <dd>{form.toppings.join(", ") || "—"}</dd>
-                          </div>
-                          <div>
-                            <dt>{t("catering.group.salsas")}</dt>
-                            <dd>{form.salsas.join(", ") || "—"}</dd>
-                          </div>
-                          <div>
-                            <dt>{t("catering.group.diet")}</dt>
-                            <dd>{form.diet.join(", ") || "—"}</dd>
-                          </div>
-                          {form.notes ? (
-                            <div>
-                              <dt>{t("catering.field.notes")}</dt>
-                              <dd>{form.notes}</dd>
-                            </div>
-                          ) : null}
-                        </dl>
-                      </div>
-                    ) : null}
-
-                    {step === 5 ? (
-                      <div className="catering-step">
-                        <h2>{t("catering.step.fulfillment")}</h2>
-                        <p>{t("catering.step.fulfillmentIntro")}</p>
-
-                        <div className="catering-mode-grid">
-                          <button
-                            type="button"
-                            className={`catering-mode${form.fulfillment === "pickup" ? " is-selected" : ""}`}
-                            onClick={() => setForm((current) => ({ ...current, fulfillment: "pickup" }))}
-                          >
-                            {t("catering.mode.pickup")}
-                          </button>
-                          <button
-                            type="button"
-                            className={`catering-mode${form.fulfillment === "delivery" ? " is-selected" : ""}`}
-                            onClick={() => setForm((current) => ({ ...current, fulfillment: "delivery" }))}
-                          >
-                            {t("catering.mode.delivery")}
-                          </button>
-                        </div>
-
-                        {form.fulfillment === "pickup" ? (
-                          <label className="form-field">
-                            <span>{t("catering.field.location")}</span>
-                            <select
-                              value={form.locationId}
-                              onChange={(event) => setForm((current) => ({ ...current, locationId: event.target.value }))}
-                            >
-                              <option value="">{t("catering.field.locationPlaceholder")}</option>
-                              {activeLocations.map((location) => (
-                                <option key={location.id} value={location.id}>
-                                  {location.name}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        ) : (
-                          <label className="form-field">
-                            <span>{t("catering.field.address")}</span>
-                            <textarea
-                              value={form.address}
-                              onChange={(event) => setForm((current) => ({ ...current, address: event.target.value }))}
-                              placeholder={t("catering.field.addressPlaceholder")}
-                            />
-                          </label>
-                        )}
-
-                        <div className="contact-form-row catering-datetime">
-                          <label className="form-field">
-                            <span>{t("catering.field.date")}</span>
-                            <input
-                              type="date"
-                              value={form.date}
-                              onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))}
-                            />
-                          </label>
-                          <label className="form-field">
-                            <span>{t("catering.field.time")}</span>
-                            <input
-                              type="time"
-                              value={form.time}
-                              onChange={(event) => setForm((current) => ({ ...current, time: event.target.value }))}
-                            />
-                          </label>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {step === 6 ? (
-                      <form className="catering-step" onSubmit={handlePay}>
-                        <h2>{t("catering.step.checkout")}</h2>
-                        <p>{t("catering.step.checkoutIntro")}</p>
-
-                        <label className="form-field">
-                          <span>{t("contact.name")}</span>
-                          <input
-                            value={form.name}
-                            onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-                          />
-                        </label>
-                        <label className="form-field">
-                          <span>{t("contact.emailField")}</span>
-                          <input
-                            type="email"
-                            value={form.email}
-                            onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-                          />
-                        </label>
-                        <label className="form-field">
-                          <span>{t("apply.phone")}</span>
-                          <input
-                            value={form.phone}
-                            onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
-                          />
-                        </label>
-                        <label className="form-field">
-                          <span>{t("catering.field.company")}</span>
-                          <input
-                            value={form.company}
-                            onChange={(event) => setForm((current) => ({ ...current, company: event.target.value }))}
-                          />
-                        </label>
-
-                        <div className="catering-payment-placeholder">
-                          <strong>{t("catering.payment.title")}</strong>
-                          <p>{t("catering.payment.body")}</p>
-                        </div>
-
-                        {message ? <p className="contact-form-message error">{message}</p> : null}
-
-                        <div className="catering-actions">
-                          <button type="button" className="btn alt" onClick={goBack}>
-                            {t("common.back")}
-                          </button>
-                          <button type="submit" className="btn primary" disabled={submitting}>
-                            {submitting ? t("common.submitting") : t("catering.pay")}
-                          </button>
-                        </div>
-                      </form>
-                    ) : (
-                      <>
-                        {message ? <p className="contact-form-message error">{message}</p> : null}
-                        <div className="catering-actions">
-                          <button type="button" className="btn alt" onClick={goBack} disabled={step === 1}>
-                            {t("common.back")}
-                          </button>
-                          <button type="button" className="btn primary" onClick={goNext}>
-                            {step === CATERING_STEPS ? t("catering.pay") : t("common.next")}
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </>
-                )}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className="catering-hint">{t("catering.cartEmpty")}</p>
+              )}
+              <div className="catering-cart-total">
+                <span>{t("catering.subtotal")}</span>
+                <strong>{formatEuro(subtotal)}</strong>
+              </div>
+              <div className="catering-actions">
+                <button type="button" className="btn alt" onClick={() => setView("shop")}>
+                  {t("catering.continueShopping")}
+                </button>
+                <button type="button" className="btn primary" disabled={!cart.length} onClick={() => setView("checkout")}>
+                  {t("catering.checkout")}
+                </button>
               </div>
             </div>
-          </div>
-        </section>
-      )}
+          ) : null}
+
+          {view === "checkout" ? (
+            <form className="catering-checkout" onSubmit={handleSubmit}>
+              <h2>{t("catering.step.checkout")}</h2>
+              <p>{t("catering.guestCheckout")}</p>
+
+              {fulfillment === "pickup" ? (
+                <label className="form-field">
+                  <span>{t("catering.field.location")}</span>
+                  <select
+                    value={checkout.locationId}
+                    onChange={(event) => setCheckout((current) => ({ ...current, locationId: event.target.value }))}
+                  >
+                    <option value="">{t("catering.field.locationPlaceholder")}</option>
+                    {activeLocations.map((location) => (
+                      <option key={location.id} value={location.id}>
+                        {location.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <label className="form-field">
+                  <span>{t("catering.field.address")}</span>
+                  <textarea
+                    value={checkout.address}
+                    onChange={(event) => setCheckout((current) => ({ ...current, address: event.target.value }))}
+                    placeholder={t("catering.field.addressPlaceholder")}
+                  />
+                </label>
+              )}
+
+              <div className="contact-form-row catering-datetime">
+                <label className="form-field">
+                  <span>{t("catering.field.date")}</span>
+                  <input
+                    type="date"
+                    value={checkout.date}
+                    onChange={(event) => setCheckout((current) => ({ ...current, date: event.target.value }))}
+                  />
+                </label>
+                <label className="form-field">
+                  <span>{t("catering.field.time")}</span>
+                  <input
+                    type="time"
+                    value={checkout.time}
+                    onChange={(event) => setCheckout((current) => ({ ...current, time: event.target.value }))}
+                  />
+                </label>
+              </div>
+
+              <label className="form-field">
+                <span>{t("contact.name")}</span>
+                <input value={checkout.name} onChange={(event) => setCheckout((current) => ({ ...current, name: event.target.value }))} />
+              </label>
+              <label className="form-field">
+                <span>{t("contact.emailField")}</span>
+                <input
+                  type="email"
+                  value={checkout.email}
+                  onChange={(event) => setCheckout((current) => ({ ...current, email: event.target.value }))}
+                />
+              </label>
+              <label className="form-field">
+                <span>{t("apply.phone")}</span>
+                <input value={checkout.phone} onChange={(event) => setCheckout((current) => ({ ...current, phone: event.target.value }))} />
+              </label>
+              <label className="form-field">
+                <span>{t("catering.field.company")}</span>
+                <input value={checkout.company} onChange={(event) => setCheckout((current) => ({ ...current, company: event.target.value }))} />
+              </label>
+              <label className="form-field">
+                <span>{t("catering.field.notes")}</span>
+                <textarea
+                  value={checkout.notes}
+                  onChange={(event) => setCheckout((current) => ({ ...current, notes: event.target.value }))}
+                  placeholder={t("catering.field.notesPlaceholder")}
+                />
+              </label>
+
+              <div className="catering-cart-total">
+                <span>{t("catering.subtotal")}</span>
+                <strong>{formatEuro(subtotal)}</strong>
+              </div>
+
+              <div className="catering-payment-placeholder">
+                <strong>{t("catering.payment.title")}</strong>
+                <p>{t("catering.payment.body")}</p>
+              </div>
+
+              {message ? <p className="contact-form-message error">{message}</p> : null}
+
+              <div className="catering-actions">
+                <button type="button" className="btn alt" onClick={() => setView("cart")}>
+                  {t("common.back")}
+                </button>
+                <button type="submit" className="btn primary" disabled={submitting}>
+                  {submitting ? t("common.submitting") : t("catering.pay")}
+                </button>
+              </div>
+            </form>
+          ) : null}
+        </div>
+      </section>
+
+      {activeProduct ? (
+        <CateringProductModal
+          product={activeProduct}
+          open={Boolean(activeProduct)}
+          onClose={() => setActiveProduct(null)}
+          onAdd={addLine}
+        />
+      ) : null}
     </>
   );
 }

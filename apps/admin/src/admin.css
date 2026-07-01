@@ -2467,3 +2467,7 @@ select {
 .ta-section-title {
   color: var(--ta-text);
 }
+
+.catering-admin-lines{display:grid;gap:10px;margin-top:8px}
+.catering-admin-line{padding:12px;border:1px solid var(--ta-line);border-radius:14px;background:#fff}
+.catering-admin-line p{margin:6px 0;color:var(--ta-muted);font-size:13px;font-weight:650}

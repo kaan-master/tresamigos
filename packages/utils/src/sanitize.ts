@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import type {
   Application,
+  CateringCartLine,
   CateringFulfillment,
   CateringOrder,
   CateringOrderStatus,
@@ -623,8 +624,48 @@ export function sanitizeApplication(input: CreateApplicationInput | Application)
 }
 
 const CATERING_STATUSES = new Set(["nieuw", "bevestigd", "voorbereid", "afgerond", "geannuleerd"]);
-const CATERING_BOXES = new Set(["burrito-box", "bowl-box", "quesadilla-box", "taco-box"]);
+const CATERING_BOXES = new Set(["burrito-box", "bowl-box", "quesadilla-box", "taco-box", "shop"]);
 const CATERING_FULFILLMENT = new Set(["pickup", "delivery"]);
+
+function sanitizeCartLines(value: unknown): CateringCartLine[] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 40).map((line, index) => {
+    const item = line && typeof line === "object" ? (line as Partial<CateringCartLine>) : {};
+    const configuration =
+      item.configuration && typeof item.configuration === "object" && !Array.isArray(item.configuration)
+        ? Object.fromEntries(
+            Object.entries(item.configuration)
+              .slice(0, 24)
+              .map(([key, val]) => [
+                cleanText(key, "", 40),
+                Array.isArray(val)
+                  ? cleanStringList(val, 12, 80)
+                  : typeof val === "number"
+                    ? val
+                    : cleanText(val, "", 120)
+              ])
+          )
+        : {};
+
+    return {
+      id: cleanText(item.id, `line-${index}`, 80),
+      productId: cleanText(item.productId, "", 80),
+      categoryId: cleanText(item.categoryId, "buffet", 40) as CateringCartLine["categoryId"],
+      name: cleanText(item.name, "Product", 160),
+      tier: cleanText(item.tier, "", 20) as CateringCartLine["tier"],
+      servings: Math.min(30, Math.max(0, Number(item.servings) || 0)),
+      quantity: Math.min(99, Math.max(1, Number(item.quantity) || 1)),
+      unitPriceCents: Math.max(0, Number(item.unitPriceCents) || 0),
+      lineTotalCents: Math.max(0, Number(item.lineTotalCents) || 0),
+      configuration
+    };
+  });
+}
+
+export function sanitizeCateringCartLine(input: Partial<CateringCartLine>): CateringCartLine {
+  const [line] = sanitizeCartLines([input]);
+  return line;
+}
 
 function cleanStringList(value: unknown, maxItems = 24, maxLen = 80) {
   if (!Array.isArray(value)) return [] as string[];
@@ -636,8 +677,9 @@ function cleanStringList(value: unknown, maxItems = 24, maxLen = 80) {
 
 export function sanitizeCateringOrder(input: Partial<CateringOrder | CreateCateringOrderInput>): CateringOrder {
   const status = cleanText((input as Partial<CateringOrder>)?.status, "nieuw", 40);
-  const boxId = cleanText(input?.boxId, "", 40);
+  const boxId = cleanText(input?.boxId, "shop", 40);
   const fulfillment = cleanText(input?.fulfillment, "pickup", 20);
+  const items = sanitizeCartLines((input as Partial<CateringOrder>)?.items);
 
   return {
     id: cleanText((input as Partial<CateringOrder>)?.id, crypto.randomUUID(), 80),
@@ -645,8 +687,10 @@ export function sanitizeCateringOrder(input: Partial<CateringOrder | CreateCater
     createdAt: cleanText((input as Partial<CateringOrder>)?.createdAt, new Date().toISOString(), 80),
     updatedAt: cleanText((input as Partial<CateringOrder>)?.updatedAt, new Date().toISOString(), 80),
     status: CATERING_STATUSES.has(status) ? (status as CateringOrderStatus) : "nieuw",
-    boxId: CATERING_BOXES.has(boxId) ? (boxId as CateringOrder["boxId"]) : "burrito-box",
-    quantity: Math.min(200, Math.max(1, Number(input?.quantity) || 0)),
+    items,
+    subtotalCents: Math.max(0, Number((input as Partial<CateringOrder>)?.subtotalCents) || 0),
+    boxId: CATERING_BOXES.has(boxId) ? (boxId as CateringOrder["boxId"]) : "shop",
+    quantity: Math.min(200, Math.max(0, Number(input?.quantity) || items.reduce((sum, line) => sum + line.servings * line.quantity, 0))),
     proteins: cleanStringList(input?.proteins),
     toppings: cleanStringList(input?.toppings),
     salsas: cleanStringList(input?.salsas),

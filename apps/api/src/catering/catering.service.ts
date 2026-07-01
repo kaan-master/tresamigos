@@ -27,6 +27,8 @@ export class CateringService {
     createdAt: Date;
     updatedAt: Date;
     status: string;
+    items?: unknown;
+    subtotalCents?: number;
     boxId: string;
     quantity: number;
     proteins: string[];
@@ -52,6 +54,8 @@ export class CateringService {
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
       status: record.status as CateringOrderStatus,
+      items: (record.items as CateringOrder["items"]) || [],
+      subtotalCents: record.subtotalCents || 0,
       boxId: record.boxId as CateringBoxId,
       quantity: record.quantity,
       proteins: record.proteins,
@@ -86,15 +90,10 @@ export class CateringService {
 
   async create(input: CreateCateringOrderInput) {
     const order = sanitizeCateringOrder(input);
+    const isCartOrder = order.items.length > 0;
 
-    if (!order.boxId || !order.name || !order.email || !order.email.includes("@")) {
+    if (!order.name || !order.email || !order.email.includes("@")) {
       throw new BadRequestException({ message: "Vul alle verplichte velden in." });
-    }
-    if (order.quantity < 5 || order.quantity > 200) {
-      throw new BadRequestException({ message: "Kies tussen 5 en 200 gasten." });
-    }
-    if (!order.proteins.length) {
-      throw new BadRequestException({ message: "Selecteer minimaal één eiwit of vulling." });
     }
     if (!order.eventDate || !order.eventTime) {
       throw new BadRequestException({ message: "Kies een datum en tijd." });
@@ -106,15 +105,37 @@ export class CateringService {
       throw new BadRequestException({ message: "Vul een volledig bezorgadres in." });
     }
 
+    if (isCartOrder) {
+      if (!order.items.length) {
+        throw new BadRequestException({ message: "Je winkelwagen is leeg." });
+      }
+      const computed = order.items.reduce((sum, line) => sum + line.lineTotalCents, 0);
+      if (Math.abs(computed - order.subtotalCents) > 5) {
+        throw new BadRequestException({ message: "Winkelwagen totaal klopt niet. Vernieuw en probeer opnieuw." });
+      }
+    } else {
+      if (!order.boxId || order.quantity < 5 || order.quantity > 200) {
+        throw new BadRequestException({ message: "Ongeldige bestelling." });
+      }
+      if (!order.proteins.length) {
+        throw new BadRequestException({ message: "Selecteer minimaal één eiwit of vulling." });
+      }
+    }
+
     const content = await this.contentService.getContent();
     const locationName = this.resolveLocationName(content, order.locationId);
+    const totalServings = isCartOrder
+      ? order.items.reduce((sum, line) => sum + line.servings * line.quantity, 0)
+      : order.quantity;
 
     const record = await this.prisma.cateringOrder.create({
       data: {
         orderNumber: await this.nextOrderNumber(),
         status: "nieuw",
-        boxId: order.boxId,
-        quantity: order.quantity,
+        items: JSON.parse(JSON.stringify(order.items)),
+        subtotalCents: isCartOrder ? order.subtotalCents : 0,
+        boxId: isCartOrder ? "shop" : order.boxId,
+        quantity: totalServings,
         proteins: order.proteins,
         toppings: order.toppings,
         salsas: order.salsas,
@@ -130,7 +151,7 @@ export class CateringService {
         email: order.email,
         phone: order.phone,
         company: order.company
-      }
+      } as unknown as Parameters<typeof this.prisma.cateringOrder.create>[0]["data"]
     });
 
     const dto = this.toDto(record);
@@ -157,16 +178,33 @@ export class CateringService {
     };
   }
 
+  private formatLine(line: CateringOrder["items"][number]) {
+    const config = Object.entries(line.configuration || {})
+      .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+      .join("; ");
+    return [
+      `${line.quantity}× ${line.name}${line.servings ? ` (${line.servings} servings)` : ""}`,
+      config ? `  ${config}` : "",
+      `  €${(line.lineTotalCents / 100).toFixed(2)}`
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
   private async notifyOwner(content: SiteContent, order: CateringOrder) {
     const inbox = content.site.footer.email || content.site.mailRelay.replyTo;
     if (!inbox) return;
 
-    const boxLabels: Record<string, string> = {
-      "burrito-box": "Burrito Box",
-      "bowl-box": "Bowl & Salad Box",
-      "quesadilla-box": "Quesadilla Box",
-      "taco-box": "Taco Box"
-    };
+    const itemsBlock =
+      order.items.length > 0
+        ? order.items.map((line) => this.formatLine(line)).join("\n")
+        : [
+            `Type: ${order.boxId}`,
+            `Gasten: ${order.quantity}`,
+            `Eiwitten: ${order.proteins.join(", ")}`,
+            `Toppings: ${order.toppings.join(", ") || "-"}`,
+            `Salsa's: ${order.salsas.join(", ") || "-"}`
+          ].join("\n");
 
     await this.mailService.sendCateringNotificationEmail({
       to: inbox,
@@ -176,8 +214,9 @@ export class CateringService {
       body: [
         `Nieuwe cateringbestelling ${order.orderNumber}`,
         "",
-        `Type: ${boxLabels[order.boxId] || order.boxId}`,
-        `Gasten: ${order.quantity}`,
+        itemsBlock,
+        "",
+        `Subtotaal: €${(order.subtotalCents / 100).toFixed(2)}`,
         `Datum/tijd: ${order.eventDate} ${order.eventTime}`,
         `Afhandeling: ${order.fulfillment === "pickup" ? "Afhalen" : "Bezorgen"}`,
         order.fulfillment === "pickup"
@@ -188,11 +227,6 @@ export class CateringService {
         `E-mail: ${order.email}`,
         `Telefoon: ${order.phone || "-"}`,
         order.company ? `Bedrijf: ${order.company}` : "",
-        "",
-        `Eiwitten: ${order.proteins.join(", ")}`,
-        `Toppings: ${order.toppings.join(", ") || "-"}`,
-        `Salsa's: ${order.salsas.join(", ") || "-"}`,
-        `Dieet: ${order.diet.join(", ") || "-"}`,
         order.notes ? `Opmerkingen: ${order.notes}` : ""
       ]
         .filter(Boolean)

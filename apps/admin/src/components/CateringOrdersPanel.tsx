@@ -99,7 +99,8 @@ export function CateringOrdersPanel({ orders, onOrdersChange }: Props) {
         order.notes,
         order.adminNotes,
         order.eventDate,
-        order.eventTime
+        order.items.map((line) => line.name).join(" "),
+        String(order.subtotalCents),
       ]
         .join(" ")
         .toLowerCase();
@@ -241,11 +242,51 @@ export function CateringOrdersPanel({ orders, onOrdersChange }: Props) {
               <input readOnly value={selected.company || "-"} />
             </label>
             <label className="ta-field">
-              <span>Boxtype</span>
-              <input readOnly value={BOX_LABELS[selected.boxId] || selected.boxId} />
+              <span>Subtotaal</span>
+              <input readOnly value={`€ ${(selected.subtotalCents / 100).toFixed(2)}`} />
             </label>
+            {selected.items.length ? (
+              <div className="ta-field ta-grid-wide">
+                <span>Producten ({selected.items.length})</span>
+                <div className="catering-admin-lines">
+                  {selected.items.map((line) => (
+                    <article key={line.id} className="catering-admin-line">
+                      <strong>
+                        {line.quantity}× {line.name}
+                        {line.servings ? ` · ${line.servings} servings` : ""}
+                      </strong>
+                      <p>
+                        {Object.entries(line.configuration)
+                          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+                          .join(" · ") || "—"}
+                      </p>
+                      <span>€ {(line.lineTotalCents / 100).toFixed(2)}</span>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                <label className="ta-field">
+                  <span>Boxtype</span>
+                  <input readOnly value={BOX_LABELS[selected.boxId] || selected.boxId} />
+                </label>
+                <label className="ta-field ta-grid-wide">
+                  <span>Eiwitten & vullingen</span>
+                  <input readOnly value={selected.proteins.join(", ") || "-"} />
+                </label>
+                <label className="ta-field ta-grid-wide">
+                  <span>Toppings</span>
+                  <input readOnly value={selected.toppings.join(", ") || "-"} />
+                </label>
+                <label className="ta-field ta-grid-wide">
+                  <span>Salsa&apos;s</span>
+                  <input readOnly value={selected.salsas.join(", ") || "-"} />
+                </label>
+              </>
+            )}
             <label className="ta-field">
-              <span>Aantal gasten</span>
+              <span>Aantal gasten / servings</span>
               <input readOnly value={String(selected.quantity)} />
             </label>
             <label className="ta-field">
@@ -264,22 +305,12 @@ export function CateringOrdersPanel({ orders, onOrdersChange }: Props) {
                 value={selected.fulfillment === "pickup" ? selected.locationName || "-" : selected.address || "-"}
               />
             </label>
-            <label className="ta-field ta-grid-wide">
-              <span>Eiwitten & vullingen</span>
-              <input readOnly value={selected.proteins.join(", ") || "-"} />
-            </label>
-            <label className="ta-field ta-grid-wide">
-              <span>Toppings</span>
-              <input readOnly value={selected.toppings.join(", ") || "-"} />
-            </label>
-            <label className="ta-field ta-grid-wide">
-              <span>Salsa&apos;s</span>
-              <input readOnly value={selected.salsas.join(", ") || "-"} />
-            </label>
-            <label className="ta-field ta-grid-wide">
-              <span>Dieetopties</span>
-              <input readOnly value={selected.diet.join(", ") || "-"} />
-            </label>
+            {!selected.items.length ? (
+              <label className="ta-field ta-grid-wide">
+                <span>Dieetopties</span>
+                <input readOnly value={selected.diet.join(", ") || "-"} />
+              </label>
+            ) : null}
             <label className="ta-field ta-grid-wide">
               <span>Klantopmerkingen</span>
               <textarea readOnly rows={3} value={selected.notes || "-"} />

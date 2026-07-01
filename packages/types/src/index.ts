@@ -503,9 +503,25 @@ export const WEEK_DAYS: WeekDay[] = [
   "Zondag"
 ];
 
-export const CATERING_BOX_IDS = ["burrito-box", "bowl-box", "quesadilla-box", "taco-box"] as const;
+export const CATERING_BOX_IDS = ["burrito-box", "bowl-box", "quesadilla-box", "taco-box", "shop"] as const;
 export type CateringBoxId = (typeof CATERING_BOX_IDS)[number];
 export type CateringFulfillment = "pickup" | "delivery";
+export type CateringCategoryId = "buffet" | "burrito" | "drinks" | "sauces" | "team-thanks";
+export type CateringPackageTier = "budget" | "single" | "double" | "triple";
+
+export interface CateringCartLine {
+  id: string;
+  productId: string;
+  categoryId: CateringCategoryId;
+  name: string;
+  tier?: CateringPackageTier;
+  servings: number;
+  quantity: number;
+  unitPriceCents: number;
+  lineTotalCents: number;
+  configuration: Record<string, string | number | string[]>;
+}
+
 export const CATERING_ORDER_STATUSES = ["nieuw", "bevestigd", "voorbereid", "afgerond", "geannuleerd"] as const;
 export type CateringOrderStatus = (typeof CATERING_ORDER_STATUSES)[number];
 
@@ -515,6 +531,8 @@ export interface CateringOrder {
   createdAt: string;
   updatedAt: string;
   status: CateringOrderStatus;
+  items: CateringCartLine[];
+  subtotalCents: number;
   boxId: CateringBoxId;
   quantity: number;
   proteins: string[];
@@ -536,13 +554,8 @@ export interface CateringOrder {
 }
 
 export interface CreateCateringOrderInput {
-  boxId: CateringBoxId;
-  quantity: number;
-  proteins: string[];
-  toppings?: string[];
-  salsas?: string[];
-  diet?: string[];
-  notes?: string;
+  items: CateringCartLine[];
+  subtotalCents: number;
   fulfillment: CateringFulfillment;
   locationId?: string;
   address?: string;
@@ -552,6 +565,14 @@ export interface CreateCateringOrderInput {
   email: string;
   phone?: string;
   company?: string;
+  notes?: string;
+  /** @deprecated legacy single-box flow */
+  boxId?: CateringBoxId;
+  quantity?: number;
+  proteins?: string[];
+  toppings?: string[];
+  salsas?: string[];
+  diet?: string[];
 }
 
 export interface UpdateCateringOrderInput {

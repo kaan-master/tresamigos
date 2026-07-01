@@ -178,4 +178,6 @@ model CateringOrder {
   phone        String   @default("")
   company      String   @default("")
   adminNotes   String   @default("")
+  items        Json     @default("[]")
+  subtotalCents Int     @default(0)
 }

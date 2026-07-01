@@ -14,6 +14,8 @@ interface LayoutProps {
   content: SiteContent;
 }
 
+const SHOW_CATERING_NAV = false;
+
 function HamburgerIcon({ open }: { open: boolean }) {
   return (
     <svg className={`hamburger-icon${open ? " is-open" : ""}`} viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
@@ -63,7 +65,7 @@ export function Layout({ content }: LayoutProps) {
             </Link>
             <div className={`nav-links nav-links-main${menuOpen ? " open" : ""}`} id="site-nav-links">
               <NavLink to="/menu">{t("nav.menu")}</NavLink>
-              <NavLink to="/catering">{t("nav.catering")}</NavLink>
+              {SHOW_CATERING_NAV ? <NavLink to="/catering">{t("nav.catering")}</NavLink> : null}
               <NavLink to="/locations">{t("nav.locations")}</NavLink>
               <NavLink to="/our-story">{t("nav.ourStory")}</NavLink>
               <NavLink to="/our-value">{t("nav.ourValue")}</NavLink>
