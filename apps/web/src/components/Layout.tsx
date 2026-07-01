@@ -63,6 +63,7 @@ export function Layout({ content }: LayoutProps) {
             </Link>
             <div className={`nav-links nav-links-main${menuOpen ? " open" : ""}`} id="site-nav-links">
               <NavLink to="/menu">{t("nav.menu")}</NavLink>
+              <NavLink to="/catering">{t("nav.catering")}</NavLink>
               <NavLink to="/locations">{t("nav.locations")}</NavLink>
               <NavLink to="/our-story">{t("nav.ourStory")}</NavLink>
               <NavLink to="/our-value">{t("nav.ourValue")}</NavLink>

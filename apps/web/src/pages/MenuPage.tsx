@@ -1,14 +1,19 @@
+import { useState } from "react";
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { MenuTabs } from "../components/MenuTabs";
+import { ProductDetailModal } from "../components/ProductDetailModal";
 import { useMenuSectionCollapse } from "../hooks/useMenuSectionCollapse";
 import { productImageUrl } from "../lib/productImage";
 import { pageSeo } from "../lib/seo";
 
+type MenuItem = SiteContent["menu"][number]["items"][number];
+
 export function MenuPage({ content }: { content: SiteContent }) {
-  const { site, menu } = content;
+  const { menu } = content;
   const seo = pageSeo(content, "menu");
   const activeMenu = menu.filter((category) => category.active !== false);
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   useMenuSectionCollapse();
 
   return (
@@ -33,14 +38,19 @@ export function MenuPage({ content }: { content: SiteContent }) {
                   {category.items
                     .filter((item) => item.active !== false)
                     .map((item) => (
-                      <article className="product-card has-image" key={item.id}>
+                      <button
+                        type="button"
+                        className="product-card has-image"
+                        key={item.id}
+                        onClick={() => setSelectedItem(item)}
+                      >
                         <img src={productImageUrl(item.image, item.id)} alt={item.name} loading="lazy" />
                         <div>
                           <h3>{item.name}</h3>
                           <p>{item.description}</p>
                         </div>
                         <strong>{item.price}</strong>
-                      </article>
+                      </button>
                     ))}
                 </div>
               </div>
@@ -64,6 +74,11 @@ export function MenuPage({ content }: { content: SiteContent }) {
           </div>
         </div>
       </section>
+      <ProductDetailModal
+        open={Boolean(selectedItem)}
+        product={selectedItem}
+        onClose={() => setSelectedItem(null)}
+      />
     </>
   );
 }

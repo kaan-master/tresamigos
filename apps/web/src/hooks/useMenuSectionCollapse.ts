@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 
-const FADE_PX = 72;
 const STICKY_TOP = 22;
 
 function syncSticky() {
@@ -26,26 +25,21 @@ function syncSections() {
 
     if (rect.bottom <= line) {
       inner.style.opacity = "0";
-      inner.style.maskImage = "none";
-      inner.style.webkitMaskImage = "none";
+      inner.style.clipPath = "none";
       inner.style.pointerEvents = "none";
       return;
     }
 
     if (rect.top >= line) {
       inner.style.opacity = "1";
-      inner.style.maskImage = "none";
-      inner.style.webkitMaskImage = "none";
+      inner.style.clipPath = "none";
       inner.style.pointerEvents = "";
       return;
     }
 
-    const overlap = line - rect.top;
-    const fadeEnd = Math.min(rect.height, overlap + FADE_PX);
-    const gradient = `linear-gradient(to bottom, transparent 0px, transparent ${overlap}px, black ${fadeEnd}px)`;
+    const clipTop = Math.max(0, line - rect.top);
     inner.style.opacity = "1";
-    inner.style.maskImage = gradient;
-    inner.style.webkitMaskImage = gradient;
+    inner.style.clipPath = `inset(${clipTop}px 0 0 0)`;
     inner.style.pointerEvents = "";
   });
 }
@@ -81,8 +75,7 @@ export function resetMenuSection(sectionId: string) {
   const inner = section.querySelector<HTMLElement>(".menu-section-inner");
   if (inner) {
     inner.style.opacity = "";
-    inner.style.maskImage = "";
-    inner.style.webkitMaskImage = "";
+    inner.style.clipPath = "";
     inner.style.pointerEvents = "";
   }
 }
