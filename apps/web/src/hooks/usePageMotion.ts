@@ -20,7 +20,9 @@ const REVEAL_SELECTOR = [
   ".portrait-video-card",
   ".hero-card",
   ".showcase-panel",
-  ".brand-strip"
+  ".brand-strip",
+  ".catering-landing",
+  ".catering-page"
 ].join(", ");
 
 export function usePageMotion() {

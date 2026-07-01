@@ -1,6 +1,9 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import type {
+  CateringBoxId,
+  CateringFulfillment,
   CateringOrder,
+  CateringOrderStatus,
   CreateCateringOrderInput,
   SiteContent,
   UpdateCateringOrderInput
@@ -48,15 +51,15 @@ export class CateringService {
       orderNumber: record.orderNumber,
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
-      status: record.status,
-      boxId: record.boxId,
+      status: record.status as CateringOrderStatus,
+      boxId: record.boxId as CateringBoxId,
       quantity: record.quantity,
       proteins: record.proteins,
       toppings: record.toppings,
       salsas: record.salsas,
       diet: record.diet,
       notes: record.notes,
-      fulfillment: record.fulfillment,
+      fulfillment: record.fulfillment as CateringFulfillment,
       locationId: record.locationId,
       locationName: record.locationName,
       address: record.address,

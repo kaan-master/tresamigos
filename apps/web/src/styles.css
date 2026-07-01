@@ -237,6 +237,12 @@ main{background:var(--paper)}.hero{padding:54px 0 46px;background:linear-gradien
     transform 680ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.animate-ready .catering-landing,
+.animate-ready .catering-page {
+  opacity: 1;
+  transform: none;
+}
+
 .animate-ready .section.in-view,
 .animate-ready .card.in-view,
 .animate-ready .product-card.in-view,

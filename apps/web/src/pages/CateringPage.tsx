@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { useLanguage } from "../i18n/LanguageProvider";
@@ -71,6 +71,12 @@ export function CateringPage({ content }: { content: SiteContent }) {
   const progress = useMemo(() => Math.round((step / CATERING_STEPS) * 100), [step]);
 
   const heroImage = selectedBox?.image ?? "/assets/brand/breakfast-lunch-dinner.png";
+
+  useEffect(() => {
+    if (!started) return;
+    window.scrollTo({ top: 0, behavior: "auto" });
+    document.querySelector(".catering-page")?.classList.add("in-view");
+  }, [started]);
 
   function validate(currentStep: number) {
     setMessage("");
@@ -191,7 +197,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
           </div>
         </section>
       ) : (
-        <section className="section catering-page">
+        <section className="catering-page">
           <div className="shell">
             <div className="catering-app">
               <div className="catering-app-visual">
