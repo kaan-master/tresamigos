@@ -1,44 +1,52 @@
 import { useEffect } from "react";
 
-const FADE_PX = 96;
-const MIN_OPACITY = 0.18;
+const FADE_PX = 72;
+const STICKY_TOP = 22;
 
-function tabsBottomLine() {
-  const tabs = document.querySelector(".menu-tabs");
-  return tabs ? tabs.getBoundingClientRect().bottom : 104;
+function syncSticky() {
+  const sticky = document.querySelector<HTMLElement>(".menu-tabs-sticky");
+  if (!sticky) return null;
+
+  const stickyRect = sticky.getBoundingClientRect();
+  sticky.classList.toggle("is-stuck", stickyRect.top <= STICKY_TOP + 0.5);
+
+  const tabs = sticky.querySelector<HTMLElement>(".menu-tabs");
+  return tabs ? tabs.getBoundingClientRect().bottom : stickyRect.bottom;
 }
 
 function syncSections() {
-  const line = tabsBottomLine();
+  const line = syncSticky();
+  if (line === null) return;
 
   document.querySelectorAll<HTMLElement>(".menu-section").forEach((section) => {
     const inner = section.querySelector<HTMLElement>(".menu-section-inner");
     if (!inner) return;
 
     const rect = section.getBoundingClientRect();
-    const overlap = line - rect.top;
 
-    if (overlap <= 0) {
+    if (rect.bottom <= line) {
+      inner.style.opacity = "0";
+      inner.style.maskImage = "none";
+      inner.style.webkitMaskImage = "none";
+      inner.style.pointerEvents = "none";
+      return;
+    }
+
+    if (rect.top >= line) {
       inner.style.opacity = "1";
       inner.style.maskImage = "none";
       inner.style.webkitMaskImage = "none";
+      inner.style.pointerEvents = "";
       return;
     }
 
-    if (rect.bottom <= line) {
-      const passed = line - rect.bottom;
-      const opacity = Math.max(MIN_OPACITY, 1 - passed / FADE_PX);
-      inner.style.opacity = String(opacity);
-      inner.style.maskImage = "none";
-      inner.style.webkitMaskImage = "none";
-      return;
-    }
-
+    const overlap = line - rect.top;
     const fadeEnd = Math.min(rect.height, overlap + FADE_PX);
     const gradient = `linear-gradient(to bottom, transparent 0px, transparent ${overlap}px, black ${fadeEnd}px)`;
     inner.style.opacity = "1";
     inner.style.maskImage = gradient;
     inner.style.webkitMaskImage = gradient;
+    inner.style.pointerEvents = "";
   });
 }
 
@@ -61,6 +69,7 @@ export function useMenuSectionCollapse() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", syncSections);
       if (frame) window.cancelAnimationFrame(frame);
+      document.querySelector(".menu-tabs-sticky")?.classList.remove("is-stuck");
     };
   }, []);
 }
@@ -74,5 +83,6 @@ export function resetMenuSection(sectionId: string) {
     inner.style.opacity = "";
     inner.style.maskImage = "";
     inner.style.webkitMaskImage = "";
+    inner.style.pointerEvents = "";
   }
 }
