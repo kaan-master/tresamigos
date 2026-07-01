@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Application, SiteContent } from "@tresamigos/types";
+import type { Application, CateringOrder, SiteContent } from "@tresamigos/types";
 import { api } from "./lib/api";
 import { randomSaveError, randomSaveLoading, randomSaveSuccess } from "./lib/saveMessages";
 import { AdminBadge } from "./components/AdminBadge";
@@ -11,6 +11,7 @@ import { LocationsPanel } from "./components/LocationsPanel";
 import { MediaLibraryPanel } from "./components/MediaLibraryPanel";
 import { ProductsPanel } from "./components/ProductsPanel";
 import { ApplicationsPanel } from "./components/ApplicationsPanel";
+import { CateringOrdersPanel } from "./components/CateringOrdersPanel";
 import { FooterPanel } from "./components/FooterPanel";
 import { HomePanel } from "./components/HomePanel";
 import { SeoPanel } from "./components/SeoPanel";
@@ -25,6 +26,7 @@ const tabs = [
   ["products", "Producten"],
   ["media", "Media"],
   ["applications", "Sollicitaties"],
+  ["catering", "Catering"],
   ["reviews", "Reviews"],
   ["seo", "SEO"],
   ["footer", "Footer"],
@@ -42,6 +44,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [content, setContent] = useState<SiteContent | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [cateringOrders, setCateringOrders] = useState<CateringOrder[]>([]);
   const [popup, setPopup] = useState<{ title: string; message?: string; tone: "loading" | "success" | "error" } | null>(
     null
   );
@@ -50,14 +53,16 @@ export function AdminDashboard({ user, onLogout }: Props) {
 
   async function loadAll() {
     setLoading(true);
-    setPopup({ title: "Dashboard laden", message: "Content en sollicitaties ophalen...", tone: "loading" });
+    setPopup({ title: "Dashboard laden", message: "Content en inkomende berichten ophalen...", tone: "loading" });
     try {
-      const [contentData, applicationsData] = await Promise.all([
+      const [contentData, applicationsData, cateringData] = await Promise.all([
         api<SiteContent>("/api/admin/content"),
-        api<{ applications: Application[] }>("/api/admin/applications").catch(() => ({ applications: [] }))
+        api<{ applications: Application[] }>("/api/admin/applications").catch(() => ({ applications: [] })),
+        api<{ orders: CateringOrder[] }>("/api/admin/catering-orders").catch(() => ({ orders: [] }))
       ]);
       setContent(contentData);
       setApplications(applicationsData.applications);
+      setCateringOrders(cateringData.orders);
       setPopup(null);
     } catch (error) {
       setPopup({
@@ -100,9 +105,10 @@ export function AdminDashboard({ user, onLogout }: Props) {
       ["Producten", content.menu.reduce((total, category) => total + category.items.length, 0)],
       ["Video's", content.videos.filter((video) => video.active !== false).length],
       ["Sollicitaties", applications.length],
+      ["Catering", cateringOrders.filter((order) => ["nieuw", "bevestigd", "voorbereid"].includes(order.status)).length],
       ["Hero tags", content.site.hero.tags.length]
     ] as const;
-  }, [content, applications.length]);
+  }, [content, applications.length, cateringOrders]);
 
   async function saveContent() {
     if (!content || saving) return;
@@ -243,6 +249,16 @@ export function AdminDashboard({ user, onLogout }: Props) {
                 <p>Inkomende sollicitaties bekijken, functies beheren en vacaturepagina instellen.</p>
               </header>
               <ApplicationsPanel content={content} applications={applications} onChange={setContent} onSave={saveContent} saving={saving} />
+            </section>
+          ) : null}
+
+          {activeTab === "catering" ? (
+            <section className="ta-panel ta-fade-in">
+              <header className="ta-panel-head">
+                <h2>Cateringbestellingen</h2>
+                <p>Bekijk inkomende cateringaanvragen, filter op datum en werk de status bij.</p>
+              </header>
+              <CateringOrdersPanel orders={cateringOrders} onOrdersChange={setCateringOrders} />
             </section>
           ) : null}
 

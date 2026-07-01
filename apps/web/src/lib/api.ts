@@ -48,6 +48,17 @@ export async function submitApplication(body: unknown) {
   return data;
 }
 
+export async function submitCatering(body: unknown) {
+  const response = await fetch(apiUrl("/api/catering"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || "Verzenden mislukt.");
+  return data;
+}
+
 export function assetUrl(path: string) {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;

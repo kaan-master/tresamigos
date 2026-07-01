@@ -93,4 +93,29 @@ export class MailService {
 
     return true;
   }
+
+  async sendCateringNotificationEmail(input: {
+    to: string;
+    fromName: string;
+    replyTo: string;
+    subject: string;
+    body: string;
+  }) {
+    if (!this.isConfigured()) {
+      this.logger.warn("SMTP niet geconfigureerd — catering mail niet verstuurd.");
+      return false;
+    }
+
+    const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER || input.replyTo;
+
+    await this.createTransport().sendMail({
+      from: `"${input.fromName}" <${fromAddress}>`,
+      to: input.to,
+      replyTo: input.replyTo || fromAddress,
+      subject: input.subject,
+      text: input.body
+    });
+
+    return true;
+  }
 }

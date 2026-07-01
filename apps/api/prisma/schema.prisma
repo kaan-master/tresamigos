@@ -153,3 +153,29 @@ model Application {
   pdfSize          Int?
   pdfData          String?  @db.Text
 }
+
+model CateringOrder {
+  id           String   @id @default(uuid())
+  orderNumber  String   @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  status       String   @default("nieuw")
+  boxId        String
+  quantity     Int
+  proteins     String[]
+  toppings     String[]
+  salsas       String[]
+  diet         String[]
+  notes        String   @default("")
+  fulfillment  String
+  locationId   String   @default("")
+  locationName String   @default("")
+  address      String   @default("")
+  eventDate    String
+  eventTime    String
+  name         String
+  email        String
+  phone        String   @default("")
+  company      String   @default("")
+  adminNotes   String   @default("")
+}

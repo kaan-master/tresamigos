@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { useLanguage } from "../i18n/LanguageProvider";
+import { submitCatering } from "../lib/api";
 import {
   CATERING_BOXES,
   CATERING_DIET,
@@ -62,6 +63,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
   const [step, setStep] = useState(1);
   const [done, setDone] = useState(false);
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<CateringForm>(emptyForm);
 
   const activeLocations = locations.filter((location) => location.active !== false);
@@ -127,10 +129,37 @@ export function CateringPage({ content }: { content: SiteContent }) {
     if (step > 1) setStep((current) => current - 1);
   }
 
-  function handlePay(event: FormEvent) {
+  async function handlePay(event: FormEvent) {
     event.preventDefault();
-    if (!validate(6)) return;
-    setDone(true);
+    if (!validate(6) || submitting) return;
+
+    setSubmitting(true);
+    setMessage("");
+    try {
+      await submitCatering({
+        boxId: form.boxId,
+        quantity: form.quantity,
+        proteins: form.proteins,
+        toppings: form.toppings,
+        salsas: form.salsas,
+        diet: form.diet,
+        notes: form.notes,
+        fulfillment: form.fulfillment,
+        locationId: form.locationId,
+        address: form.address,
+        eventDate: form.date,
+        eventTime: form.time,
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        company: form.company
+      });
+      setDone(true);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : t("contact.errorSend"));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function restart() {
@@ -461,8 +490,8 @@ export function CateringPage({ content }: { content: SiteContent }) {
                           <button type="button" className="btn alt" onClick={goBack}>
                             {t("common.back")}
                           </button>
-                          <button type="submit" className="btn primary">
-                            {t("catering.pay")}
+                          <button type="submit" className="btn primary" disabled={submitting}>
+                            {submitting ? t("common.submitting") : t("catering.pay")}
                           </button>
                         </div>
                       </form>

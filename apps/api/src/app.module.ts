@@ -3,6 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 import { join } from "node:path";
 import { AnalyticsModule } from "./analytics/analytics.module";
 import { ApplicationsModule } from "./applications/applications.module";
+import { CateringModule } from "./catering/catering.module";
 import { AuthModule } from "./auth/auth.module";
 import { ContactModule } from "./contact/contact.module";
 import { ContentModule } from "./content/content.module";
@@ -27,6 +28,7 @@ import { UsersModule } from "./users/users.module";
     AuthModule,
     ContentModule,
     ApplicationsModule,
+    CateringModule,
     MediaModule,
     AnalyticsModule,
     PromoModule,

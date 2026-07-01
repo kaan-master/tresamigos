@@ -1,10 +1,15 @@
 import crypto from "node:crypto";
 import type {
   Application,
+  CateringFulfillment,
+  CateringOrder,
+  CateringOrderStatus,
   CreateApplicationInput,
+  CreateCateringOrderInput,
   PageSeo,
   SeoPageKey,
   SiteContent,
+  UpdateCateringOrderInput,
   VacancyRoleConfig,
   WeekDay
 } from "@tresamigos/types";
@@ -614,6 +619,58 @@ export function sanitizeApplication(input: CreateApplicationInput | Application)
             data: pdfData
           }
         : null
+  };
+}
+
+const CATERING_STATUSES = new Set(["nieuw", "bevestigd", "voorbereid", "afgerond", "geannuleerd"]);
+const CATERING_BOXES = new Set(["burrito-box", "bowl-box", "quesadilla-box", "taco-box"]);
+const CATERING_FULFILLMENT = new Set(["pickup", "delivery"]);
+
+function cleanStringList(value: unknown, maxItems = 24, maxLen = 80) {
+  if (!Array.isArray(value)) return [] as string[];
+  return value
+    .slice(0, maxItems)
+    .map((item) => cleanText(item, "", maxLen))
+    .filter(Boolean);
+}
+
+export function sanitizeCateringOrder(input: Partial<CateringOrder | CreateCateringOrderInput>): CateringOrder {
+  const status = cleanText((input as Partial<CateringOrder>)?.status, "nieuw", 40);
+  const boxId = cleanText(input?.boxId, "", 40);
+  const fulfillment = cleanText(input?.fulfillment, "pickup", 20);
+
+  return {
+    id: cleanText((input as Partial<CateringOrder>)?.id, crypto.randomUUID(), 80),
+    orderNumber: cleanText((input as Partial<CateringOrder>)?.orderNumber, "", 40),
+    createdAt: cleanText((input as Partial<CateringOrder>)?.createdAt, new Date().toISOString(), 80),
+    updatedAt: cleanText((input as Partial<CateringOrder>)?.updatedAt, new Date().toISOString(), 80),
+    status: CATERING_STATUSES.has(status) ? (status as CateringOrderStatus) : "nieuw",
+    boxId: CATERING_BOXES.has(boxId) ? (boxId as CateringOrder["boxId"]) : "burrito-box",
+    quantity: Math.min(200, Math.max(1, Number(input?.quantity) || 0)),
+    proteins: cleanStringList(input?.proteins),
+    toppings: cleanStringList(input?.toppings),
+    salsas: cleanStringList(input?.salsas),
+    diet: cleanStringList(input?.diet),
+    notes: cleanText(input?.notes, "", 2000),
+    fulfillment: CATERING_FULFILLMENT.has(fulfillment) ? (fulfillment as CateringFulfillment) : "pickup",
+    locationId: cleanText(input?.locationId, "", 80),
+    locationName: cleanText((input as Partial<CateringOrder>)?.locationName, "", 160),
+    address: cleanText(input?.address, "", 500),
+    eventDate: cleanText(input?.eventDate, "", 20),
+    eventTime: cleanText(input?.eventTime, "", 20),
+    name: cleanText(input?.name, "", 160),
+    email: cleanText(input?.email, "", 180).toLowerCase(),
+    phone: cleanText(input?.phone, "", 80),
+    company: cleanText(input?.company, "", 160),
+    adminNotes: cleanText((input as Partial<CateringOrder>)?.adminNotes, "", 2000)
+  };
+}
+
+export function sanitizeUpdateCateringOrderInput(input: UpdateCateringOrderInput): UpdateCateringOrderInput {
+  const status = cleanText(input?.status, "", 40);
+  return {
+    status: CATERING_STATUSES.has(status) ? (status as CateringOrderStatus) : undefined,
+    adminNotes: input?.adminNotes === undefined ? undefined : cleanText(input.adminNotes, "", 2000)
   };
 }
 

@@ -88,6 +88,7 @@ export const ADMIN_TAB_IDS = [
   "products",
   "media",
   "applications",
+  "catering",
   "reviews",
   "seo",
   "footer",
@@ -103,6 +104,7 @@ export const ADMIN_TAB_LABELS: Record<AdminTabId, string> = {
   products: "Producten",
   media: "Media",
   applications: "Sollicitaties",
+  catering: "Catering",
   reviews: "Reviews",
   seo: "SEO",
   footer: "Footer",
@@ -500,3 +502,71 @@ export const WEEK_DAYS: WeekDay[] = [
   "Zaterdag",
   "Zondag"
 ];
+
+export const CATERING_BOX_IDS = ["burrito-box", "bowl-box", "quesadilla-box", "taco-box"] as const;
+export type CateringBoxId = (typeof CATERING_BOX_IDS)[number];
+export type CateringFulfillment = "pickup" | "delivery";
+export const CATERING_ORDER_STATUSES = ["nieuw", "bevestigd", "voorbereid", "afgerond", "geannuleerd"] as const;
+export type CateringOrderStatus = (typeof CATERING_ORDER_STATUSES)[number];
+
+export interface CateringOrder {
+  id: string;
+  orderNumber: string;
+  createdAt: string;
+  updatedAt: string;
+  status: CateringOrderStatus;
+  boxId: CateringBoxId;
+  quantity: number;
+  proteins: string[];
+  toppings: string[];
+  salsas: string[];
+  diet: string[];
+  notes: string;
+  fulfillment: CateringFulfillment;
+  locationId: string;
+  locationName: string;
+  address: string;
+  eventDate: string;
+  eventTime: string;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  adminNotes: string;
+}
+
+export interface CreateCateringOrderInput {
+  boxId: CateringBoxId;
+  quantity: number;
+  proteins: string[];
+  toppings?: string[];
+  salsas?: string[];
+  diet?: string[];
+  notes?: string;
+  fulfillment: CateringFulfillment;
+  locationId?: string;
+  address?: string;
+  eventDate: string;
+  eventTime: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+}
+
+export interface UpdateCateringOrderInput {
+  status?: CateringOrderStatus;
+  adminNotes?: string;
+}
+
+export interface CateringOrdersResponse {
+  orders: CateringOrder[];
+}
+
+export interface CreateCateringOrderResponse extends ApiMessage {
+  order: {
+    id: string;
+    orderNumber: string;
+    createdAt: string;
+  };
+}
