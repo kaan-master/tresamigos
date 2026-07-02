@@ -2,9 +2,14 @@ import crypto from "node:crypto";
 import type {
   Application,
   CateringCartLine,
+  CateringCategoryId,
   CateringFulfillment,
   CateringOrder,
   CateringOrderStatus,
+  CateringPackageTier,
+  CateringProductConfig,
+  CateringSettings,
+  CateringServingOption,
   CreateApplicationInput,
   CreateCateringOrderInput,
   PageSeo,
@@ -15,6 +20,7 @@ import type {
   WeekDay
 } from "@tresamigos/types";
 import { SEO_PAGE_KEYS, WEEK_DAYS } from "@tresamigos/types";
+import { DEFAULT_CATERING_SETTINGS } from "./cateringDefaults";
 
 export function cleanText(value: unknown, fallback = "", max = 1000): string {
   if (typeof value !== "string") return fallback;
@@ -718,6 +724,66 @@ export function sanitizeUpdateCateringOrderInput(input: UpdateCateringOrderInput
   };
 }
 
+const CATERING_CATEGORY_IDS = ["buffet", "burrito", "drinks", "sauces", "team-thanks"] as const;
+const CATERING_TIERS = ["budget", "single", "double", "triple"] as const;
+
+function sanitizeServingOptions(value: unknown): CateringServingOption[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      const row = item && typeof item === "object" ? (item as Partial<CateringServingOption>) : {};
+      const servings = Math.min(500, Math.max(1, Number(row.servings) || 0));
+      const extraCents = Math.min(500_000, Math.max(0, Number(row.extraCents) || 0));
+      if (!servings) return null;
+      return { servings, extraCents };
+    })
+    .filter((item): item is CateringServingOption => Boolean(item))
+    .slice(0, 12);
+}
+
+function sanitizeCateringProduct(value: unknown, index: number): CateringProductConfig | null {
+  const raw = value && typeof value === "object" ? (value as Partial<CateringProductConfig>) : {};
+  const name = cleanText(raw.name, `Product ${index + 1}`, 160);
+  const categoryRaw = cleanText(raw.categoryId, "buffet", 40);
+  const categoryId = CATERING_CATEGORY_IDS.includes(categoryRaw as CateringCategoryId)
+    ? (categoryRaw as CateringCategoryId)
+    : "buffet";
+  const tierRaw = cleanText(raw.tier, "", 20);
+  const tier = CATERING_TIERS.includes(tierRaw as CateringPackageTier) ? (tierRaw as CateringPackageTier) : undefined;
+  const configurable = raw.configurable === true;
+  const servingOptions = sanitizeServingOptions(raw.servingOptions);
+  const id = cleanSlug(raw.id, cleanSlug(name, `catering-product-${index + 1}`));
+
+  return {
+    id,
+    categoryId,
+    name,
+    description: cleanText(raw.description, "", 500),
+    image: cleanUrl(raw.image) || "/assets/brand/breakfast-lunch-dinner.png",
+    basePriceCents: Math.min(500_000, Math.max(0, Number(raw.basePriceCents) || 0)),
+    active: raw.active !== false,
+    tier: configurable ? tier : undefined,
+    configurable,
+    servingOptions: configurable ? servingOptions : []
+  };
+}
+
+export function sanitizeCateringSettings(value: unknown): CateringSettings {
+  const raw = value && typeof value === "object" ? (value as Partial<CateringSettings>) : {};
+  const products = Array.isArray(raw.products)
+    ? raw.products
+        .map((product, index) => sanitizeCateringProduct(product, index))
+        .filter((product): product is CateringProductConfig => Boolean(product))
+        .slice(0, 80)
+    : [];
+
+  return {
+    maxOnlineServings: Math.min(500, Math.max(1, Number(raw.maxOnlineServings) || DEFAULT_CATERING_SETTINGS.maxOnlineServings)),
+    largeGroupEmail: cleanText(raw.largeGroupEmail, DEFAULT_CATERING_SETTINGS.largeGroupEmail, 180),
+    products: products.length ? products : DEFAULT_CATERING_SETTINGS.products
+  };
+}
+
 export function sanitizeContent(input: unknown): SiteContent {
   const payload = input && typeof input === "object" ? (input as Partial<SiteContent>) : {};
   const site = payload.site || ({} as SiteContent["site"]);
@@ -735,6 +801,7 @@ export function sanitizeContent(input: unknown): SiteContent {
   const promoPopup = site.promoPopup;
   const mailRelay = site.mailRelay;
   const contactForm = site.contactForm;
+  const catering = site.catering;
 
   const locations = Array.isArray(payload.locations)
     ? payload.locations.slice(0, 50).map((location, index) => {
@@ -856,7 +923,8 @@ export function sanitizeContent(input: unknown): SiteContent {
       promoPopup: sanitizePromoPopup(promoPopup),
       mailRelay: sanitizeMailRelay(mailRelay),
       contactForm: sanitizeContactForm(contactForm),
-      vacancy: sanitizeVacancySettings(vacancy)
+      vacancy: sanitizeVacancySettings(vacancy),
+      catering: sanitizeCateringSettings(catering)
     },
     videos,
     menu,

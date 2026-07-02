@@ -43,12 +43,13 @@ interface ListRowProps {
   title: string;
   meta?: string;
   badge?: string;
+  badgeClassName?: string;
   thumb?: string;
   active?: boolean;
   onClick: () => void;
 }
 
-export function AdminListRow({ title, meta, badge, thumb, active, onClick }: ListRowProps) {
+export function AdminListRow({ title, meta, badge, badgeClassName, thumb, active, onClick }: ListRowProps) {
   return (
     <button type="button" className={`ta-list-row${active ? " is-active" : ""}`} onClick={onClick}>
       {thumb ? (
@@ -60,7 +61,7 @@ export function AdminListRow({ title, meta, badge, thumb, active, onClick }: Lis
         <strong>{title}</strong>
         {meta ? <small>{meta}</small> : null}
       </span>
-      {badge ? <span className="ta-status">{badge}</span> : null}
+      {badge ? <span className={`ta-status${badgeClassName ? ` ${badgeClassName}` : ""}`}>{badge}</span> : null}
     </button>
   );
 }

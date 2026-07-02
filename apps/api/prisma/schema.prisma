@@ -42,6 +42,7 @@ model SiteSettings {
   promoPopup         Json     @default("{}")
   mailRelay          Json     @default("{}")
   contactForm        Json     @default("{}")
+  cateringCatalog    Json     @default("{}")
   seoSiteUrl           String   @default("https://tresamigos.nl")
   seoGoogleVerification String  @default("")
   seoBingVerification   String  @default("")

@@ -2470,4 +2470,79 @@ select {
 
 .catering-admin-lines{display:grid;gap:10px;margin-top:8px}
 .catering-admin-line{padding:12px;border:1px solid var(--ta-line);border-radius:14px;background:#fff}
-.catering-admin-line p{margin:6px 0;color:var(--ta-muted);font-size:13px;font-weight:650}
+.catering-admin-line p,.catering-admin-config{margin:6px 0;color:var(--ta-muted);font-size:13px;font-weight:650}
+.catering-admin-config{padding-left:18px;display:grid;gap:4px}
+.catering-admin-line-price{display:block;margin-top:8px;font-weight:900}
+.catering-admin-layout .ta-list-pane{min-width:0}
+.catering-admin-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+@media(min-width:900px){.catering-admin-stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.catering-admin-stat{padding:12px 14px;border:1px solid var(--ta-line);border-radius:16px;background:#fff}
+.catering-admin-stat span{display:block;font-size:11px;font-weight:800;color:var(--ta-muted);text-transform:uppercase;letter-spacing:.04em}
+.catering-admin-stat strong{display:block;margin-top:4px;font-size:24px;line-height:1}
+.catering-admin-stat-alert{border-color:#f0b4b4;background:#fff8f8}
+.catering-admin-detail-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.catering-admin-event-card{
+  display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding:14px 16px;margin-bottom:14px;
+  border:1px solid #efd596;border-radius:16px;background:linear-gradient(135deg,#fff9ea,#fff)
+}
+.catering-admin-event-card.is-soon{border-color:#f0b4b4;background:linear-gradient(135deg,#fff4f4,#fff9ea)}
+.catering-admin-event-card.is-past{opacity:.72}
+.catering-admin-event-card strong{font-size:18px}
+.catering-admin-event-card span{font-size:13px;font-weight:800;color:var(--ta-muted)}
+.catering-admin-quick-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.catering-admin-section{margin-bottom:16px;padding:14px;border:1px solid var(--ta-line);border-radius:18px;background:rgba(255,255,255,.72)}
+.catering-admin-section h4{margin:0 0 10px;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--ta-muted)}
+.catering-admin-kv{display:grid;grid-template-columns:120px 1fr;gap:8px 12px;font-size:14px}
+.catering-admin-kv span{color:var(--ta-muted);font-weight:700}
+.catering-admin-kv a{color:inherit;text-decoration:underline}
+.catering-admin-note{margin:0;line-height:1.5;font-weight:650}
+.catering-admin-total{margin:12px 0 0;font-weight:800}
+.catering-admin-guide{display:grid;gap:14px}
+.catering-admin-guide-card{padding:18px;border:1px solid var(--ta-line);border-radius:18px;background:#fff}
+.catering-admin-guide-card h3{margin:0 0 10px;font-size:18px}
+.catering-admin-guide-card ol,.catering-admin-guide-card ul{margin:0;padding-left:20px;display:grid;gap:8px;line-height:1.45}
+.catering-status-nieuw{background:#fff4f4;border-color:#f0b4b4;color:#8f1f1f}
+.catering-status-bevestigd{background:#eef4ff;border-color:#c7d7f7;color:#1d4fa3}
+.catering-status-voorbereid{background:#fff8e8;border-color:#efd596;color:#9a6700}
+.catering-status-afgerond{background:#edf8ef;border-color:#b9dfc8;color:#176a3a}
+.catering-status-geannuleerd{background:#f5f5f5;border-color:#ddd;color:#666}
+.ta-nav-badge{
+  margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--ta-cherry,#b42318);
+  color:#fff;font-size:11px;font-weight:900;line-height:20px;text-align:center
+}
+.ta-nav button{display:flex;align-items:center;gap:10px}
+.ta-kpi-clickable{cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}
+.ta-kpi-clickable:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(31,22,11,.08)}
+.catering-panel-shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:980px){.catering-panel-shell{grid-template-columns:1fr}}
+.catering-panel-nav{display:grid;gap:8px;position:sticky;top:104px}
+.catering-panel-nav button{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:14px 16px;
+  border:1px solid var(--ta-line);border-radius:16px;background:#fff;color:var(--ta-text);font:inherit;
+  font-size:14px;font-weight:800;text-align:left;cursor:pointer;transition:background .18s ease,border-color .18s ease
+}
+.catering-panel-nav button.is-active{background:#fff9ea;border-color:#efd596}
+.catering-panel-nav em{
+  min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#b42318;color:#fff;font-style:normal;
+  font-size:11px;font-weight:900;line-height:22px;text-align:center
+}
+.catering-panel-content{min-width:0}
+.catering-orders-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.catering-orders-toolbar strong{display:block;font-size:18px}
+.catering-filters-toggle{
+  margin:0 0 10px;padding:0;border:0;background:transparent;color:var(--ta-muted);font:inherit;font-size:13px;
+  font-weight:800;text-decoration:underline;cursor:pointer
+}
+.catering-filters-panel{display:grid;gap:10px;margin-bottom:10px;padding:12px;border:1px dashed var(--ta-line);border-radius:16px;background:rgba(255,255,255,.55)}
+.catering-products-layout{display:grid;gap:16px}
+.catering-admin-settings-card{padding:16px;border:1px solid var(--ta-line);border-radius:18px;background:#fff}
+.catering-admin-settings-card h3{margin:0 0 12px;font-size:18px}
+.catering-serving-table{display:grid;gap:8px;margin-top:10px}
+.catering-serving-table-head,.catering-serving-row{display:grid;grid-template-columns:1fr 180px;gap:10px;align-items:center}
+.catering-serving-table-head span{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--ta-muted)}
+.catering-serving-row span{font-weight:700}
+@media print{
+  .ta-sidebar,.ta-action-dock,.ta-main-head,.ta-list-pane,.catering-admin-quick-actions,.ta-stack-panel .ta-filter-chips{display:none!important}
+  .ta-main,.ta-shell{display:block!important}
+  .ta-detail-pane,.catering-admin-detail{box-shadow:none;border:0;max-width:100%}
+}

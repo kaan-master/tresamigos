@@ -2,19 +2,19 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import type { SiteContent } from "@tresamigos/types";
 import { assetUrl } from "../lib/api";
+import { showCateringNav } from "../lib/featureFlags";
+import { useCateringCart } from "../context/CateringCartContext";
 import { usePageMotion } from "../hooks/usePageMotion";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { AnalyticsTracker } from "./AnalyticsTracker";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { IconLocation, IconLogin } from "./NavIcons";
+import { IconCart, IconLocation, IconLogin } from "./NavIcons";
 import { SocialLinks } from "./SocialLinks";
 import { SiteHead } from "./Helmet";
 
 interface LayoutProps {
   content: SiteContent;
 }
-
-const SHOW_CATERING_NAV = false;
 
 function HamburgerIcon({ open }: { open: boolean }) {
   return (
@@ -36,6 +36,7 @@ export function Layout({ content }: LayoutProps) {
   const { site, locations } = content;
   const location = useLocation();
   const { t } = useLanguage();
+  const { itemCount } = useCateringCart();
   const [menuOpen, setMenuOpen] = useState(false);
   usePageMotion();
 
@@ -65,7 +66,7 @@ export function Layout({ content }: LayoutProps) {
             </Link>
             <div className={`nav-links nav-links-main${menuOpen ? " open" : ""}`} id="site-nav-links">
               <NavLink to="/menu">{t("nav.menu")}</NavLink>
-              {SHOW_CATERING_NAV ? <NavLink to="/catering">{t("nav.catering")}</NavLink> : null}
+              {showCateringNav ? <NavLink to="/catering">{t("nav.catering")}</NavLink> : null}
               <NavLink to="/locations">{t("nav.locations")}</NavLink>
               <NavLink to="/our-story">{t("nav.ourStory")}</NavLink>
               <NavLink to="/our-value">{t("nav.ourValue")}</NavLink>
@@ -75,6 +76,16 @@ export function Layout({ content }: LayoutProps) {
                 <IconLocation />
                 <span>{t("nav.findTresAmigos")}</span>
               </Link>
+              {itemCount > 0 ? (
+                <Link
+                  className="nav-icon-link nav-cart-link nav-mobile-only"
+                  to="/catering?view=cart"
+                  aria-label={`${t("nav.cart")} (${itemCount})`}
+                >
+                  <IconCart />
+                  <span className="nav-cart-badge">{itemCount}</span>
+                </Link>
+              ) : null}
               <Link className="nav-text-link nav-mobile-only" to="/login">
                 <IconLogin />
                 <span>{t("nav.login")}</span>
@@ -90,6 +101,16 @@ export function Layout({ content }: LayoutProps) {
               <IconLocation />
               <span>{t("nav.findTresAmigos")}</span>
             </Link>
+            {itemCount > 0 ? (
+              <Link
+                className="nav-icon-link nav-cart-link"
+                to="/catering?view=cart"
+                aria-label={`${t("nav.cart")} (${itemCount})`}
+              >
+                <IconCart />
+                <span className="nav-cart-badge">{itemCount}</span>
+              </Link>
+            ) : null}
             <Link className="nav-text-link" to="/login">
               <IconLogin />
               <span>{t("nav.login")}</span>

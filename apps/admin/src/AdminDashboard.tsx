@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import type { Application, CateringOrder, SiteContent } from "@tresamigos/types";
 import { api } from "./lib/api";
 import { randomSaveError, randomSaveLoading, randomSaveSuccess } from "./lib/saveMessages";
@@ -11,7 +11,7 @@ import { LocationsPanel } from "./components/LocationsPanel";
 import { MediaLibraryPanel } from "./components/MediaLibraryPanel";
 import { ProductsPanel } from "./components/ProductsPanel";
 import { ApplicationsPanel } from "./components/ApplicationsPanel";
-import { CateringOrdersPanel } from "./components/CateringOrdersPanel";
+import { CateringPanel } from "./components/CateringPanel";
 import { FooterPanel } from "./components/FooterPanel";
 import { HomePanel } from "./components/HomePanel";
 import { SeoPanel } from "./components/SeoPanel";
@@ -51,18 +51,26 @@ export function AdminDashboard({ user, onLogout }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  async function loadCateringOrders() {
+    try {
+      const cateringData = await api<{ orders: CateringOrder[] }>("/api/admin/catering-orders");
+      setCateringOrders(cateringData.orders);
+    } catch {
+      setCateringOrders([]);
+    }
+  }
+
   async function loadAll() {
     setLoading(true);
     setPopup({ title: "Dashboard laden", message: "Content en inkomende berichten ophalen...", tone: "loading" });
     try {
-      const [contentData, applicationsData, cateringData] = await Promise.all([
+      const [contentData, applicationsData] = await Promise.all([
         api<SiteContent>("/api/admin/content"),
-        api<{ applications: Application[] }>("/api/admin/applications").catch(() => ({ applications: [] })),
-        api<{ orders: CateringOrder[] }>("/api/admin/catering-orders").catch(() => ({ orders: [] }))
+        api<{ applications: Application[] }>("/api/admin/applications").catch(() => ({ applications: [] }))
       ]);
       setContent(contentData);
       setApplications(applicationsData.applications);
-      setCateringOrders(cateringData.orders);
+      await loadCateringOrders();
       setPopup(null);
     } catch (error) {
       setPopup({
@@ -97,6 +105,11 @@ export function AdminDashboard({ user, onLogout }: Props) {
     );
   }, [user]);
 
+  const incomingCateringCount = useMemo(
+    () => cateringOrders.filter((order) => ["nieuw", "bevestigd", "voorbereid"].includes(order.status)).length,
+    [cateringOrders]
+  );
+
   const kpis = useMemo(() => {
     if (!content) return [];
     return [
@@ -105,10 +118,10 @@ export function AdminDashboard({ user, onLogout }: Props) {
       ["Producten", content.menu.reduce((total, category) => total + category.items.length, 0)],
       ["Video's", content.videos.filter((video) => video.active !== false).length],
       ["Sollicitaties", applications.length],
-      ["Catering", cateringOrders.filter((order) => ["nieuw", "bevestigd", "voorbereid"].includes(order.status)).length],
+      ["Catering inkomend", incomingCateringCount],
       ["Hero tags", content.site.hero.tags.length]
     ] as const;
-  }, [content, applications.length, cateringOrders]);
+  }, [content, applications.length, incomingCateringCount]);
 
   async function saveContent() {
     if (!content || saving) return;
@@ -159,6 +172,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
           <nav className="ta-nav">
             {visibleTabs.map(([id, label]) => {
               const Icon = tabIcons[id];
+              const badge = id === "catering" && incomingCateringCount > 0 ? incomingCateringCount : null;
               return (
                 <button
                   key={id}
@@ -168,6 +182,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
                 >
                   <Icon width={18} height={18} />
                   <span>{label}</span>
+                  {badge ? <span className="ta-nav-badge">{badge}</span> : null}
                 </button>
               );
             })}
@@ -193,7 +208,20 @@ export function AdminDashboard({ user, onLogout }: Props) {
               <OverviewPanel />
               <div className="ta-kpis" style={{ marginTop: 18 }}>
                 {kpis.map(([label, value]) => (
-                  <article className="ta-kpi" key={label}>
+                  <article
+                    className={`ta-kpi${label === "Catering inkomend" ? " ta-kpi-clickable" : ""}`}
+                    key={label}
+                    {...(label === "Catering inkomend"
+                      ? {
+                          role: "button",
+                          tabIndex: 0,
+                          onClick: () => setActiveTab("catering"),
+                          onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
+                            if (event.key === "Enter" || event.key === " ") setActiveTab("catering");
+                          }
+                        }
+                      : {})}
+                  >
                     <span>{label}</span>
                     <strong>{value}</strong>
                   </article>
@@ -255,10 +283,22 @@ export function AdminDashboard({ user, onLogout }: Props) {
           {activeTab === "catering" ? (
             <section className="ta-panel ta-fade-in">
               <header className="ta-panel-head">
-                <h2>Cateringbestellingen</h2>
-                <p>Bekijk inkomende cateringaanvragen, filter op datum en werk de status bij.</p>
+                <h2>Catering</h2>
+                <p>
+                  Beheer bestellingen, producten en werkwijze vanuit één overzicht.
+                  {incomingCateringCount > 0 ? ` ${incomingCateringCount} order(s) vragen om actie.` : ""}
+                </p>
               </header>
-              <CateringOrdersPanel orders={cateringOrders} onOrdersChange={setCateringOrders} />
+              <CateringPanel
+                content={content}
+                onContentChange={setContent}
+                orders={cateringOrders}
+                onOrdersChange={setCateringOrders}
+                isActive={activeTab === "catering"}
+                incomingCount={incomingCateringCount}
+                onSave={saveContent}
+                saving={saving}
+              />
             </section>
           ) : null}
 

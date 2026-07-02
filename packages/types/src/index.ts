@@ -411,6 +411,7 @@ export interface SiteSettings {
   mailRelay: MailRelaySettings;
   contactForm: ContactFormSettings;
   vacancy: VacancySettings;
+  catering: CateringSettings;
 }
 
 export interface ReviewsResponse {
@@ -508,6 +509,30 @@ export type CateringBoxId = (typeof CATERING_BOX_IDS)[number];
 export type CateringFulfillment = "pickup" | "delivery";
 export type CateringCategoryId = "buffet" | "burrito" | "drinks" | "sauces" | "team-thanks";
 export type CateringPackageTier = "budget" | "single" | "double" | "triple";
+
+export interface CateringServingOption {
+  servings: number;
+  extraCents: number;
+}
+
+export interface CateringProductConfig {
+  id: string;
+  categoryId: CateringCategoryId;
+  name: string;
+  description: string;
+  image: string;
+  basePriceCents: number;
+  active: boolean;
+  tier?: CateringPackageTier;
+  configurable: boolean;
+  servingOptions: CateringServingOption[];
+}
+
+export interface CateringSettings {
+  maxOnlineServings: number;
+  largeGroupEmail: string;
+  products: CateringProductConfig[];
+}
 
 export interface CateringCartLine {
   id: string;

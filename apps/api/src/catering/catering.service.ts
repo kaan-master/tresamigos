@@ -6,9 +6,10 @@ import type {
   CateringOrderStatus,
   CreateCateringOrderInput,
   SiteContent,
-  UpdateCateringOrderInput
+  UpdateCateringOrderInput,
+  CateringSettings
 } from "@tresamigos/types";
-import { sanitizeCateringOrder, sanitizeUpdateCateringOrderInput } from "@tresamigos/utils";
+import { sanitizeCateringOrder, sanitizeCateringSettings, sanitizeUpdateCateringOrderInput } from "@tresamigos/utils";
 import { ContentService } from "../content/content.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.module";
@@ -261,5 +262,19 @@ export class CateringService {
     });
 
     return this.toDto(record);
+  }
+
+  async getSettings(): Promise<CateringSettings> {
+    const content = await this.contentService.getContent();
+    return content.site.catering;
+  }
+
+  async saveSettings(input: unknown): Promise<CateringSettings> {
+    const settings = sanitizeCateringSettings(input);
+    await this.prisma.siteSettings.update({
+      where: { id: "default" },
+      data: { cateringCatalog: settings as unknown as import("@prisma/client").Prisma.InputJsonValue }
+    });
+    return settings;
   }
 }

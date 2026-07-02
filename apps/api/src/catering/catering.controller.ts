@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Put, UseGuards } from "@nestjs/common";
 import type { CreateCateringOrderInput, UpdateCateringOrderInput } from "@tresamigos/types";
 import { AdminGuard } from "../auth/admin.guard";
 import { PermissionsGuard } from "../auth/permissions.guard";
@@ -12,6 +12,11 @@ export class PublicCateringController {
   @Post("catering")
   create(@Body() body: CreateCateringOrderInput) {
     return this.cateringService.create(body);
+  }
+
+  @Get("catering/catalog")
+  catalog() {
+    return this.cateringService.getSettings();
   }
 }
 
@@ -30,5 +35,17 @@ export class AdminCateringController {
   @RequirePermissions("catering")
   update(@Param("id") id: string, @Body() body: UpdateCateringOrderInput) {
     return this.cateringService.update(id, body);
+  }
+
+  @Get("catering/settings")
+  @RequirePermissions("catering")
+  getSettings() {
+    return this.cateringService.getSettings();
+  }
+
+  @Put("catering/settings")
+  @RequirePermissions("catering")
+  saveSettings(@Body() body: unknown) {
+    return this.cateringService.saveSettings(body);
   }
 }

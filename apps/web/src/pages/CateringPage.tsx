@@ -1,22 +1,23 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { CateringCartLine, CateringCategoryId } from "@tresamigos/types";
 import type { SiteContent } from "@tresamigos/types";
 import { CateringProductModal } from "../components/catering/CateringProductModal";
 import { Helmet } from "../components/Helmet";
+import { useCateringCart } from "../context/CateringCartContext";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { submitCatering } from "../lib/api";
 import {
   CATERING_CATEGORIES,
   FulfillmentMode,
-  LARGE_GROUP_EMAIL,
   buildSimpleLine,
-  cartItemCount,
-  cartSubtotal,
   formatEuro,
   fulfillmentHoursLabel,
   isDeliveryAvailableToday,
   isScheduledWithinHours,
-  productsByCategory
+  productDescription,
+  productLabel,
+  resolveCateringCatalog
 } from "../lib/catering";
 import type { CateringProduct } from "../lib/catering/catalog";
 
@@ -62,11 +63,12 @@ export function CateringPage({ content }: { content: SiteContent }) {
   const { t } = useLanguage();
   const { locations } = content;
   const activeLocations = locations.filter((location) => location.active !== false);
+  const [searchParams] = useSearchParams();
+  const { cart, addLine, removeLine, clearCart, itemCount, subtotalCents: subtotal } = useCateringCart();
 
   const [view, setView] = useState<ShopView>("landing");
   const [fulfillment, setFulfillment] = useState<FulfillmentMode>("pickup");
   const [category, setCategory] = useState<CateringCategoryId>("buffet");
-  const [cart, setCart] = useState<CateringCartLine[]>([]);
   const [activeProduct, setActiveProduct] = useState<CateringProduct | null>(null);
   const [checkout, setCheckout] = useState<CheckoutForm>(emptyCheckout);
   const [message, setMessage] = useState("");
@@ -74,9 +76,14 @@ export function CateringPage({ content }: { content: SiteContent }) {
   const [orderNumber, setOrderNumber] = useState("");
 
   const deliveryAvailable = isDeliveryAvailableToday();
-  const subtotal = useMemo(() => cartSubtotal(cart), [cart]);
-  const itemCount = useMemo(() => cartItemCount(cart), [cart]);
-  const visibleProducts = useMemo(() => productsByCategory(category), [category]);
+  const catalog = useMemo(() => resolveCateringCatalog(content.site.catering), [content.site.catering]);
+  const visibleProducts = useMemo(() => catalog.productsByCategory(category), [catalog, category]);
+
+  useEffect(() => {
+    if (searchParams.get("view") !== "cart") return;
+    setView((current) => (current === "landing" ? "shop" : current));
+    if (cart.length) setView("cart");
+  }, [searchParams, cart.length]);
 
   useEffect(() => {
     if (view === "landing") return;
@@ -96,16 +103,8 @@ export function CateringPage({ content }: { content: SiteContent }) {
       return;
     }
     const line = buildSimpleLine(product, 1);
-    line.name = t(product.nameKey);
-    setCart((current) => [...current, line]);
-  }
-
-  function addLine(line: CateringCartLine) {
-    setCart((current) => [...current, line]);
-  }
-
-  function removeLine(id: string) {
-    setCart((current) => current.filter((line) => line.id !== id));
+    line.name = productLabel(product, t);
+    addLine(line);
   }
 
   function validateCheckout() {
@@ -166,6 +165,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
         notes: checkout.notes
       });
       setOrderNumber(response.order?.orderNumber || "");
+      clearCart();
       setView("success");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t("contact.errorSend"));
@@ -176,7 +176,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
 
   function restart() {
     setView("landing");
-    setCart([]);
+    clearCart();
     setCheckout(emptyCheckout());
     setOrderNumber("");
     setMessage("");
@@ -221,7 +221,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
               {!deliveryAvailable ? <p className="catering-hint">{t("catering.deliveryUnavailable")}</p> : null}
               <p className="catering-hint">
                 {t("catering.largeGroup")}{" "}
-                <a href={`mailto:${LARGE_GROUP_EMAIL}`}>{LARGE_GROUP_EMAIL}</a>
+                <a href={`mailto:${catalog.largeGroupEmail}`}>{catalog.largeGroupEmail}</a>
               </p>
             </div>
             <button type="button" className="btn primary catering-cart-btn" onClick={() => setView("cart")}>
@@ -277,10 +277,10 @@ export function CateringPage({ content }: { content: SiteContent }) {
               <div className="catering-product-grid">
                 {visibleProducts.map((product) => (
                   <button key={product.id} type="button" className="catering-product-card" onClick={() => openProduct(product)}>
-                    <img src={product.image} alt={t(product.nameKey)} loading="lazy" />
+                    <img src={product.image} alt={productLabel(product, t)} loading="lazy" />
                     <div>
-                      <strong>{t(product.nameKey)}</strong>
-                      <p>{t(product.descKey)}</p>
+                      <strong>{productLabel(product, t)}</strong>
+                      <p>{productDescription(product, t)}</p>
                       <span>{formatEuro(product.basePriceCents)}+</span>
                     </div>
                   </button>

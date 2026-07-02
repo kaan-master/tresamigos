@@ -100,6 +100,10 @@ export class ContentService {
         contactForm:
           site.contactForm && typeof site.contactForm === "object" && !Array.isArray(site.contactForm)
             ? (site.contactForm as unknown as SiteContent["site"]["contactForm"])
+            : undefined,
+        catering:
+          site.cateringCatalog && typeof site.cateringCatalog === "object" && !Array.isArray(site.cateringCatalog)
+            ? (site.cateringCatalog as unknown as SiteContent["site"]["catering"])
             : undefined
       },
       locations: locations.map((location) => ({
@@ -181,7 +185,8 @@ export class ContentService {
           instagramFeed: content.site.instagram as unknown as Prisma.InputJsonValue,
           promoPopup: content.site.promoPopup as unknown as Prisma.InputJsonValue,
           mailRelay: content.site.mailRelay as unknown as Prisma.InputJsonValue,
-          contactForm: content.site.contactForm as unknown as Prisma.InputJsonValue
+          contactForm: content.site.contactForm as unknown as Prisma.InputJsonValue,
+          cateringCatalog: content.site.catering as unknown as Prisma.InputJsonValue
         },
         update: {
           seoTitle: content.site.seo.pages.home.title,
@@ -220,7 +225,8 @@ export class ContentService {
           instagramFeed: content.site.instagram as unknown as Prisma.InputJsonValue,
           promoPopup: content.site.promoPopup as unknown as Prisma.InputJsonValue,
           mailRelay: content.site.mailRelay as unknown as Prisma.InputJsonValue,
-          contactForm: content.site.contactForm as unknown as Prisma.InputJsonValue
+          contactForm: content.site.contactForm as unknown as Prisma.InputJsonValue,
+          cateringCatalog: content.site.catering as unknown as Prisma.InputJsonValue
         }
       });
 
