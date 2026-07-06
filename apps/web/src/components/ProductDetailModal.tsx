@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../i18n/LanguageProvider";
-import { showCateringNav } from "../lib/featureFlags";
 import { productImageUrl } from "../lib/productImage";
 
 interface Product {
@@ -47,11 +46,9 @@ export function ProductDetailModal({ open, product, onClose }: Props) {
           <p>{product.description}</p>
           <strong>{product.price}</strong>
           <div className="product-modal-actions">
-            {showCateringNav ? (
-              <Link className="btn primary" to="/catering" onClick={onClose}>
-                {t("menu.cateringCta")}
-              </Link>
-            ) : null}
+            <Link className="btn primary" to="/catering" onClick={onClose}>
+              {t("menu.cateringCta")}
+            </Link>
             <button type="button" className="btn alt" onClick={onClose}>
               {t("common.close")}
             </button>

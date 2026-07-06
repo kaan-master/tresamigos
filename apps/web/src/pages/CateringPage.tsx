@@ -2,7 +2,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { CateringCartLine, CateringCategoryId } from "@tresamigos/types";
 import type { SiteContent } from "@tresamigos/types";
-import { CateringProductModal } from "../components/catering/CateringProductModal";
+import { CateringProductConfigurator } from "../components/catering/CateringProductModal";
+import { CateringFlowSteps } from "../components/catering/CateringFlowSteps";
 import { Helmet } from "../components/Helmet";
 import { useCateringCart } from "../context/CateringCartContext";
 import { useLanguage } from "../i18n/LanguageProvider";
@@ -21,7 +22,7 @@ import {
 } from "../lib/catering";
 import type { CateringProduct } from "../lib/catering/catalog";
 
-type ShopView = "landing" | "shop" | "cart" | "checkout" | "success";
+type ShopView = "landing" | "shop" | "configure" | "cart" | "checkout" | "success";
 
 interface CheckoutForm {
   name: string;
@@ -60,13 +61,13 @@ function configSummary(line: CateringCartLine) {
 }
 
 export function CateringPage({ content }: { content: SiteContent }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { locations } = content;
   const activeLocations = locations.filter((location) => location.active !== false);
   const [searchParams] = useSearchParams();
   const { cart, addLine, removeLine, clearCart, itemCount, subtotalCents: subtotal } = useCateringCart();
 
-  const [view, setView] = useState<ShopView>("landing");
+  const [view, setView] = useState<ShopView>("shop");
   const [fulfillment, setFulfillment] = useState<FulfillmentMode>("pickup");
   const [category, setCategory] = useState<CateringCategoryId>("buffet");
   const [activeProduct, setActiveProduct] = useState<CateringProduct | null>(null);
@@ -76,8 +77,19 @@ export function CateringPage({ content }: { content: SiteContent }) {
   const [orderNumber, setOrderNumber] = useState("");
 
   const deliveryAvailable = isDeliveryAvailableToday();
-  const catalog = useMemo(() => resolveCateringCatalog(content.site.catering), [content.site.catering]);
+  const catalog = useMemo(() => resolveCateringCatalog(content.site.catering, lang), [content.site.catering, lang]);
   const visibleProducts = useMemo(() => catalog.productsByCategory(category), [catalog, category]);
+  const categoryTabs = useMemo(() => {
+    const fromSettings = catalog.categories.filter((entry) => entry.visible).sort((a, b) => a.sortOrder - b.sortOrder);
+    if (fromSettings.length) return fromSettings.map((entry) => ({ id: entry.id }));
+    return CATERING_CATEGORIES.map((entry) => ({ id: entry.id }));
+  }, [catalog.categories]);
+
+  useEffect(() => {
+    if (categoryTabs.length && !categoryTabs.some((entry) => entry.id === category)) {
+      setCategory(categoryTabs[0].id);
+    }
+  }, [categoryTabs, category]);
 
   useEffect(() => {
     if (searchParams.get("view") !== "cart") return;
@@ -100,11 +112,26 @@ export function CateringPage({ content }: { content: SiteContent }) {
   function openProduct(product: CateringProduct) {
     if (product.configurable) {
       setActiveProduct(product);
+      setView("configure");
       return;
     }
     const line = buildSimpleLine(product, 1);
     line.name = productLabel(product, t);
     addLine(line);
+  }
+
+  function flowStep() {
+    if (view === "success") return "done" as const;
+    if (view === "checkout") return "checkout" as const;
+    if (view === "cart") return "cart" as const;
+    if (view === "configure") return "package" as const;
+    return "category" as const;
+  }
+
+  function navigateFlow(step: ReturnType<typeof flowStep>) {
+    if (step === "method" || step === "category") setView("shop");
+    if (step === "cart") setView("cart");
+    if (step === "checkout" && cart.length) setView("checkout");
   }
 
   function validateCheckout() {
@@ -175,7 +202,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
   }
 
   function restart() {
-    setView("landing");
+    setView("shop");
     clearCart();
     setCheckout(emptyCheckout());
     setOrderNumber("");
@@ -208,25 +235,41 @@ export function CateringPage({ content }: { content: SiteContent }) {
   return (
     <>
       <Helmet title={t("catering.seoTitle")} description={t("catering.seoDesc")} />
+      {view === "configure" && activeProduct ? (
+        <div className="shell">
+          <CateringFlowSteps current="package" onNavigate={navigateFlow} />
+          <CateringProductConfigurator
+            product={activeProduct}
+            onBack={() => {
+              setActiveProduct(null);
+              setView("shop");
+            }}
+            onAdd={addLine}
+          />
+        </div>
+      ) : (
       <section className="catering-page catering-shop">
         <div className="shell">
+          <CateringFlowSteps current={flowStep()} onNavigate={navigateFlow} />
+
           <div className="catering-shop-head">
             <div>
               <p className="eyebrow">{t("catering.eyebrow")}</p>
-              <h1>{t("catering.shopTitle")}</h1>
-              <p className="catering-hours">
-                {t("catering.pickupHours")}: {fulfillmentHoursLabel("pickup")} · {t("catering.deliveryHours")}:{" "}
-                {fulfillmentHoursLabel("delivery")}
-              </p>
-              {!deliveryAvailable ? <p className="catering-hint">{t("catering.deliveryUnavailable")}</p> : null}
-              <p className="catering-hint">
-                {t("catering.largeGroup")}{" "}
-                <a href={`mailto:${catalog.largeGroupEmail}`}>{catalog.largeGroupEmail}</a>
-              </p>
+              <h1>{view === "cart" ? t("catering.cartReview") : view === "checkout" ? t("catering.step.checkout") : t("catering.shopTitle")}</h1>
+              {view === "shop" ? (
+                <>
+                  <p className="catering-hours">
+                    {t("catering.pickupHours")}: {fulfillmentHoursLabel("pickup")} · {t("catering.deliveryHours")}:{" "}
+                    {fulfillmentHoursLabel("delivery")}
+                  </p>
+                  {!deliveryAvailable ? <p className="catering-hint">{t("catering.deliveryUnavailable")}</p> : null}
+                  <p className="catering-hint">
+                    {t("catering.largeGroup")}{" "}
+                    <a href={`mailto:${catalog.largeGroupEmail}`}>{catalog.largeGroupEmail}</a>
+                  </p>
+                </>
+              ) : null}
             </div>
-            <button type="button" className="btn primary catering-cart-btn" onClick={() => setView("cart")}>
-              {t("catering.cart")} ({itemCount}) · {formatEuro(subtotal)}
-            </button>
           </div>
 
           {view === "success" ? (
@@ -262,14 +305,14 @@ export function CateringPage({ content }: { content: SiteContent }) {
               </div>
 
               <div className="catering-category-tabs">
-                {CATERING_CATEGORIES.map((entry) => (
+                {categoryTabs.map((entry) => (
                   <button
                     key={entry.id}
                     type="button"
                     className={category === entry.id ? "active" : ""}
                     onClick={() => setCategory(entry.id)}
                   >
-                    {t(entry.labelKey)}
+                    {catalog.categoryLabel(entry.id, t)}
                   </button>
                 ))}
               </div>
@@ -333,20 +376,22 @@ export function CateringPage({ content }: { content: SiteContent }) {
               <p>{t("catering.guestCheckout")}</p>
 
               {fulfillment === "pickup" ? (
-                <label className="form-field">
+                <div className="form-field">
                   <span>{t("catering.field.location")}</span>
-                  <select
-                    value={checkout.locationId}
-                    onChange={(event) => setCheckout((current) => ({ ...current, locationId: event.target.value }))}
-                  >
-                    <option value="">{t("catering.field.locationPlaceholder")}</option>
+                  <div className="catering-choice-grid catering-location-grid">
                     {activeLocations.map((location) => (
-                      <option key={location.id} value={location.id}>
-                        {location.name}
-                      </option>
+                      <button
+                        key={location.id}
+                        type="button"
+                        className={`catering-choice catering-location-choice${checkout.locationId === location.id ? " is-selected" : ""}`}
+                        onClick={() => setCheckout((current) => ({ ...current, locationId: location.id }))}
+                      >
+                        <strong>{location.name}</strong>
+                        <span>{location.area}</span>
+                      </button>
                     ))}
-                  </select>
-                </label>
+                  </div>
+                </div>
               ) : (
                 <label className="form-field">
                   <span>{t("catering.field.address")}</span>
@@ -430,15 +475,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
           ) : null}
         </div>
       </section>
-
-      {activeProduct ? (
-        <CateringProductModal
-          product={activeProduct}
-          open={Boolean(activeProduct)}
-          onClose={() => setActiveProduct(null)}
-          onAdd={addLine}
-        />
-      ) : null}
+      )}
     </>
   );
 }

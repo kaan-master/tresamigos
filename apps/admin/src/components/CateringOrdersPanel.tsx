@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CateringOrder, CateringOrderStatus } from "@tresamigos/types";
-import { CATERING_ORDER_STATUSES } from "@tresamigos/types";
 import { api } from "../lib/api";
 import {
-  BOX_LABELS,
+  DateFilterPreset,
   formatConfiguration,
   formatEuro,
   formatEventDateTime,
@@ -11,62 +10,23 @@ import {
   INCOMING_STATUSES,
   isEventPast,
   isEventSoon,
+  matchesDateFilter,
   orderSummaryMeta,
   parseEventDate,
   STATUS_BADGE_CLASS,
   STATUS_LABELS
 } from "../lib/cateringAdmin";
-import { AdminFilterChips, AdminListRow, AdminSearchBar } from "./AdminListUi";
+import { AdminListRow, AdminSearchBar } from "./AdminListUi";
+import { CateringOrderStatusPipeline } from "./catering/CateringOrderStatusPipeline";
 
 interface Props {
   orders: CateringOrder[];
   onOrdersChange: (orders: CateringOrder[]) => void;
   isActive?: boolean;
+  initialSelectedId?: string | null;
 }
 
-type DatePreset = "today" | "week" | "month" | "upcoming" | "all";
-type ScopeFilter = "incoming" | "all";
 type SortMode = "eventAsc" | "createdDesc";
-
-function startOfDay(date: Date) {
-  const copy = new Date(date);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
-
-function orderMatchesDate(order: CateringOrder, preset: DatePreset) {
-  if (preset === "all") return true;
-
-  const reference = parseEventDate(order) || new Date(order.createdAt);
-  if (!reference) return false;
-
-  const now = new Date();
-  const start = startOfDay(now);
-
-  if (preset === "today") {
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-    return reference >= start && reference < end;
-  }
-
-  if (preset === "week") {
-    const weekStart = new Date(start);
-    weekStart.setDate(weekStart.getDate() - 6);
-    const weekEnd = new Date(start);
-    weekEnd.setDate(weekEnd.getDate() + 7);
-    return reference >= weekStart && reference < weekEnd;
-  }
-
-  if (preset === "month") {
-    const monthStart = new Date(start);
-    monthStart.setDate(monthStart.getDate() - 29);
-    const monthEnd = new Date(start);
-    monthEnd.setDate(monthEnd.getDate() + 30);
-    return reference >= monthStart && reference < monthEnd;
-  }
-
-  return reference >= start;
-}
 
 function sortOrders(orders: CateringOrder[], sortMode: SortMode) {
   return [...orders].sort((a, b) => {
@@ -79,14 +39,13 @@ function sortOrders(orders: CateringOrder[], sortMode: SortMode) {
   });
 }
 
-export function CateringOrdersPanel({ orders, onOrdersChange, isActive }: Props) {
+export function CateringOrdersPanel({ orders, onOrdersChange, isActive, initialSelectedId = null }: Props) {
   const [query, setQuery] = useState("");
-  const [datePreset, setDatePreset] = useState<DatePreset>("upcoming");
-  const [scope, setScope] = useState<ScopeFilter>("incoming");
+  const [statusFilter, setStatusFilter] = useState<string>("incoming");
+  const [periodFilter, setPeriodFilter] = useState<DateFilterPreset>("upcoming");
   const [sortMode, setSortMode] = useState<SortMode>("eventAsc");
-  const [showFilters, setShowFilters] = useState(false);
-  const [fulfillmentFilter, setFulfillmentFilter] = useState("all");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
   const [draftStatus, setDraftStatus] = useState<CateringOrderStatus>("nieuw");
   const [draftNotes, setDraftNotes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -116,14 +75,18 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive }: Props)
     return () => window.clearInterval(interval);
   }, [isActive]);
 
+  useEffect(() => {
+    if (initialSelectedId) setSelectedId(initialSelectedId);
+  }, [initialSelectedId]);
+
   const sorted = useMemo(() => sortOrders(orders, sortMode), [orders, sortMode]);
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return sorted.filter((order) => {
-      if (!orderMatchesDate(order, datePreset)) return false;
-      if (scope === "incoming" && !INCOMING_STATUSES.has(order.status)) return false;
-      if (fulfillmentFilter !== "all" && order.fulfillment !== fulfillmentFilter) return false;
+      if (statusFilter === "incoming" && !INCOMING_STATUSES.has(order.status)) return false;
+      if (statusFilter !== "incoming" && statusFilter !== "all" && order.status !== statusFilter) return false;
+      if (!matchesDateFilter(parseEventDate(order), periodFilter)) return false;
       if (!normalized) return true;
 
       const haystack = [
@@ -135,11 +98,6 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive }: Props)
         order.locationName,
         order.address,
         order.status,
-        BOX_LABELS[order.boxId] || order.boxId,
-        order.proteins.join(" "),
-        order.toppings.join(" "),
-        order.salsas.join(" "),
-        order.diet.join(" "),
         order.notes,
         order.adminNotes,
         order.eventDate,
@@ -152,12 +110,13 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive }: Props)
 
       return haystack.includes(normalized);
     });
-  }, [sorted, query, datePreset, scope, fulfillmentFilter]);
+  }, [sorted, query, statusFilter, periodFilter]);
 
   const selected =
     filtered.find((order) => order.id === selectedId) || orders.find((order) => order.id === selectedId) || null;
 
   const incomingCount = orders.filter((order) => INCOMING_STATUSES.has(order.status)).length;
+  const activeFilterCount = [statusFilter !== "incoming", periodFilter !== "upcoming", sortMode !== "eventAsc"].filter(Boolean).length;
 
   function selectOrder(order: CateringOrder) {
     setSelectedId(order.id);
@@ -218,49 +177,46 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive }: Props)
           label="Zoeken"
         />
 
-        <AdminFilterChips
-          value={scope}
-          onChange={(value) => setScope(value as ScopeFilter)}
-          options={[
-            { value: "incoming", label: `Inkomend (${incomingCount})` },
-            { value: "all", label: "Alle orders" }
-          ]}
-        />
-
-        <AdminFilterChips
-          value={datePreset}
-          onChange={(value) => setDatePreset(value as DatePreset)}
-          options={[
-            { value: "upcoming", label: "Komende events" },
-            { value: "today", label: "Vandaag" },
-            { value: "week", label: "Deze week" },
-            { value: "all", label: "Alles" }
-          ]}
-        />
-
-        <button className="catering-filters-toggle" type="button" onClick={() => setShowFilters((open) => !open)}>
-          {showFilters ? "Minder filters" : "Meer filters"}
+        <button
+          type="button"
+          className="catering-filters-toggle"
+          aria-expanded={filtersOpen}
+          onClick={() => setFiltersOpen((open) => !open)}
+        >
+          Filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
         </button>
 
-        {showFilters ? (
+        {filtersOpen ? (
           <div className="catering-filters-panel">
-            <AdminFilterChips
-              value={sortMode}
-              onChange={(value) => setSortMode(value as SortMode)}
-              options={[
-                { value: "eventAsc", label: "Event: eerstvolgend" },
-                { value: "createdDesc", label: "Nieuwste bestelling" }
-              ]}
-            />
-            <AdminFilterChips
-              value={fulfillmentFilter}
-              onChange={setFulfillmentFilter}
-              options={[
-                { value: "all", label: "Afhalen & bezorgen" },
-                { value: "pickup", label: "Afhalen" },
-                { value: "delivery", label: "Bezorgen" }
-              ]}
-            />
+            <label className="ta-field">
+              <span>Status</span>
+              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+                <option value="incoming">Inkomend ({incomingCount})</option>
+                <option value="all">Alle statussen</option>
+                <option value="nieuw">Nieuw</option>
+                <option value="bevestigd">Bevestigd</option>
+                <option value="voorbereid">In voorbereiding</option>
+                <option value="afgerond">Afgerond</option>
+                <option value="geannuleerd">Geannuleerd</option>
+              </select>
+            </label>
+            <label className="ta-field">
+              <span>Eventperiode</span>
+              <select value={periodFilter} onChange={(event) => setPeriodFilter(event.target.value as DateFilterPreset)}>
+                <option value="upcoming">Komende events</option>
+                <option value="today">Vandaag</option>
+                <option value="week">Deze week</option>
+                <option value="month">Deze maand</option>
+                <option value="all">Alles</option>
+              </select>
+            </label>
+            <label className="ta-field">
+              <span>Sorteren</span>
+              <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}>
+                <option value="eventAsc">Eerstvolgend event</option>
+                <option value="createdDesc">Nieuwste bestelling</option>
+              </select>
+            </label>
           </div>
         ) : null}
 
@@ -294,6 +250,14 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive }: Props)
             </div>
             <span className={`ta-status ${STATUS_BADGE_CLASS[selected.status]}`}>{STATUS_LABELS[selected.status]}</span>
           </div>
+
+          <CateringOrderStatusPipeline
+            current={selected.status}
+            onSelect={(status) => {
+              if (saving) return;
+              void quickStatus(status);
+            }}
+          />
 
           <div className={`catering-admin-event-card${isEventSoon(selected) ? " is-soon" : ""}${isEventPast(selected) ? " is-past" : ""}`}>
             <strong>{formatEventDateTime(selected)}</strong>
@@ -358,7 +322,7 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive }: Props)
           </section>
 
           <section className="catering-admin-section">
-            <h4>{selected.items.length ? `Producten (${selected.items.length})` : "Box & samenstelling"}</h4>
+            <h4>{selected.items.length ? `Producten (${selected.items.length})` : "Samenstelling"}</h4>
             {selected.items.length ? (
               <div className="catering-admin-lines">
                 {selected.items.map((line) => (
@@ -377,20 +341,7 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive }: Props)
                 ))}
               </div>
             ) : (
-              <div className="catering-admin-kv">
-                <span>Boxtype</span>
-                <strong>{BOX_LABELS[selected.boxId] || selected.boxId}</strong>
-                <span>Aantal gasten</span>
-                <strong>{selected.quantity}</strong>
-                <span>Eiwitten</span>
-                <strong>{selected.proteins.join(", ") || "—"}</strong>
-                <span>Toppings</span>
-                <strong>{selected.toppings.join(", ") || "—"}</strong>
-                <span>Salsa&apos;s</span>
-                <strong>{selected.salsas.join(", ") || "—"}</strong>
-                <span>Dieet</span>
-                <strong>{selected.diet.join(", ") || "—"}</strong>
-              </div>
+              <p className="ta-seo-hint">Geen productregels in deze order.</p>
             )}
             {selected.subtotalCents > 0 ? (
               <p className="catering-admin-total">
@@ -407,26 +358,16 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive }: Props)
           ) : null}
 
           <section className="catering-admin-section">
-            <h4>Beheer</h4>
-            <div className="ta-grid">
-              <label className="ta-field">
-                <span>Status</span>
-                <select value={draftStatus} onChange={(event) => setDraftStatus(event.target.value as CateringOrderStatus)}>
-                  {CATERING_ORDER_STATUSES.map((status) => (
-                    <option key={status} value={status}>
-                      {STATUS_LABELS[status]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="ta-field ta-grid-wide">
-                <span>Interne notities</span>
-                <textarea rows={4} value={draftNotes} onChange={(event) => setDraftNotes(event.target.value)} placeholder="Bijv. contact gehad, allergieën, aanpassingen..." />
-              </label>
-            </div>
+            <h4>Interne notities</h4>
+            <textarea
+              rows={4}
+              value={draftNotes}
+              onChange={(event) => setDraftNotes(event.target.value)}
+              placeholder="Bijv. contact gehad, allergieën, aanpassingen..."
+            />
             <div className="ta-toolbar" style={{ marginTop: 12 }}>
               <button className="ta-btn ta-btn-primary" type="button" disabled={saving} onClick={() => void saveOrder()}>
-                {saving ? "Opslaan…" : "Opslaan"}
+                {saving ? "Opslaan…" : "Notities opslaan"}
               </button>
             </div>
           </section>

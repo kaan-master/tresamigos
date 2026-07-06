@@ -193,7 +193,10 @@ export class CateringService {
   }
 
   private async notifyOwner(content: SiteContent, order: CateringOrder) {
-    const inbox = content.site.footer.email || content.site.mailRelay.replyTo;
+    const inbox =
+      content.site.catering?.notifications?.recipientEmail ||
+      content.site.footer.email ||
+      content.site.mailRelay.replyTo;
     if (!inbox) return;
 
     const itemsBlock =

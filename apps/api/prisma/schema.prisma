@@ -43,6 +43,7 @@ model SiteSettings {
   mailRelay          Json     @default("{}")
   contactForm        Json     @default("{}")
   cateringCatalog    Json     @default("{}")
+  navigation         Json     @default("{}")
   seoSiteUrl           String   @default("https://tresamigos.nl")
   seoGoogleVerification String  @default("")
   seoBingVerification   String  @default("")

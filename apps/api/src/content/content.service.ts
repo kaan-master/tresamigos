@@ -42,6 +42,10 @@ export class ContentService {
           label: site.navCtaLabel,
           url: site.navCtaUrl
         },
+        navigation:
+          site.navigation && typeof site.navigation === "object" && !Array.isArray(site.navigation)
+            ? (site.navigation as unknown as SiteContent["site"]["navigation"])
+            : undefined,
         hero: {
           eyebrow: site.heroEyebrow,
           title: site.heroTitle,
@@ -160,6 +164,7 @@ export class ContentService {
           seoPages: content.site.seo.pages as unknown as Prisma.InputJsonValue,
           navCtaLabel: content.site.navCta.label,
           navCtaUrl: content.site.navCta.url,
+          navigation: content.site.navigation as unknown as Prisma.InputJsonValue,
           heroEyebrow: content.site.hero.eyebrow,
           heroTitle: content.site.hero.title,
           heroIntro: content.site.hero.intro,
@@ -200,6 +205,7 @@ export class ContentService {
           seoPages: content.site.seo.pages as unknown as Prisma.InputJsonValue,
           navCtaLabel: content.site.navCta.label,
           navCtaUrl: content.site.navCta.url,
+          navigation: content.site.navigation as unknown as Prisma.InputJsonValue,
           heroEyebrow: content.site.hero.eyebrow,
           heroTitle: content.site.hero.title,
           heroIntro: content.site.hero.intro,

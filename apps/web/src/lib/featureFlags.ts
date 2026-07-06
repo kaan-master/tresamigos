@@ -4,5 +4,5 @@ function envFlag(value: string | undefined, defaultValue = false) {
   return normalized === "true" || normalized === "1" || normalized === "yes";
 }
 
-/** Navbar link + menu product modal catering CTA. Set VITE_SHOW_CATERING_NAV in root .env */
-export const showCateringNav = envFlag(import.meta.env.VITE_SHOW_CATERING_NAV, false);
+/** @deprecated gebruik site.navigation in admin; blijft als fallback voor catering-link */
+export const showCateringNav = envFlag(import.meta.env.VITE_SHOW_CATERING_NAV, true);

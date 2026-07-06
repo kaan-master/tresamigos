@@ -2,8 +2,12 @@ import crypto from "node:crypto";
 import type {
   Application,
   CateringCartLine,
+  CateringCategoryConfig,
   CateringCategoryId,
+  CateringFormFieldConfig,
   CateringFulfillment,
+  CateringLocalizedText,
+  CateringNotificationsSettings,
   CateringOrder,
   CateringOrderStatus,
   CateringPackageTier,
@@ -21,6 +25,7 @@ import type {
 } from "@tresamigos/types";
 import { SEO_PAGE_KEYS, WEEK_DAYS } from "@tresamigos/types";
 import { DEFAULT_CATERING_SETTINGS } from "./cateringDefaults";
+import { DEFAULT_NAV_SETTINGS, sanitizeNavSettings } from "./navDefaults";
 
 export function cleanText(value: unknown, fallback = "", max = 1000): string {
   if (typeof value !== "string") return fallback;
@@ -727,6 +732,17 @@ export function sanitizeUpdateCateringOrderInput(input: UpdateCateringOrderInput
 const CATERING_CATEGORY_IDS = ["buffet", "burrito", "drinks", "sauces", "team-thanks"] as const;
 const CATERING_TIERS = ["budget", "single", "double", "triple"] as const;
 
+function sanitizeLocalizedText(value: unknown, fallback: CateringLocalizedText): CateringLocalizedText {
+  if (typeof value === "string") {
+    return { nl: cleanText(value, fallback.nl, 200), en: cleanText(value, fallback.en, 200) };
+  }
+  const raw = value && typeof value === "object" ? (value as Partial<CateringLocalizedText>) : {};
+  return {
+    nl: cleanText(raw.nl, fallback.nl, 200),
+    en: cleanText(raw.en, fallback.en, 200)
+  };
+}
+
 function sanitizeServingOptions(value: unknown): CateringServingOption[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -742,8 +758,9 @@ function sanitizeServingOptions(value: unknown): CateringServingOption[] {
 }
 
 function sanitizeCateringProduct(value: unknown, index: number): CateringProductConfig | null {
-  const raw = value && typeof value === "object" ? (value as Partial<CateringProductConfig>) : {};
-  const name = cleanText(raw.name, `Product ${index + 1}`, 160);
+  const raw = value && typeof value === "object" ? (value as Partial<CateringProductConfig> & { name?: unknown; description?: unknown }) : {};
+  const fallbackName = `Product ${index + 1}`;
+  const name = sanitizeLocalizedText(raw.name, { nl: fallbackName, en: fallbackName });
   const categoryRaw = cleanText(raw.categoryId, "buffet", 40);
   const categoryId = CATERING_CATEGORY_IDS.includes(categoryRaw as CateringCategoryId)
     ? (categoryRaw as CateringCategoryId)
@@ -752,19 +769,56 @@ function sanitizeCateringProduct(value: unknown, index: number): CateringProduct
   const tier = CATERING_TIERS.includes(tierRaw as CateringPackageTier) ? (tierRaw as CateringPackageTier) : undefined;
   const configurable = raw.configurable === true;
   const servingOptions = sanitizeServingOptions(raw.servingOptions);
-  const id = cleanSlug(raw.id, cleanSlug(name, `catering-product-${index + 1}`));
+  const id = cleanSlug(raw.id, cleanSlug(name.nl, `catering-product-${index + 1}`));
 
   return {
     id,
     categoryId,
     name,
-    description: cleanText(raw.description, "", 500),
+    description: sanitizeLocalizedText(raw.description, { nl: "", en: "" }),
     image: cleanUrl(raw.image) || "/assets/brand/breakfast-lunch-dinner.png",
     basePriceCents: Math.min(500_000, Math.max(0, Number(raw.basePriceCents) || 0)),
     active: raw.active !== false,
+    sortOrder: Math.min(200, Math.max(0, Number(raw.sortOrder) || index)),
+    minServings: Math.min(500, Math.max(1, Number(raw.minServings) || 10)),
+    maxServings: Math.min(500, Math.max(1, Number(raw.maxServings) || 30)),
     tier: configurable ? tier : undefined,
     configurable,
     servingOptions: configurable ? servingOptions : []
+  };
+}
+
+function sanitizeCateringCategory(value: unknown, index: number): CateringCategoryConfig | null {
+  const raw = value && typeof value === "object" ? (value as Partial<CateringCategoryConfig>) : {};
+  const idRaw = cleanText(raw.id, DEFAULT_CATERING_SETTINGS.categories[index]?.id || "buffet", 40);
+  const id = CATERING_CATEGORY_IDS.includes(idRaw as CateringCategoryId) ? (idRaw as CateringCategoryId) : "buffet";
+  const fallback = DEFAULT_CATERING_SETTINGS.categories.find((category) => category.id === id);
+  return {
+    id,
+    label: sanitizeLocalizedText(raw.label, fallback?.label || { nl: id, en: id }),
+    sortOrder: Math.min(200, Math.max(0, Number(raw.sortOrder) ?? index)),
+    visible: raw.visible !== false
+  };
+}
+
+function sanitizeCateringFormField(value: unknown, index: number): CateringFormFieldConfig | null {
+  const raw = value && typeof value === "object" ? (value as Partial<CateringFormFieldConfig>) : {};
+  const id = cleanSlug(raw.id, DEFAULT_CATERING_SETTINGS.formFields[index]?.id || `field-${index + 1}`);
+  const fallback = DEFAULT_CATERING_SETTINGS.formFields.find((field) => field.id === id);
+  return {
+    id,
+    label: sanitizeLocalizedText(raw.label, fallback?.label || { nl: id, en: id }),
+    enabled: raw.enabled !== false,
+    required: raw.required === true
+  };
+}
+
+function sanitizeCateringNotifications(value: unknown): CateringNotificationsSettings {
+  const raw = value && typeof value === "object" ? (value as Partial<CateringNotificationsSettings>) : {};
+  return {
+    recipientEmail: cleanText(raw.recipientEmail, DEFAULT_CATERING_SETTINGS.notifications.recipientEmail, 180),
+    notifyOnNewOrder: raw.notifyOnNewOrder !== false,
+    notifyOnStatusChange: raw.notifyOnStatusChange === true
   };
 }
 
@@ -776,11 +830,26 @@ export function sanitizeCateringSettings(value: unknown): CateringSettings {
         .filter((product): product is CateringProductConfig => Boolean(product))
         .slice(0, 80)
     : [];
+  const categories = Array.isArray(raw.categories)
+    ? raw.categories
+        .map((category, index) => sanitizeCateringCategory(category, index))
+        .filter((category): category is CateringCategoryConfig => Boolean(category))
+        .slice(0, 20)
+    : [];
+  const formFields = Array.isArray(raw.formFields)
+    ? raw.formFields
+        .map((field, index) => sanitizeCateringFormField(field, index))
+        .filter((field): field is CateringFormFieldConfig => Boolean(field))
+        .slice(0, 20)
+    : [];
 
   return {
     maxOnlineServings: Math.min(500, Math.max(1, Number(raw.maxOnlineServings) || DEFAULT_CATERING_SETTINGS.maxOnlineServings)),
     largeGroupEmail: cleanText(raw.largeGroupEmail, DEFAULT_CATERING_SETTINGS.largeGroupEmail, 180),
-    products: products.length ? products : DEFAULT_CATERING_SETTINGS.products
+    categories: categories.length ? categories : DEFAULT_CATERING_SETTINGS.categories,
+    products: products.length ? products : DEFAULT_CATERING_SETTINGS.products,
+    formFields: formFields.length ? formFields : DEFAULT_CATERING_SETTINGS.formFields,
+    notifications: sanitizeCateringNotifications(raw.notifications)
   };
 }
 
@@ -791,6 +860,7 @@ export function sanitizeContent(input: unknown): SiteContent {
   const hero = site.hero || ({} as SiteContent["site"]["hero"]);
   const footer = site.footer || ({} as SiteContent["site"]["footer"]);
   const navCta = site.navCta || ({} as SiteContent["site"]["navCta"]);
+  const navigation = site.navigation;
   const videosSection = site.videosSection || ({} as SiteContent["site"]["videosSection"]);
   const vacancy = site.vacancy;
   const openingHours = site.openingHours;
@@ -890,6 +960,7 @@ export function sanitizeContent(input: unknown): SiteContent {
         label: cleanText(navCta.label, "Order Now", 80),
         url: cleanUrl(navCta.url) || "/order"
       },
+      navigation: sanitizeNavSettings(navigation || DEFAULT_NAV_SETTINGS),
       hero: {
         eyebrow: cleanText(hero.eyebrow, "Amsterdam Mexican Street Food", 120),
         title: cleanText(hero.title, "Fresh Mexican street food.", 180),

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import type { SiteContent } from "@tresamigos/types";
+import type { NavItemId, SiteContent } from "@tresamigos/types";
+import { getVisibleNavItems, NAV_ITEM_I18N_KEYS, NAV_ITEM_PATHS, DEFAULT_NAV_SETTINGS } from "@tresamigos/utils";
 import { assetUrl } from "../lib/api";
 import { showCateringNav } from "../lib/featureFlags";
 import { useCateringCart } from "../context/CateringCartContext";
@@ -32,12 +33,132 @@ function formatCopyright(template: string) {
   return `© ${year} ${template.replace(/^©\s*/, "").trim()}`;
 }
 
+function MainNavLink({ id, label }: { id: NavItemId; label: string }) {
+  const path = NAV_ITEM_PATHS[id];
+  return (
+    <NavLink to={path} end={path === "/"}>
+      {label}
+    </NavLink>
+  );
+}
+
+function UtilityNavLink({ id, label }: { id: NavItemId; label: string }) {
+  const path = NAV_ITEM_PATHS[id];
+  if (id === "findTresAmigos") {
+    return (
+      <Link className="nav-text-link" to={path}>
+        <IconLocation />
+        <span>{label}</span>
+      </Link>
+    );
+  }
+  if (id === "login") {
+    return (
+      <Link className="nav-text-link" to={path}>
+        <IconLogin />
+        <span>{label}</span>
+      </Link>
+    );
+  }
+  return (
+    <Link className="nav-text-link" to={path}>
+      <span>{label}</span>
+    </Link>
+  );
+}
+
+function CartNavLink({ mobile }: { mobile?: boolean }) {
+  const { t } = useLanguage();
+  const { itemCount } = useCateringCart();
+  const className = mobile ? "nav-icon-link nav-cart-link nav-mobile-only" : "nav-icon-link nav-cart-link";
+  return (
+    <Link
+      className={className}
+      to={itemCount > 0 ? "/catering?view=cart" : "/catering"}
+      aria-label={itemCount > 0 ? `${t("nav.cart")} (${itemCount})` : t("nav.cart")}
+    >
+      <IconCart />
+      {itemCount > 0 ? <span className="nav-cart-badge">{itemCount}</span> : null}
+    </Link>
+  );
+}
+
+function MobileUtilityNavLink({ id, label }: { id: NavItemId; label: string }) {
+  const path = NAV_ITEM_PATHS[id];
+  if (id === "findTresAmigos") {
+    return (
+      <Link className="nav-text-link nav-mobile-only" to={path}>
+        <IconLocation />
+        <span>{label}</span>
+      </Link>
+    );
+  }
+  if (id === "login") {
+    return (
+      <Link className="nav-text-link nav-mobile-only" to={path}>
+        <IconLogin />
+        <span>{label}</span>
+      </Link>
+    );
+  }
+  return (
+    <Link className="nav-text-link nav-mobile-only" to={path}>
+      <span>{label}</span>
+    </Link>
+  );
+}
+
+function resolveMainNavItems(navigation: SiteContent["site"]["navigation"]) {
+  const settings = navigation ?? DEFAULT_NAV_SETTINGS;
+  let items = getVisibleNavItems(settings, "main");
+
+  if (!showCateringNav) {
+    return items.filter((item) => item.id !== "catering");
+  }
+
+  if (!items.some((item) => item.id === "catering")) {
+    const cateringDefault = DEFAULT_NAV_SETTINGS.items.find((item) => item.id === "catering");
+    if (cateringDefault) {
+      items = [...items, cateringDefault].sort((a, b) => a.sortOrder - b.sortOrder);
+    }
+  }
+
+  return items;
+}
+
+  navigation,
+  mobile
+}: {
+  navigation: SiteContent["site"]["navigation"];
+  mobile?: boolean;
+}) {
+  const { t } = useLanguage();
+  const utilityNavItems = getVisibleNavItems(navigation, "utility");
+  const loginIndex = utilityNavItems.findIndex((item) => item.id === "login");
+
+  return (
+    <>
+      {utilityNavItems.map((item, index) => (
+        <span key={item.id} style={{ display: "contents" }}>
+          {index === loginIndex ? <CartNavLink mobile={mobile} /> : null}
+          {mobile ? (
+            <MobileUtilityNavLink id={item.id} label={t(NAV_ITEM_I18N_KEYS[item.id])} />
+          ) : (
+            <UtilityNavLink id={item.id} label={t(NAV_ITEM_I18N_KEYS[item.id])} />
+          )}
+        </span>
+      ))}
+      {loginIndex === -1 ? <CartNavLink mobile={mobile} /> : null}
+    </>
+  );
+}
+
 export function Layout({ content }: LayoutProps) {
   const { site, locations } = content;
   const location = useLocation();
   const { t } = useLanguage();
-  const { itemCount } = useCateringCart();
   const [menuOpen, setMenuOpen] = useState(false);
+  const mainNavItems = resolveMainNavItems(site.navigation);
   usePageMotion();
 
   useEffect(() => {
@@ -65,31 +186,10 @@ export function Layout({ content }: LayoutProps) {
               </span>
             </Link>
             <div className={`nav-links nav-links-main${menuOpen ? " open" : ""}`} id="site-nav-links">
-              <NavLink to="/menu">{t("nav.menu")}</NavLink>
-              {showCateringNav ? <NavLink to="/catering">{t("nav.catering")}</NavLink> : null}
-              <NavLink to="/locations">{t("nav.locations")}</NavLink>
-              <NavLink to="/our-story">{t("nav.ourStory")}</NavLink>
-              <NavLink to="/our-value">{t("nav.ourValue")}</NavLink>
-              <NavLink to="/vacancy">{t("nav.vacancy")}</NavLink>
-              <NavLink to="/contact">{t("nav.contact")}</NavLink>
-              <Link className="nav-text-link nav-mobile-only" to="/locations">
-                <IconLocation />
-                <span>{t("nav.findTresAmigos")}</span>
-              </Link>
-              {itemCount > 0 ? (
-                <Link
-                  className="nav-icon-link nav-cart-link nav-mobile-only"
-                  to="/catering?view=cart"
-                  aria-label={`${t("nav.cart")} (${itemCount})`}
-                >
-                  <IconCart />
-                  <span className="nav-cart-badge">{itemCount}</span>
-                </Link>
-              ) : null}
-              <Link className="nav-text-link nav-mobile-only" to="/login">
-                <IconLogin />
-                <span>{t("nav.login")}</span>
-              </Link>
+              {mainNavItems.map((item) => (
+                <MainNavLink key={item.id} id={item.id} label={t(NAV_ITEM_I18N_KEYS[item.id])} />
+              ))}
+              <UtilityNavItems navigation={site.navigation} mobile />
               <div className="nav-mobile-only nav-mobile-lang">
                 <LanguageSwitcher />
               </div>
@@ -97,24 +197,7 @@ export function Layout({ content }: LayoutProps) {
           </div>
 
           <div className={`nav-right nav-desktop-only${menuOpen ? " open" : ""}`}>
-            <Link className="nav-text-link" to="/locations">
-              <IconLocation />
-              <span>{t("nav.findTresAmigos")}</span>
-            </Link>
-            {itemCount > 0 ? (
-              <Link
-                className="nav-icon-link nav-cart-link"
-                to="/catering?view=cart"
-                aria-label={`${t("nav.cart")} (${itemCount})`}
-              >
-                <IconCart />
-                <span className="nav-cart-badge">{itemCount}</span>
-              </Link>
-            ) : null}
-            <Link className="nav-text-link" to="/login">
-              <IconLogin />
-              <span>{t("nav.login")}</span>
-            </Link>
+            <UtilityNavItems navigation={site.navigation} />
             <LanguageSwitcher />
           </div>
 

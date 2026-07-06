@@ -2517,10 +2517,27 @@ select {
 @media(max-width:980px){.catering-panel-shell{grid-template-columns:1fr}}
 .catering-panel-nav{display:grid;gap:8px;position:sticky;top:104px}
 .catering-panel-nav button{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:14px 16px;
-  border:1px solid var(--ta-line);border-radius:16px;background:#fff;color:var(--ta-text);font:inherit;
-  font-size:14px;font-weight:800;text-align:left;cursor:pointer;transition:background .18s ease,border-color .18s ease
+  display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--ta-line);
+  border-radius:14px;background:rgba(255,255,255,.72);font:inherit;font-weight:800;text-align:left;cursor:pointer
 }
+.catering-panel-nav-icon{font-size:16px;line-height:1}
+.catering-filters-toggle{
+  width:100%;margin:8px 0;padding:10px 12px;border:1px dashed var(--ta-line);border-radius:14px;background:#fff;
+  font:inherit;font-weight:800;text-align:left;cursor:pointer
+}
+.catering-status-pipeline{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.catering-status-step{
+  display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ta-line);border-radius:999px;
+  background:#fff;font:inherit;font-weight:800;font-size:13px;cursor:pointer
+}
+.catering-status-step.is-done{border-color:#b9dfc8;background:#edf8ef;color:#176a3a}
+.catering-status-step.is-active{border-color:#efd596;background:#fff9ea;box-shadow:0 8px 20px rgba(154,103,0,.08)}
+.catering-status-step:disabled{opacity:.55;cursor:default}
+.catering-status-step-icon{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:#f7f0e4;font-size:12px}
+.catering-status-pipeline.is-cancelled .catering-status-pipeline-cancelled{
+  display:inline-flex;padding:8px 12px;border-radius:999px;background:#f5f5f5;border:1px solid #ddd;font-weight:800
+}
+.catering-filters-panel{display:grid;gap:10px;margin-bottom:10px;padding:12px;border:1px dashed var(--ta-line);border-radius:16px;background:rgba(255,255,255,.55)}
 .catering-panel-nav button.is-active{background:#fff9ea;border-color:#efd596}
 .catering-panel-nav em{
   min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#b42318;color:#fff;font-style:normal;
@@ -2529,11 +2546,6 @@ select {
 .catering-panel-content{min-width:0}
 .catering-orders-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
 .catering-orders-toolbar strong{display:block;font-size:18px}
-.catering-filters-toggle{
-  margin:0 0 10px;padding:0;border:0;background:transparent;color:var(--ta-muted);font:inherit;font-size:13px;
-  font-weight:800;text-decoration:underline;cursor:pointer
-}
-.catering-filters-panel{display:grid;gap:10px;margin-bottom:10px;padding:12px;border:1px dashed var(--ta-line);border-radius:16px;background:rgba(255,255,255,.55)}
 .catering-products-layout{display:grid;gap:16px}
 .catering-admin-settings-card{padding:16px;border:1px solid var(--ta-line);border-radius:18px;background:#fff}
 .catering-admin-settings-card h3{margin:0 0 12px;font-size:18px}
@@ -2541,6 +2553,28 @@ select {
 .catering-serving-table-head,.catering-serving-row{display:grid;grid-template-columns:1fr 180px;gap:10px;align-items:center}
 .catering-serving-table-head span{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--ta-muted)}
 .catering-serving-row span{font-weight:700}
+.catering-panel-nav{max-height:calc(100vh - 180px);overflow:auto}
+.catering-overview{display:grid;gap:18px}
+.catering-overview-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(min-width:900px){.catering-overview-stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.catering-overview-stat,.catering-overview-stat span{display:block}
+.catering-overview-stat{padding:16px;border:1px solid var(--ta-line);border-radius:18px;background:#fff}
+.catering-overview-stat span{font-size:12px;font-weight:800;color:var(--ta-muted);text-transform:uppercase;letter-spacing:.04em}
+.catering-overview-stat strong{margin-top:6px;font-size:28px;line-height:1}
+.catering-overview-stat-alert{border-color:#f0b4b4;background:#fff8f8}
+.catering-overview-actions{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.catering-overview-actions h3{margin:0 0 4px}
+.catering-overview-list{display:grid;gap:8px}
+.catering-settings-page{display:grid;gap:16px}
+.catering-settings-head h3{margin:0 0 4px;font-size:22px}
+.catering-filter-label{margin:8px 0 4px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--ta-muted)}
+.catering-localized-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.catering-localized-grid label{display:grid;gap:4px}
+.catering-localized-grid small{font-size:11px;font-weight:800;color:var(--ta-muted)}
+.catering-category-list,.catering-form-fields-list{display:grid;gap:12px}
+.catering-category-card,.catering-form-field-card{padding:14px;border:1px solid var(--ta-line);border-radius:18px;background:#fff;display:grid;gap:10px}
+.catering-category-card-head{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.catering-category-card-actions{display:flex;gap:6px}
 @media print{
   .ta-sidebar,.ta-action-dock,.ta-main-head,.ta-list-pane,.catering-admin-quick-actions,.ta-stack-panel .ta-filter-chips{display:none!important}
   .ta-main,.ta-shell{display:block!important}

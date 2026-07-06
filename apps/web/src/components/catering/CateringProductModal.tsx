@@ -16,13 +16,11 @@ import { useLanguage } from "../../i18n/LanguageProvider";
 
 interface Props {
   product: CateringProduct;
-  open: boolean;
-  onClose: () => void;
+  onBack: () => void;
   onAdd: (line: CateringCartLine) => void;
 }
 
 type SectionId = "servings" | "proteins" | "toppings" | "sauces" | "tortilla" | "cream" | "quantity";
-
 type SectionTone = "blue" | "red" | "green" | "yellow" | "purple" | "orange";
 
 interface SectionConfig {
@@ -31,10 +29,6 @@ interface SectionConfig {
   titleKey: string;
   required: number;
   selected: number;
-}
-
-function pickCount(rules: (typeof PACKAGE_RULES)[keyof typeof PACKAGE_RULES], key: keyof typeof PACKAGE_RULES.budget) {
-  return rules[key] as number;
 }
 
 function setLimited(list: string[], value: string, max: number) {
@@ -127,7 +121,7 @@ function pickHint(count: number, t: (key: string) => string) {
   return count === 1 ? t("catering.modal.pickOne") : t("catering.modal.pickCount").replace("{count}", String(count));
 }
 
-export function CateringProductModal({ product, open, onClose, onAdd }: Props) {
+export function CateringProductConfigurator({ product, onBack, onAdd }: Props) {
   const { t } = useLanguage();
   const rules = product.tier ? PACKAGE_RULES[product.tier] : null;
   const toppings = toppingsForCategory(product.categoryId);
@@ -142,11 +136,11 @@ export function CateringProductModal({ product, open, onClose, onAdd }: Props) {
   const [tortillas, setTortillas] = useState<string[]>([]);
   const [cream, setCream] = useState("");
   const [errors, setErrors] = useState<Partial<Record<SectionId, string>>>({});
+  const [activeSection, setActiveSection] = useState<SectionId>("servings");
 
   const creamOptions = rules?.cream === "and" ? TRIPLE_CREAM_OPTIONS : CREAM_OPTIONS;
 
   useEffect(() => {
-    if (!open) return;
     setServings(product.servingOptions?.[0]?.servings || 10);
     setQuantity(1);
     setProteins([]);
@@ -155,13 +149,12 @@ export function CateringProductModal({ product, open, onClose, onAdd }: Props) {
     setTortillas([]);
     setCream("");
     setErrors({});
-    document.body.classList.add("catering-modal-open");
-    return () => {
-      document.body.classList.remove("catering-modal-open");
-    };
-  }, [open, product.id]);
+    setActiveSection(product.servingOptions ? "servings" : "quantity");
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [product.id, product.servingOptions]);
 
   function scrollToSection(id: SectionId) {
+    setActiveSection(id);
     const container = scrollRef.current;
     const section = sectionRefs.current[id];
     if (!container || !section) return;
@@ -229,7 +222,7 @@ export function CateringProductModal({ product, open, onClose, onAdd }: Props) {
         tone: "orange",
         titleKey: rules.cream === "and" ? "catering.field.creamAnd" : "catering.field.creamOr",
         required: 1,
-        selected: cream && cream !== "None" ? 1 : cream === "None" ? 1 : 0
+        selected: cream ? 1 : 0
       });
     }
 
@@ -239,8 +232,7 @@ export function CateringProductModal({ product, open, onClose, onAdd }: Props) {
 
   const completedSections = sections.filter((section) => section.selected >= section.required).length;
   const progress = Math.round((completedSections / sections.length) * 100);
-
-  if (!open) return null;
+  const missingSections = sections.filter((section) => section.selected < section.required);
 
   function validate() {
     const next: Partial<Record<SectionId, string>> = {};
@@ -261,9 +253,7 @@ export function CateringProductModal({ product, open, onClose, onAdd }: Props) {
     setErrors(next);
     if (Object.keys(next).length) {
       const firstId = sections.find((section) => next[section.id])?.id;
-      if (firstId) {
-        window.requestAnimationFrame(() => scrollToSection(firstId));
-      }
+      if (firstId) window.requestAnimationFrame(() => scrollToSection(firstId));
       return false;
     }
     return true;
@@ -302,284 +292,323 @@ export function CateringProductModal({ product, open, onClose, onAdd }: Props) {
       lineTotalCents: price.lineTotalCents,
       configuration
     });
-    onClose();
+    onBack();
   }
 
-  function sectionProps(id: SectionId, tone: SectionTone, titleKey: string, required: number, selected: number) {
+  function sectionProps(id: SectionId, tone: SectionTone, required: number, selected: number) {
     const complete = selected >= required;
     const error = errors[id];
     return {
       ref: (node: HTMLElement | null) => {
         sectionRefs.current[id] = node;
       },
-      className: `catering-config-section tone-${tone}${complete ? " is-complete" : ""}${error ? " is-error" : ""}`,
+      className: `catering-config-section tone-${tone}${complete ? " is-complete" : ""}${error ? " is-error" : ""}${activeSection === id ? " is-active" : ""}`,
       "data-section": id
     };
   }
 
-  const missingSections = sections.filter((section) => section.selected < section.required);
-
   return (
-    <div className="catering-modal" role="dialog" aria-modal="true" aria-label={productLabel(product, t)}>
-      <button type="button" className="catering-modal-backdrop" aria-label={t("common.close")} onClick={onClose} />
-      <div className="catering-modal-panel">
-        <div className="catering-modal-hero">
+    <section className="catering-config-page">
+      <div className="catering-config-top">
+        <button type="button" className="btn alt catering-config-back" onClick={onBack}>
+          ← {t("catering.config.back")}
+        </button>
+        <div className="catering-config-hero">
           <img src={product.image} alt="" />
-          <div className="catering-modal-hero-copy">
+          <div>
             <p className="eyebrow">{t("catering.modal.configure")}</p>
             <h2>{productLabel(product, t)}</h2>
             <p>{productDescription(product, t)}</p>
-            <div className="catering-modal-hero-progress">
-              <div className="catering-modal-progress-meta">
-                <strong>{t("catering.modal.progress")}</strong>
-                <span>
-                  {completedSections}/{sections.length} {t("catering.modal.sectionsDone")}
+          </div>
+        </div>
+      </div>
+
+      <div className="catering-config-layout">
+        <aside className="catering-config-rail" aria-label={t("catering.modal.progress")}>
+          {sections.map((section) => {
+            const complete = section.selected >= section.required;
+            const missing = section.selected < section.required;
+            return (
+              <button
+                key={section.id}
+                type="button"
+                className={`catering-rail-step tone-${section.tone}${complete ? " is-complete" : ""}${missing ? " is-missing" : ""}${activeSection === section.id ? " is-active" : ""}`}
+                onClick={() => scrollToSection(section.id)}
+              >
+                <span className="catering-rail-icon">
+                  <SectionIcon name={complete ? "check" : section.id} />
                 </span>
-              </div>
-              <div className="catering-modal-progress-bar" aria-hidden="true">
-                <span style={{ width: `${progress}%` }} />
-              </div>
+                <span className="catering-rail-copy">
+                  <strong>{t(section.titleKey)}</strong>
+                  <em>
+                    {section.selected}/{section.required}
+                  </em>
+                </span>
+              </button>
+            );
+          })}
+          <div className="catering-rail-progress">
+            <strong>{progress}%</strong>
+            <span>
+              {completedSections}/{sections.length} {t("catering.modal.sectionsDone")}
+            </span>
+            <div className="catering-modal-progress-bar" aria-hidden="true">
+              <span style={{ width: `${progress}%` }} />
             </div>
           </div>
-          <button type="button" className="catering-modal-close" onClick={onClose} aria-label={t("common.close")}>
-            ×
-          </button>
-        </div>
+        </aside>
 
-        <div className="catering-modal-scroll" ref={scrollRef}>
-          {missingSections.length && Object.keys(errors).length ? (
-            <div className="catering-modal-missing" role="alert">
+        <div className="catering-config-main">
+          {missingSections.length ? (
+            <div className="catering-config-missing" role="status">
               <strong>{t("catering.modal.missingTitle")}</strong>
-              <ul>
+              <div className="catering-config-missing-grid">
                 {missingSections.map((section) => (
-                  <li key={section.id}>
-                    <button type="button" className="catering-modal-missing-jump" onClick={() => scrollToSection(section.id)}>
-                      <SectionIcon name={section.id} />
-                      <span>{t(section.titleKey)}</span>
-                      <em>
-                        {section.selected}/{section.required}
-                      </em>
-                    </button>
-                  </li>
+                  <button
+                    key={section.id}
+                    type="button"
+                    className={`catering-missing-chip tone-${section.tone}`}
+                    onClick={() => scrollToSection(section.id)}
+                  >
+                    <SectionIcon name={section.id} />
+                    <span>{t(section.titleKey)}</span>
+                    <em>
+                      {section.selected}/{section.required}
+                    </em>
+                  </button>
                 ))}
-              </ul>
+              </div>
             </div>
           ) : null}
 
-          <div className="catering-modal-body">
-          {product.servingOptions ? (
-            <section {...sectionProps("servings", "blue", "catering.field.servings", 1, servings ? 1 : 0)}>
-              <header className="catering-config-head">
-                <span className="catering-config-icon">
-                  <SectionIcon name="servings" />
-                </span>
-                <div>
-                  <h3>{t("catering.field.servings")}</h3>
-                  <p>{t("catering.modal.servingsHint")}</p>
-                </div>
-                <span className="catering-config-badge">{servings ? "✓" : "1"}</span>
-              </header>
-              <div className="catering-choice-grid catering-choice-grid-wide">
-                {product.servingOptions.map((option) => (
-                  <ChoiceChip
-                    key={option.servings}
-                    label={`${t(option.labelKey)}${option.extraCents ? ` +${formatEuro(option.extraCents)}` : ""}`}
-                    selected={servings === option.servings}
-                    onClick={() => {
-                      setServings(option.servings);
-                      setErrors((current) => ({ ...current, servings: undefined }));
-                    }}
-                  />
-                ))}
-              </div>
-              {errors.servings ? <p className="catering-section-error">{errors.servings}</p> : null}
-            </section>
-          ) : null}
-
-          {rules ? (
-            <>
-              <section
-                {...sectionProps("proteins", "red", "catering.group.proteins", rules.proteins, proteins.filter(Boolean).length)}
-                data-wide={rules.proteins > 1 ? "true" : undefined}
-              >
-                <header className="catering-config-head">
-                  <span className="catering-config-icon">
-                    <SectionIcon name="proteins" />
-                  </span>
-                  <div>
-                    <h3>{t("catering.group.proteins")}</h3>
-                    <p>{pickHint(rules.proteins, t)}</p>
+          <div className="catering-config-scroll" ref={scrollRef}>
+            <div className="catering-config-body">
+              {product.servingOptions ? (
+                <section {...sectionProps("servings", "blue", 1, servings ? 1 : 0)}>
+                  <header className="catering-config-head">
+                    <span className="catering-config-icon">
+                      <SectionIcon name="servings" />
+                    </span>
+                    <div>
+                      <h3>{t("catering.field.servings")}</h3>
+                      <p>{t("catering.modal.servingsHint")}</p>
+                    </div>
+                    <span className="catering-config-badge">{servings ? "✓" : "1"}</span>
+                  </header>
+                  <div className="catering-choice-grid catering-choice-grid-wide">
+                    {product.servingOptions.map((option) => (
+                      <ChoiceChip
+                        key={option.servings}
+                        label={`${t(option.labelKey)}${option.extraCents ? ` +${formatEuro(option.extraCents)}` : ""}`}
+                        selected={servings === option.servings}
+                        onClick={() => {
+                          setServings(option.servings);
+                          setErrors((current) => ({ ...current, servings: undefined }));
+                        }}
+                      />
+                    ))}
                   </div>
-                  <span className="catering-config-badge">
-                    {proteins.filter(Boolean).length}/{rules.proteins}
-                  </span>
-                </header>
-                {Array.from({ length: rules.proteins }).map((_, index) => (
-                  <div key={`protein-slot-${index}`} className="catering-protein-slot">
-                    <p className="catering-slot-label">
-                      {t("catering.field.protein")} {rules.proteins > 1 ? index + 1 : ""}
-                    </p>
+                  {errors.servings ? <p className="catering-section-error">{errors.servings}</p> : null}
+                </section>
+              ) : null}
+
+              {rules ? (
+                <>
+                  <section
+                    {...sectionProps("proteins", "red", rules.proteins, proteins.filter(Boolean).length)}
+                    data-wide={rules.proteins > 1 ? "true" : undefined}
+                  >
+                    <header className="catering-config-head">
+                      <span className="catering-config-icon">
+                        <SectionIcon name="proteins" />
+                      </span>
+                      <div>
+                        <h3>{t("catering.group.proteins")}</h3>
+                        <p>{pickHint(rules.proteins, t)}</p>
+                      </div>
+                      <span className="catering-config-badge">
+                        {proteins.filter(Boolean).length}/{rules.proteins}
+                      </span>
+                    </header>
+                    {Array.from({ length: rules.proteins }).map((_, index) => (
+                      <div key={`protein-slot-${index}`} className="catering-protein-slot">
+                        <p className="catering-slot-label">
+                          {t("catering.field.protein")} {rules.proteins > 1 ? index + 1 : ""}
+                        </p>
+                        <div className="catering-choice-grid">
+                          {PROTEINS.map((item) => (
+                            <ChoiceChip
+                              key={`${index}-${item}`}
+                              label={item}
+                              selected={proteins[index] === item}
+                              onClick={() => setProteinAt(index, item)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {errors.proteins ? <p className="catering-section-error">{errors.proteins}</p> : null}
+                  </section>
+
+                  <section {...sectionProps("toppings", "green", rules.toppings, toppingChoices.length)}>
+                    <header className="catering-config-head">
+                      <span className="catering-config-icon">
+                        <SectionIcon name="toppings" />
+                      </span>
+                      <div>
+                        <h3>{t("catering.group.toppings")}</h3>
+                        <p>{pickHint(rules.toppings, t)}</p>
+                      </div>
+                      <span className="catering-config-badge">
+                        {toppingChoices.length}/{rules.toppings}
+                      </span>
+                    </header>
                     <div className="catering-choice-grid">
-                      {PROTEINS.map((item) => (
+                      {toppings.map((item) => (
                         <ChoiceChip
-                          key={`${index}-${item}`}
+                          key={item}
                           label={item}
-                          selected={proteins[index] === item}
-                          onClick={() => setProteinAt(index, item)}
+                          selected={toppingChoices.includes(item)}
+                          onClick={() => {
+                            setToppingChoices((current) => setLimited(current, item, rules.toppings));
+                            setErrors((current) => ({ ...current, toppings: undefined }));
+                          }}
                         />
                       ))}
                     </div>
-                  </div>
-                ))}
-                {errors.proteins ? <p className="catering-section-error">{errors.proteins}</p> : null}
-              </section>
+                    {errors.toppings ? <p className="catering-section-error">{errors.toppings}</p> : null}
+                  </section>
 
-              <section {...sectionProps("toppings", "green", "catering.group.toppings", rules.toppings, toppingChoices.length)}>
-                <header className="catering-config-head">
-                  <span className="catering-config-icon">
-                    <SectionIcon name="toppings" />
-                  </span>
-                  <div>
-                    <h3>{t("catering.group.toppings")}</h3>
-                    <p>{pickHint(rules.toppings, t)}</p>
-                  </div>
-                  <span className="catering-config-badge">
-                    {toppingChoices.length}/{rules.toppings}
-                  </span>
-                </header>
-                <div className="catering-choice-grid">
-                  {toppings.map((item) => (
-                    <ChoiceChip
-                      key={item}
-                      label={item}
-                      selected={toppingChoices.includes(item)}
-                      onClick={() => {
-                        setToppingChoices((current) => setLimited(current, item, rules.toppings));
-                        setErrors((current) => ({ ...current, toppings: undefined }));
-                      }}
-                    />
-                  ))}
-                </div>
-                {errors.toppings ? <p className="catering-section-error">{errors.toppings}</p> : null}
-              </section>
-
-              <section {...sectionProps("sauces", "yellow", "catering.group.salsas", rules.sauces, sauceChoices.length)}>
-                <header className="catering-config-head">
-                  <span className="catering-config-icon">
-                    <SectionIcon name="sauces" />
-                  </span>
-                  <div>
-                    <h3>{t("catering.group.salsas")}</h3>
-                    <p>{pickHint(rules.sauces, t)}</p>
-                  </div>
-                  <span className="catering-config-badge">
-                    {sauceChoices.length}/{rules.sauces}
-                  </span>
-                </header>
-                <div className="catering-choice-grid">
-                  {SAUCES.map((item) => (
-                    <ChoiceChip
-                      key={item}
-                      label={item}
-                      selected={sauceChoices.includes(item)}
-                      onClick={() => {
-                        setSauceChoices((current) => setLimited(current, item, rules.sauces));
-                        setErrors((current) => ({ ...current, sauces: undefined }));
-                      }}
-                    />
-                  ))}
-                </div>
-                {errors.sauces ? <p className="catering-section-error">{errors.sauces}</p> : null}
-              </section>
-
-              {product.categoryId === "buffet" ? (
-                <section {...sectionProps("tortilla", "purple", "catering.field.tortilla", rules.tortillas, tortillas.length)}>
-                  <header className="catering-config-head">
-                    <span className="catering-config-icon">
-                      <SectionIcon name="tortilla" />
-                    </span>
-                    <div>
-                      <h3>{t("catering.field.tortilla")}</h3>
-                      <p>{pickHint(rules.tortillas, t)}</p>
+                  <section {...sectionProps("sauces", "yellow", rules.sauces, sauceChoices.length)}>
+                    <header className="catering-config-head">
+                      <span className="catering-config-icon">
+                        <SectionIcon name="sauces" />
+                      </span>
+                      <div>
+                        <h3>{t("catering.group.salsas")}</h3>
+                        <p>{pickHint(rules.sauces, t)}</p>
+                      </div>
+                      <span className="catering-config-badge">
+                        {sauceChoices.length}/{rules.sauces}
+                      </span>
+                    </header>
+                    <div className="catering-choice-grid">
+                      {SAUCES.map((item) => (
+                        <ChoiceChip
+                          key={item}
+                          label={item}
+                          selected={sauceChoices.includes(item)}
+                          onClick={() => {
+                            setSauceChoices((current) => setLimited(current, item, rules.sauces));
+                            setErrors((current) => ({ ...current, sauces: undefined }));
+                          }}
+                        />
+                      ))}
                     </div>
-                    <span className="catering-config-badge">
-                      {tortillas.length}/{rules.tortillas}
-                    </span>
-                  </header>
-                  <div className="catering-choice-grid">
-                    {TORTILLAS.map((item) => (
-                      <ChoiceChip
-                        key={item}
-                        label={item}
-                        selected={tortillas.includes(item)}
-                        onClick={() => {
-                          setTortillas((current) => setLimited(current, item, rules.tortillas));
-                          setErrors((current) => ({ ...current, tortilla: undefined }));
-                        }}
-                      />
-                    ))}
-                  </div>
-                  {errors.tortilla ? <p className="catering-section-error">{errors.tortilla}</p> : null}
-                </section>
+                    {errors.sauces ? <p className="catering-section-error">{errors.sauces}</p> : null}
+                  </section>
+
+                  {product.categoryId === "buffet" ? (
+                    <section {...sectionProps("tortilla", "purple", rules.tortillas, tortillas.length)}>
+                      <header className="catering-config-head">
+                        <span className="catering-config-icon">
+                          <SectionIcon name="tortilla" />
+                        </span>
+                        <div>
+                          <h3>{t("catering.field.tortilla")}</h3>
+                          <p>{pickHint(rules.tortillas, t)}</p>
+                        </div>
+                        <span className="catering-config-badge">
+                          {tortillas.length}/{rules.tortillas}
+                        </span>
+                      </header>
+                      <div className="catering-choice-grid">
+                        {TORTILLAS.map((item) => (
+                          <ChoiceChip
+                            key={item}
+                            label={item}
+                            selected={tortillas.includes(item)}
+                            onClick={() => {
+                              setTortillas((current) => setLimited(current, item, rules.tortillas));
+                              setErrors((current) => ({ ...current, tortilla: undefined }));
+                            }}
+                          />
+                        ))}
+                      </div>
+                      {errors.tortilla ? <p className="catering-section-error">{errors.tortilla}</p> : null}
+                    </section>
+                  ) : null}
+
+                  {rules.cream !== "none" ? (
+                    <section {...sectionProps("cream", "orange", 1, cream ? 1 : 0)}>
+                      <header className="catering-config-head">
+                        <span className="catering-config-icon">
+                          <SectionIcon name="cream" />
+                        </span>
+                        <div>
+                          <h3>{rules.cream === "and" ? t("catering.field.creamAnd") : t("catering.field.creamOr")}</h3>
+                          <p>{t("catering.modal.pickOne")}</p>
+                        </div>
+                        <span className="catering-config-badge">{cream ? "✓" : "1"}</span>
+                      </header>
+                      <div className="catering-choice-grid">
+                        {creamOptions.map((item) => (
+                          <ChoiceChip
+                            key={item}
+                            label={item}
+                            selected={cream === item}
+                            onClick={() => {
+                              setCream(item);
+                              setErrors((current) => ({ ...current, cream: undefined }));
+                            }}
+                          />
+                        ))}
+                      </div>
+                      {errors.cream ? <p className="catering-section-error">{errors.cream}</p> : null}
+                    </section>
+                  ) : null}
+                </>
               ) : null}
 
-              {rules.cream !== "none" ? (
-                <section {...sectionProps("cream", "orange", rules.cream === "and" ? "catering.field.creamAnd" : "catering.field.creamOr", 1, cream ? 1 : 0)}>
-                  <header className="catering-config-head">
-                    <span className="catering-config-icon">
-                      <SectionIcon name="cream" />
-                    </span>
-                    <div>
-                      <h3>{rules.cream === "and" ? t("catering.field.creamAnd") : t("catering.field.creamOr")}</h3>
-                      <p>{t("catering.modal.pickOne")}</p>
-                    </div>
-                    <span className="catering-config-badge">{cream ? "✓" : "1"}</span>
-                  </header>
-                  <div className="catering-choice-grid">
-                    {creamOptions.map((item) => (
-                      <ChoiceChip
-                        key={item}
-                        label={item}
-                        selected={cream === item}
-                        onClick={() => {
-                          setCream(item);
-                          setErrors((current) => ({ ...current, cream: undefined }));
-                        }}
-                      />
-                    ))}
+              <section {...sectionProps("quantity", "blue", 1, quantity > 0 ? 1 : 0)}>
+                <header className="catering-config-head">
+                  <span className="catering-config-icon">
+                    <SectionIcon name="quantity" />
+                  </span>
+                  <div>
+                    <h3>{t("catering.field.quantity")}</h3>
+                    <p>{t("catering.modal.quantityHint")}</p>
                   </div>
-                  {errors.cream ? <p className="catering-section-error">{errors.cream}</p> : null}
-                </section>
-              ) : null}
-            </>
-          ) : null}
+                  <span className="catering-config-badge">{quantity}</span>
+                </header>
+                <div className="catering-qty-stepper catering-qty-stepper-large">
+                  <button type="button" aria-label="-" onClick={() => setQuantity((current) => Math.max(1, current - 1))}>
+                    −
+                  </button>
+                  <strong>{quantity}</strong>
+                  <button type="button" aria-label="+" onClick={() => setQuantity((current) => Math.min(10, current + 1))}>
+                    +
+                  </button>
+                </div>
+                {errors.quantity ? <p className="catering-section-error">{errors.quantity}</p> : null}
+              </section>
+            </div>
           </div>
-        </div>
 
-        <footer className="catering-modal-footer">
-          <div className="catering-modal-footer-main">
+          <footer className="catering-config-footer">
             <div>
               <span className="catering-modal-price-label">{t("catering.subtotal")}</span>
               <strong className="catering-modal-price">{formatEuro(price.lineTotalCents)}</strong>
             </div>
-            <div className="catering-modal-footer-qty">
-              <span>{t("catering.field.quantity")}</span>
-              <div className="catering-qty-stepper">
-                <button type="button" aria-label="-" onClick={() => setQuantity((current) => Math.max(1, current - 1))}>
-                  −
-                </button>
-                <strong>{quantity}</strong>
-                <button type="button" aria-label="+" onClick={() => setQuantity((current) => Math.min(10, current + 1))}>
-                  +
-                </button>
-              </div>
-            </div>
-          </div>
-          <button type="button" className="btn primary catering-modal-add" onClick={handleAdd}>
-            {t("catering.addToCart")}
-          </button>
-        </footer>
+            <button type="button" className="btn primary catering-config-add" onClick={handleAdd}>
+              {t("catering.config.add")}
+            </button>
+          </footer>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
+
+/** @deprecated Use CateringProductConfigurator */
+export const CateringProductModal = CateringProductConfigurator;

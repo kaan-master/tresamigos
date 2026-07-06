@@ -81,6 +81,47 @@ export const SEO_PAGE_LABELS: Record<SeoPageKey, string> = {
   vacancy: "Vacatures"
 };
 
+export const NAV_MAIN_ITEM_IDS = [
+  "menu",
+  "catering",
+  "locations",
+  "ourStory",
+  "ourValue",
+  "vacancy",
+  "contact"
+] as const;
+
+export const NAV_UTILITY_ITEM_IDS = ["findTresAmigos", "login"] as const;
+
+export const NAV_ITEM_IDS = [...NAV_MAIN_ITEM_IDS, ...NAV_UTILITY_ITEM_IDS] as const;
+
+export type NavMainItemId = (typeof NAV_MAIN_ITEM_IDS)[number];
+export type NavUtilityItemId = (typeof NAV_UTILITY_ITEM_IDS)[number];
+export type NavItemId = (typeof NAV_ITEM_IDS)[number];
+
+export const NAV_ITEM_ADMIN_LABELS: Record<NavItemId, string> = {
+  menu: "Menu",
+  catering: "Catering",
+  locations: "Vestigingen",
+  ourStory: "Our Story",
+  ourValue: "Our Value",
+  vacancy: "Vacatures",
+  contact: "Contact",
+  findTresAmigos: "Vind je Tres Amigos",
+  login: "Inloggen"
+};
+
+export interface NavItemConfig {
+  id: NavItemId;
+  visible: boolean;
+  sortOrder: number;
+  group: "main" | "utility";
+}
+
+export interface NavSettings {
+  items: NavItemConfig[];
+}
+
 export const ADMIN_TAB_IDS = [
   "overview",
   "home",
@@ -91,6 +132,7 @@ export const ADMIN_TAB_IDS = [
   "catering",
   "reviews",
   "seo",
+  "navigation",
   "footer",
   "users"
 ] as const;
@@ -107,6 +149,7 @@ export const ADMIN_TAB_LABELS: Record<AdminTabId, string> = {
   catering: "Catering",
   reviews: "Reviews",
   seo: "SEO",
+  navigation: "Navigatie",
   footer: "Footer",
   users: "Gebruikers"
 };
@@ -379,6 +422,7 @@ export interface SiteSettings {
     label: string;
     url: string;
   };
+  navigation: NavSettings;
   hero: {
     eyebrow: string;
     title: string;
@@ -510,19 +554,47 @@ export type CateringFulfillment = "pickup" | "delivery";
 export type CateringCategoryId = "buffet" | "burrito" | "drinks" | "sauces" | "team-thanks";
 export type CateringPackageTier = "budget" | "single" | "double" | "triple";
 
+export interface CateringLocalizedText {
+  nl: string;
+  en: string;
+}
+
 export interface CateringServingOption {
   servings: number;
   extraCents: number;
 }
 
+export interface CateringCategoryConfig {
+  id: CateringCategoryId;
+  label: CateringLocalizedText;
+  sortOrder: number;
+  visible: boolean;
+}
+
+export interface CateringFormFieldConfig {
+  id: string;
+  label: CateringLocalizedText;
+  enabled: boolean;
+  required: boolean;
+}
+
+export interface CateringNotificationsSettings {
+  recipientEmail: string;
+  notifyOnNewOrder: boolean;
+  notifyOnStatusChange: boolean;
+}
+
 export interface CateringProductConfig {
   id: string;
   categoryId: CateringCategoryId;
-  name: string;
-  description: string;
+  name: CateringLocalizedText;
+  description: CateringLocalizedText;
   image: string;
   basePriceCents: number;
   active: boolean;
+  sortOrder: number;
+  minServings: number;
+  maxServings: number;
   tier?: CateringPackageTier;
   configurable: boolean;
   servingOptions: CateringServingOption[];
@@ -531,7 +603,10 @@ export interface CateringProductConfig {
 export interface CateringSettings {
   maxOnlineServings: number;
   largeGroupEmail: string;
+  categories: CateringCategoryConfig[];
   products: CateringProductConfig[];
+  formFields: CateringFormFieldConfig[];
+  notifications: CateringNotificationsSettings;
 }
 
 export interface CateringCartLine {

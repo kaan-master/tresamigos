@@ -13,6 +13,7 @@ import { ProductsPanel } from "./components/ProductsPanel";
 import { ApplicationsPanel } from "./components/ApplicationsPanel";
 import { CateringPanel } from "./components/CateringPanel";
 import { FooterPanel } from "./components/FooterPanel";
+import { NavbarPanel } from "./components/NavbarPanel";
 import { HomePanel } from "./components/HomePanel";
 import { SeoPanel } from "./components/SeoPanel";
 import { ReviewsPanel } from "./components/ReviewsPanel";
@@ -29,6 +30,7 @@ const tabs = [
   ["catering", "Catering"],
   ["reviews", "Reviews"],
   ["seo", "SEO"],
+  ["navigation", "Navigatie"],
   ["footer", "Footer"],
   ["users", "Gebruikers"]
 ] as const;
@@ -100,7 +102,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
 
   const canSaveContent = useMemo(() => {
     if (!user || user.role === "master") return true;
-    return ["home", "locations", "products", "media", "seo", "footer"].some((tab) =>
+    return ["home", "locations", "products", "media", "seo", "navigation", "footer"].some((tab) =>
       user.permissions.includes(tab as AdminTabId)
     );
   }, [user]);
@@ -329,6 +331,16 @@ export function AdminDashboard({ user, onLogout }: Props) {
                 <p>Subaccounts voor medewerkers met rechten per onderdeel.</p>
               </header>
               <UsersPanel />
+            </section>
+          ) : null}
+
+          {activeTab === "navigation" ? (
+            <section className="ta-panel ta-fade-in">
+              <header className="ta-panel-head">
+                <h2>Navigatie</h2>
+                <p>Menu-items tonen of verbergen en de volgorde aanpassen — zoals in Shopify.</p>
+              </header>
+              <NavbarPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
             </section>
           ) : null}
 

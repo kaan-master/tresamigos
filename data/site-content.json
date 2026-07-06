@@ -44,6 +44,19 @@
       "label": "Order Now",
       "url": "order.html"
     },
+    "navigation": {
+      "items": [
+        { "id": "menu", "visible": true, "sortOrder": 0, "group": "main" },
+        { "id": "catering", "visible": true, "sortOrder": 1, "group": "main" },
+        { "id": "locations", "visible": true, "sortOrder": 2, "group": "main" },
+        { "id": "ourStory", "visible": true, "sortOrder": 3, "group": "main" },
+        { "id": "ourValue", "visible": true, "sortOrder": 4, "group": "main" },
+        { "id": "vacancy", "visible": true, "sortOrder": 5, "group": "main" },
+        { "id": "contact", "visible": true, "sortOrder": 6, "group": "main" },
+        { "id": "findTresAmigos", "visible": true, "sortOrder": 0, "group": "utility" },
+        { "id": "login", "visible": true, "sortOrder": 1, "group": "utility" }
+      ]
+    },
     "hero": {
       "eyebrow": "Amsterdam Mexican Street Food",
       "title": "Fresh Mexican street food.",

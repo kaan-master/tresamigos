@@ -94,3 +94,42 @@ export function isEventPast(order: CateringOrder) {
   if (!event) return false;
   return event.getTime() < Date.now();
 }
+
+export type DateFilterPreset = "all" | "today" | "week" | "month" | "upcoming";
+
+function startOfDay(date: Date) {
+  const copy = new Date(date);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+}
+
+export function matchesDateFilter(date: Date | null, preset: DateFilterPreset): boolean {
+  if (preset === "all") return true;
+  if (!date) return false;
+
+  const start = startOfDay(new Date());
+
+  if (preset === "today") {
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    return date >= start && date < end;
+  }
+
+  if (preset === "week") {
+    const weekStart = new Date(start);
+    weekStart.setDate(weekStart.getDate() - 6);
+    const weekEnd = new Date(start);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    return date >= weekStart && date < weekEnd;
+  }
+
+  if (preset === "month") {
+    const monthStart = new Date(start);
+    monthStart.setDate(monthStart.getDate() - 29);
+    const monthEnd = new Date(start);
+    monthEnd.setDate(monthEnd.getDate() + 30);
+    return date >= monthStart && date < monthEnd;
+  }
+
+  return date >= start;
+}
