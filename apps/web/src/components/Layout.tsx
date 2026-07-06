@@ -126,6 +126,7 @@ function resolveMainNavItems(navigation: SiteContent["site"]["navigation"]) {
   return items;
 }
 
+function UtilityNavItems({
   navigation,
   mobile
 }: {
