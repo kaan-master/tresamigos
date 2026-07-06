@@ -17,7 +17,8 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@tresamigos/types": path.resolve(repoRoot, "packages/types/src/index.ts"),
-        "@tresamigos/utils/api-url": path.resolve(repoRoot, "packages/utils/src/api-url.ts")
+        "@tresamigos/utils/api-url": path.resolve(repoRoot, "packages/utils/src/api-url.ts"),
+        "@tresamigos/utils/navDefaults": path.resolve(repoRoot, "packages/utils/src/navDefaults.ts")
       }
     },
     plugins: [react()],

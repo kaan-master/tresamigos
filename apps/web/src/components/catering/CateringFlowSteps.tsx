@@ -1,6 +1,6 @@
 import { useLanguage } from "../../i18n/LanguageProvider";
 
-type FlowStep = "method" | "category" | "package" | "cart" | "checkout" | "done";
+export type FlowStep = "method" | "category" | "package" | "cart" | "checkout" | "done";
 
 interface Props {
   current: FlowStep;

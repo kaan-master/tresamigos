@@ -12,6 +12,10 @@
     "./api-url": {
       "types": "./dist/api-url.d.ts",
       "default": "./dist/api-url.js"
+    },
+    "./navDefaults": {
+      "types": "./dist/navDefaults.d.ts",
+      "default": "./dist/navDefaults.js"
     }
   },
   "scripts": {

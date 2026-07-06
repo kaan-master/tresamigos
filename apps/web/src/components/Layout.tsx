@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import type { NavItemId, SiteContent } from "@tresamigos/types";
-import { getVisibleNavItems, NAV_ITEM_I18N_KEYS, NAV_ITEM_PATHS, DEFAULT_NAV_SETTINGS } from "@tresamigos/utils";
+import { getVisibleNavItems, NAV_ITEM_I18N_KEYS, NAV_ITEM_PATHS, DEFAULT_NAV_SETTINGS } from "@tresamigos/utils/navDefaults";
 import { assetUrl } from "../lib/api";
 import { showCateringNav } from "../lib/featureFlags";
 import { useCateringCart } from "../context/CateringCartContext";

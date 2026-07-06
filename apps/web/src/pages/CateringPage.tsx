@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import type { CateringCartLine, CateringCategoryId } from "@tresamigos/types";
 import type { SiteContent } from "@tresamigos/types";
 import { CateringProductConfigurator } from "../components/catering/CateringProductModal";
-import { CateringFlowSteps } from "../components/catering/CateringFlowSteps";
+import { CateringFlowSteps, type FlowStep } from "../components/catering/CateringFlowSteps";
 import { Helmet } from "../components/Helmet";
 import { useCateringCart } from "../context/CateringCartContext";
 import { useLanguage } from "../i18n/LanguageProvider";
@@ -120,16 +120,20 @@ export function CateringPage({ content }: { content: SiteContent }) {
     addLine(line);
   }
 
-  function flowStep() {
-    if (view === "success") return "done" as const;
-    if (view === "checkout") return "checkout" as const;
-    if (view === "cart") return "cart" as const;
-    if (view === "configure") return "package" as const;
-    return "category" as const;
+  function flowStep(): FlowStep {
+    if (view === "success") return "done";
+    if (view === "checkout") return "checkout";
+    if (view === "cart") return "cart";
+    if (view === "configure") return "package";
+    return "category";
   }
 
-  function navigateFlow(step: ReturnType<typeof flowStep>) {
+  function navigateFlow(step: FlowStep) {
     if (step === "method" || step === "category") setView("shop");
+    if (step === "package") {
+      setActiveProduct(null);
+      setView("shop");
+    }
     if (step === "cart") setView("cart");
     if (step === "checkout" && cart.length) setView("checkout");
   }
