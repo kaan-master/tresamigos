@@ -8,6 +8,7 @@ interface CateringCartContextValue {
   cart: CateringCartLine[];
   setCart: React.Dispatch<React.SetStateAction<CateringCartLine[]>>;
   addLine: (line: CateringCartLine) => void;
+  updateLineQuantity: (id: string, quantity: number) => void;
   removeLine: (id: string) => void;
   clearCart: () => void;
   itemCount: number;
@@ -34,6 +35,36 @@ function readStoredCart(): CateringCartLine[] {
   }
 }
 
+function isMergeableSimpleLine(line: CateringCartLine) {
+  return !line.servings && Object.keys(line.configuration).length === 0;
+}
+
+function mergeLines(current: CateringCartLine[], line: CateringCartLine) {
+  if (!isMergeableSimpleLine(line)) return [...current, line];
+
+  const existing = current.find((entry) => entry.productId === line.productId && isMergeableSimpleLine(entry));
+  if (!existing) return [...current, line];
+
+  const quantity = existing.quantity + line.quantity;
+  return current.map((entry) =>
+    entry.id === existing.id
+      ? {
+          ...entry,
+          quantity,
+          lineTotalCents: entry.unitPriceCents * quantity
+        }
+      : entry
+  );
+}
+
+function recalcLine(line: CateringCartLine, quantity: number): CateringCartLine {
+  return {
+    ...line,
+    quantity,
+    lineTotalCents: line.unitPriceCents * quantity
+  };
+}
+
 export function CateringCartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CateringCartLine[]>(readStoredCart);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -48,11 +79,24 @@ export function CateringCartProvider({ children }: { children: ReactNode }) {
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   const addLine = useCallback((line: CateringCartLine) => {
-    setCart((current) => [...current, line]);
-    setLastAddedId(line.id);
+    setCart((current) => {
+      const merged = mergeLines(current, line);
+      const target = isMergeableSimpleLine(line)
+        ? merged.find((entry) => entry.productId === line.productId && isMergeableSimpleLine(entry))
+        : merged.find((entry) => entry.id === line.id);
+      setLastAddedId(target?.id || line.id);
+      return merged;
+    });
     setCartPulse(true);
     setDrawerOpen(true);
     window.setTimeout(() => setCartPulse(false), 600);
+  }, []);
+
+  const updateLineQuantity = useCallback((id: string, quantity: number) => {
+    setCart((current) => {
+      if (quantity < 1) return current.filter((line) => line.id !== id);
+      return current.map((line) => (line.id === id ? recalcLine(line, quantity) : line));
+    });
   }, []);
 
   const value = useMemo(
@@ -60,6 +104,7 @@ export function CateringCartProvider({ children }: { children: ReactNode }) {
       cart,
       setCart,
       addLine,
+      updateLineQuantity,
       removeLine: (id: string) => setCart((current) => current.filter((line) => line.id !== id)),
       clearCart: () => setCart([]),
       itemCount: cartItemCount(cart),
@@ -71,7 +116,7 @@ export function CateringCartProvider({ children }: { children: ReactNode }) {
       lastAddedId,
       cartPulse
     }),
-    [cart, addLine, drawerOpen, openDrawer, closeDrawer, lastAddedId, cartPulse]
+    [cart, addLine, updateLineQuantity, drawerOpen, openDrawer, closeDrawer, lastAddedId, cartPulse]
   );
 
   return <CateringCartContext.Provider value={value}>{children}</CateringCartContext.Provider>;

@@ -70,14 +70,15 @@ function UtilityNavLink({ id, label }: { id: NavItemId; label: string }) {
 function CartNavLink({ mobile }: { mobile?: boolean }) {
   const { t } = useLanguage();
   const location = useLocation();
-  const { itemCount, openDrawer } = useCateringCart();
+  const { itemCount, openDrawer, cartPulse } = useCateringCart();
   const className = mobile ? "nav-icon-link nav-cart-link nav-mobile-only" : "nav-icon-link nav-cart-link";
   const isCatering = location.pathname === "/catering";
+  const pulseClass = isCatering && cartPulse ? " is-pulse" : "";
 
   if (isCatering) {
     return (
       <button
-        className={className}
+        className={`${className}${pulseClass}`}
         type="button"
         aria-label={itemCount > 0 ? `${t("nav.cart")} (${itemCount})` : t("nav.cart")}
         onClick={openDrawer}

@@ -642,6 +642,7 @@ body.nav-open{overflow:hidden}
 .nav-icon-link:hover{transform:translateY(-1px);background:rgba(252,185,42,.14)}
 .nav-cart-link{color:var(--corn);display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:rgba(255,214,0,.14);border:1px solid rgba(255,214,0,.35);transition:background .18s ease,transform .18s ease}
 .nav-cart-link:hover{background:rgba(255,214,0,.24);transform:translateY(-1px)}
+.nav-cart-link.is-pulse{animation:catering-cart-pulse .55s ease}
 .nav-cart-link .nav-icon{width:20px;height:20px;color:var(--corn)}
 .nav-cart-badge{
   position:absolute;top:-2px;right:-4px;display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 4px;
@@ -1091,6 +1092,37 @@ button.product-card:focus-visible{
 .catering-product-card strong{display:block;font-size:18px}
 .catering-product-card p{margin:6px 0;color:var(--muted);font-size:14px;font-weight:650;line-height:1.45}
 .catering-product-card span{font-weight:900}
+.catering-product-card-simple{
+  display:grid;grid-template-rows:auto 1fr auto;gap:0;padding:0;text-align:left;cursor:default;overflow:hidden
+}
+.catering-product-card-simple:hover{transform:none;box-shadow:0 12px 32px rgba(31,22,11,.06)}
+.catering-product-card-body{padding:14px 14px 10px}
+.catering-product-card-body p{margin:6px 0;color:var(--muted);font-size:14px;font-weight:650;line-height:1.45}
+.catering-product-card-price{display:block;font-weight:900;font-size:16px}
+.catering-product-card-actions{
+  display:grid;gap:10px;padding:0 14px 14px;border-top:1px solid var(--line);background:#fffdf8
+}
+.catering-product-card-add-btn{width:100%;padding:10px 14px;font-size:13px}
+.catering-qty-stepper-card{
+  display:grid;grid-template-columns:36px 1fr 36px;gap:6px;align-items:center;margin-top:10px
+}
+.catering-qty-stepper-card button{
+  display:grid;place-items:center;width:36px;height:36px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer
+}
+.catering-qty-stepper-card button:disabled{opacity:.45;cursor:not-allowed}
+.catering-qty-stepper-card input{
+  width:100%;height:36px;border:1px solid var(--line);border-radius:12px;text-align:center;font:inherit;font-size:15px;font-weight:900
+}
+.catering-qty-stepper-drawer{
+  display:grid;grid-template-columns:28px 44px 28px;gap:4px;align-items:center;margin-top:8px
+}
+.catering-qty-stepper-drawer button{
+  display:grid;place-items:center;width:28px;height:28px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer
+}
+.catering-qty-stepper-drawer input{
+  width:44px;height:28px;border:1px solid var(--line);border-radius:8px;text-align:center;font:inherit;font-size:13px;font-weight:900
+}
+.catering-cart-drawer-price{display:block;margin-top:4px;font-size:13px;font-weight:900}
 .catering-cart-panel,.catering-checkout{display:grid;gap:16px;max-width:760px}
 .catering-cart-lines{display:grid;gap:12px}
 .catering-cart-line{
@@ -1256,26 +1288,8 @@ button.product-card:focus-visible{
 .catering-flow-step-icon{display:grid;place-items:center;width:28px;height:28px;color:var(--text)}
 .catering-flow-step-icon svg{width:18px;height:18px}
 .catering-flow-step-label{font-size:11px;font-weight:800;color:var(--muted);text-align:center}
-.catering-flow-cart-btn{
-  position:relative;flex:0 0 auto;display:grid;justify-items:center;gap:6px;min-width:72px;padding:10px 12px;
-  border:1px solid var(--line);border-radius:16px;background:#fff;font:inherit;cursor:pointer;margin-left:auto;
-  transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease
-}
-.catering-flow-cart-btn:hover{border-color:var(--text);transform:translateY(-1px)}
-.catering-flow-cart-count{
-  position:absolute;top:6px;right:8px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;
-  background:var(--text);color:#fff;font-style:normal;font-size:10px;font-weight:900;line-height:18px;text-align:center
-}
 .catering-icon{display:block;flex-shrink:0}
 .catering-shell{position:relative}
-.catering-cart-fab{
-  display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:transform .2s ease,box-shadow .2s ease
-}
-.catering-cart-fab em{
-  display:grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;
-  background:var(--text);color:#fff;font-style:normal;font-size:12px;font-weight:900
-}
-.catering-cart-fab.is-pulse{animation:catering-cart-pulse .55s ease}
 .catering-product-card-media{position:relative}
 .catering-product-card-add{
   position:absolute;right:10px;bottom:10px;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;

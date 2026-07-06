@@ -6,6 +6,7 @@ import { createLineId, formatEuro, priceConfiguredProduct } from "../../lib/cate
 import { productDescription, productLabel } from "../../lib/catering/resolveCatalog";
 import { resolveCateringIngredients, type ResolvedIngredientOption } from "../../lib/catering/resolveIngredients";
 import { assetUrl } from "../../lib/api";
+import { cateringImageUrl } from "../../lib/catering/images";
 import { useLanguage } from "../../i18n/LanguageProvider";
 
 interface Props {
@@ -345,7 +346,7 @@ export function CateringProductConfigurator({ product, settings, onBack, onAdd }
           ← {t("catering.config.back")}
         </button>
         <div className="catering-config-hero">
-          <img src={product.image} alt="" />
+          <img src={cateringImageUrl(product.image)} alt="" />
           <div>
             <p className="eyebrow">{t("catering.modal.configure")}</p>
             <h2>{productLabel(product, t)}</h2>

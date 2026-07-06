@@ -12,6 +12,7 @@ import { MediaLibraryPanel } from "./components/MediaLibraryPanel";
 import { ProductsPanel } from "./components/ProductsPanel";
 import { ApplicationsPanel } from "./components/ApplicationsPanel";
 import { CateringPanel } from "./components/CateringPanel";
+import { INCOMING_STATUSES } from "./lib/cateringAdmin";
 import { FooterPanel } from "./components/FooterPanel";
 import { NavbarPanel } from "./components/NavbarPanel";
 import { HomePanel } from "./components/HomePanel";
@@ -89,6 +90,11 @@ export function AdminDashboard({ user, onLogout }: Props) {
     void loadAll();
   }, []);
 
+  useEffect(() => {
+    const interval = window.setInterval(() => void loadCateringOrders(), 45_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   const visibleTabs = useMemo(() => {
     if (!user || user.role === "master") return tabs;
     return tabs.filter(([id]) => user.permissions.includes(id as AdminTabId));
@@ -108,7 +114,12 @@ export function AdminDashboard({ user, onLogout }: Props) {
   }, [user]);
 
   const incomingCateringCount = useMemo(
-    () => cateringOrders.filter((order) => ["nieuw", "bevestigd", "voorbereid"].includes(order.status)).length,
+    () => cateringOrders.filter((order) => INCOMING_STATUSES.has(order.status)).length,
+    [cateringOrders]
+  );
+
+  const newCateringOrderCount = useMemo(
+    () => cateringOrders.filter((order) => order.status === "nieuw").length,
     [cateringOrders]
   );
 
@@ -174,12 +185,12 @@ export function AdminDashboard({ user, onLogout }: Props) {
           <nav className="ta-nav">
             {visibleTabs.map(([id, label]) => {
               const Icon = tabIcons[id];
-              const badge = id === "catering" && incomingCateringCount > 0 ? incomingCateringCount : null;
+              const badge = id === "catering" && newCateringOrderCount > 0 ? newCateringOrderCount : null;
               return (
                 <button
                   key={id}
                   type="button"
-                  className={activeTab === id ? "is-active" : ""}
+                  className={`${activeTab === id ? "is-active" : ""}${id === "catering" && newCateringOrderCount > 0 ? " has-notification" : ""}`}
                   onClick={() => setActiveTab(id)}
                 >
                   <Icon width={18} height={18} />
@@ -288,7 +299,11 @@ export function AdminDashboard({ user, onLogout }: Props) {
                 <h2>Catering</h2>
                 <p>
                   Beheer bestellingen, producten en werkwijze vanuit één overzicht.
-                  {incomingCateringCount > 0 ? ` ${incomingCateringCount} order(s) vragen om actie.` : ""}
+                  {newCateringOrderCount > 0
+                    ? ` ${newCateringOrderCount} nieuwe bestelling${newCateringOrderCount === 1 ? "" : "en"} wacht${newCateringOrderCount === 1 ? "" : "en"} op actie.`
+                    : incomingCateringCount > 0
+                      ? ` ${incomingCateringCount} order(s) in behandeling.`
+                      : ""}
                 </p>
               </header>
               <CateringPanel
@@ -297,7 +312,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
                 orders={cateringOrders}
                 onOrdersChange={setCateringOrders}
                 isActive={activeTab === "catering"}
-                incomingCount={incomingCateringCount}
+                newOrderCount={newCateringOrderCount}
                 onSave={saveContent}
                 saving={saving}
               />

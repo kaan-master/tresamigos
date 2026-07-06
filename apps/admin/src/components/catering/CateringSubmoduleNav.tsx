@@ -3,11 +3,11 @@ import { CATERING_NAV_SECTIONS, type CateringView } from "./cateringNav";
 
 interface Props {
   view: CateringView;
-  incomingCount: number;
+  newOrderCount: number;
   onChange: (view: CateringView) => void;
 }
 
-export function CateringSubmoduleNav({ view, incomingCount, onChange }: Props) {
+export function CateringSubmoduleNav({ view, newOrderCount, onChange }: Props) {
   return (
     <nav className="catering-submodule-nav" aria-label="Catering submenu">
       {CATERING_NAV_SECTIONS.map((section) => (
@@ -15,12 +15,12 @@ export function CateringSubmoduleNav({ view, incomingCount, onChange }: Props) {
           <p className="catering-submodule-section-label">{section.label}</p>
           <div className="catering-submodule-items">
             {section.items.map((item) => {
-              const badgeCount = item.badge && incomingCount > 0 ? incomingCount : 0;
+              const badgeCount = item.badge && newOrderCount > 0 ? newOrderCount : 0;
               return (
                 <button
                   key={item.id}
                   type="button"
-                  className={`catering-submodule-item${view === item.id ? " is-active" : ""}`}
+                  className={`catering-submodule-item${view === item.id ? " is-active" : ""}${badgeCount > 0 ? " has-notification" : ""}`}
                   onClick={() => onChange(item.id)}
                 >
                   <span className="catering-submodule-thumb">
@@ -30,7 +30,7 @@ export function CateringSubmoduleNav({ view, incomingCount, onChange }: Props) {
                     <strong>{item.label}</strong>
                     <small>{item.description}</small>
                   </span>
-                  {badgeCount > 0 ? <em>{badgeCount}</em> : null}
+                  {badgeCount > 0 ? <em aria-label={`${badgeCount} nieuwe bestellingen`}>{badgeCount}</em> : null}
                 </button>
               );
             })}

@@ -5,8 +5,8 @@ import type { SiteContent } from "@tresamigos/types";
 import { CateringCartDrawer } from "../components/catering/CateringCartDrawer";
 import { CateringDateTimeFields } from "../components/catering/CateringDateTimeFields";
 import { CateringProductConfigurator } from "../components/catering/CateringProductModal";
+import { CateringSimpleProductCard } from "../components/catering/CateringSimpleProductCard";
 import { CateringFlowSteps, type FlowStep } from "../components/catering/CateringFlowSteps";
-import { IconPlus, IconShoppingCart } from "../components/catering/CateringIcons";
 import { Helmet } from "../components/Helmet";
 import { useCateringCart } from "../context/CateringCartContext";
 import { useLanguage } from "../i18n/LanguageProvider";
@@ -14,7 +14,6 @@ import { submitCatering } from "../lib/api";
 import {
   CATERING_CATEGORIES,
   FulfillmentMode,
-  buildSimpleLine,
   formatEuro,
   fulfillmentHoursLabel,
   isDeliveryAvailableToday,
@@ -24,6 +23,7 @@ import {
   productLabel,
   resolveCateringCatalog
 } from "../lib/catering";
+import { cateringImageUrl } from "../lib/catering/images";
 import type { CateringProduct } from "../lib/catering/catalog";
 
 type ShopView = "landing" | "shop" | "configure" | "checkout" | "success";
@@ -61,11 +61,9 @@ export function CateringPage({ content }: { content: SiteContent }) {
     cart,
     addLine,
     clearCart,
-    itemCount,
     subtotalCents: subtotal,
     openDrawer,
     closeDrawer,
-    cartPulse,
     drawerOpen
   } = useCateringCart();
 
@@ -81,7 +79,6 @@ export function CateringPage({ content }: { content: SiteContent }) {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
-  const [addedProductId, setAddedProductId] = useState<string | null>(null);
 
   const catalog = useMemo(() => resolveCateringCatalog(content.site.catering, lang), [content.site.catering, lang]);
   const visibleProducts = useMemo(() => catalog.productsByCategory(category), [catalog, category]);
@@ -100,7 +97,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
   }, [catalog.categories]);
 
   const resolveLineImage = useCallback(
-    (line: CateringCartLine) => productImageMap.get(line.productId),
+    (line: CateringCartLine) => cateringImageUrl(line.imageUrl || productImageMap.get(line.productId)),
     [productImageMap]
   );
 
@@ -137,16 +134,9 @@ export function CateringPage({ content }: { content: SiteContent }) {
   }, [drawerOpen]);
 
   function openProduct(product: CateringProduct) {
-    if (product.configurable) {
-      setActiveProduct(product);
-      setView("configure");
-      return;
-    }
-    const line = buildSimpleLine(product, 1);
-    line.name = productLabel(product, t);
-    addLine(line);
-    setAddedProductId(product.id);
-    window.setTimeout(() => setAddedProductId(null), 700);
+    if (!product.configurable) return;
+    setActiveProduct(product);
+    setView("configure");
   }
 
   function flowStep(): FlowStep {
@@ -277,7 +267,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
       <Helmet title={t("catering.seoTitle")} description={t("catering.seoDesc")} />
       {view === "configure" && activeProduct ? (
         <div className="shell">
-          <CateringFlowSteps current="package" onNavigate={navigateFlow} onOpenCart={openDrawer} cartCount={itemCount} />
+          <CateringFlowSteps current="package" onNavigate={navigateFlow} />
           <CateringProductConfigurator
             product={activeProduct}
             settings={content.site.catering}
@@ -291,7 +281,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
       ) : (
         <section className="catering-page catering-shop">
           <div className="shell catering-shell">
-            <CateringFlowSteps current={flowStep()} onNavigate={navigateFlow} onOpenCart={openDrawer} cartCount={itemCount} />
+            <CateringFlowSteps current={flowStep()} onNavigate={navigateFlow} />
 
             <div className="catering-shop-head">
               <div>
@@ -318,13 +308,6 @@ export function CateringPage({ content }: { content: SiteContent }) {
                   </>
                 ) : null}
               </div>
-              {view === "shop" ? (
-                <button type="button" className={`btn alt catering-cart-fab${cartPulse ? " is-pulse" : ""}`} onClick={openDrawer}>
-                  <IconShoppingCart width={18} height={18} />
-                  <span>{t("catering.cart")}</span>
-                  {itemCount > 0 ? <em>{itemCount}</em> : null}
-                </button>
-              ) : null}
             </div>
 
             {view === "success" ? (
@@ -371,28 +354,22 @@ export function CateringPage({ content }: { content: SiteContent }) {
                 </div>
 
                 <div className="catering-product-grid">
-                  {visibleProducts.map((product) => (
-                    <button
-                      key={product.id}
-                      type="button"
-                      className={`catering-product-card${addedProductId === product.id ? " is-added" : ""}`}
-                      onClick={() => openProduct(product)}
-                    >
-                      <div className="catering-product-card-media">
-                        <img src={product.image} alt={productLabel(product, t)} loading="lazy" />
-                        {!product.configurable ? (
-                          <span className="catering-product-card-add" aria-hidden="true">
-                            <IconPlus width={16} height={16} />
-                          </span>
-                        ) : null}
-                      </div>
-                      <div>
-                        <strong>{productLabel(product, t)}</strong>
-                        <p>{productDescription(product, t)}</p>
-                        <span>{formatEuro(product.basePriceCents)}+</span>
-                      </div>
-                    </button>
-                  ))}
+                  {visibleProducts.map((product) =>
+                    product.configurable ? (
+                      <button key={product.id} type="button" className="catering-product-card" onClick={() => openProduct(product)}>
+                        <div className="catering-product-card-media">
+                          <img src={cateringImageUrl(product.image)} alt={productLabel(product, t)} loading="lazy" />
+                        </div>
+                        <div>
+                          <strong>{productLabel(product, t)}</strong>
+                          <p>{productDescription(product, t)}</p>
+                          <span>{formatEuro(product.basePriceCents)}+</span>
+                        </div>
+                      </button>
+                    ) : (
+                      <CateringSimpleProductCard key={product.id} product={product} />
+                    )
+                  )}
                 </div>
               </>
             ) : null}

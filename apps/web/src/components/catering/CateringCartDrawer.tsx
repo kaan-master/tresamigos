@@ -2,7 +2,7 @@ import type { CateringCartLine } from "@tresamigos/types";
 import { formatEuro } from "../../lib/catering";
 import { useCateringCart } from "../../context/CateringCartContext";
 import { useLanguage } from "../../i18n/LanguageProvider";
-import { IconShoppingCart, IconTrash, IconX } from "./CateringIcons";
+import { IconMinus, IconPlus, IconShoppingCart, IconTrash, IconX } from "./CateringIcons";
 
 function configSummary(line: CateringCartLine) {
   const parts: string[] = [];
@@ -14,6 +14,10 @@ function configSummary(line: CateringCartLine) {
   return parts.join(" · ");
 }
 
+function isSimpleLine(line: CateringCartLine) {
+  return !line.servings && Object.keys(line.configuration).length === 0;
+}
+
 interface Props {
   resolveImage?: (line: CateringCartLine) => string | undefined;
   onPlaceOrder: () => void;
@@ -21,7 +25,7 @@ interface Props {
 
 export function CateringCartDrawer({ resolveImage, onPlaceOrder }: Props) {
   const { t } = useLanguage();
-  const { cart, removeLine, subtotalCents, drawerOpen, closeDrawer, lastAddedId } = useCateringCart();
+  const { cart, removeLine, updateLineQuantity, subtotalCents, drawerOpen, closeDrawer, lastAddedId } = useCateringCart();
 
   if (!drawerOpen) return null;
 
@@ -46,8 +50,9 @@ export function CateringCartDrawer({ resolveImage, onPlaceOrder }: Props) {
           {cart.length ? (
             <ul className="catering-cart-drawer-lines">
               {cart.map((line) => {
-                const image = line.imageUrl || resolveImage?.(line);
+                const image = resolveImage?.(line);
                 const isNew = line.id === lastAddedId;
+                const simple = isSimpleLine(line);
                 return (
                   <li key={line.id} className={`catering-cart-drawer-line${isNew ? " is-new" : ""}`}>
                     <div className="catering-cart-drawer-thumb">
@@ -56,9 +61,32 @@ export function CateringCartDrawer({ resolveImage, onPlaceOrder }: Props) {
                     <div className="catering-cart-drawer-copy">
                       <strong>{line.name.startsWith("catering.") ? t(line.name) : line.name}</strong>
                       {configSummary(line) ? <p>{configSummary(line)}</p> : null}
-                      <span>
-                        {line.quantity}× · {formatEuro(line.lineTotalCents)}
-                      </span>
+                      {simple ? (
+                        <div className="catering-qty-stepper catering-qty-stepper-drawer">
+                          <button type="button" aria-label={t("catering.qty.decrease")} onClick={() => updateLineQuantity(line.id, line.quantity - 1)}>
+                            <IconMinus width={14} height={14} />
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            max={99}
+                            value={line.quantity}
+                            aria-label={t("catering.field.quantity")}
+                            onChange={(event) => {
+                              const next = Number(event.target.value);
+                              if (Number.isFinite(next)) updateLineQuantity(line.id, next);
+                            }}
+                          />
+                          <button type="button" aria-label={t("catering.qty.increase")} onClick={() => updateLineQuantity(line.id, line.quantity + 1)}>
+                            <IconPlus width={14} height={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <span>
+                          {line.quantity}× · {formatEuro(line.lineTotalCents)}
+                        </span>
+                      )}
+                      {simple ? <span className="catering-cart-drawer-price">{formatEuro(line.lineTotalCents)}</span> : null}
                     </div>
                     <button type="button" className="catering-cart-drawer-remove" aria-label={t("catering.remove")} onClick={() => removeLine(line.id)}>
                       <IconTrash width={16} height={16} />

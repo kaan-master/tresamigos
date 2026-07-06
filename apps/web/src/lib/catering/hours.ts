@@ -5,7 +5,7 @@ import {
   isScheduledWithinCateringHours,
   isWithinCateringHours,
   type CateringFulfillmentMode
-} from "@tresamigos/utils";
+} from "@tresamigos/utils/cateringHours";
 
 export type FulfillmentMode = CateringFulfillmentMode;
 

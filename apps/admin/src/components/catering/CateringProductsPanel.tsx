@@ -17,7 +17,7 @@ function emptyProduct(categoryId: CateringCategoryId = "buffet"): CateringProduc
     categoryId,
     name,
     description: { nl: "", en: "" },
-    image: "/assets/brand/breakfast-lunch-dinner.png",
+    image: "assets/brand/breakfast-lunch-dinner.png",
     basePriceCents: 0,
     active: true,
     sortOrder: 99,

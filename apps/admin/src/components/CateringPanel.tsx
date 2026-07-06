@@ -18,7 +18,7 @@ interface Props {
   orders: CateringOrder[];
   onOrdersChange: (orders: CateringOrder[]) => void;
   isActive: boolean;
-  incomingCount: number;
+  newOrderCount: number;
   onSave: () => void | Promise<void>;
   saving: boolean;
 }
@@ -29,7 +29,7 @@ export function CateringPanel({
   orders,
   onOrdersChange,
   isActive,
-  incomingCount,
+  newOrderCount,
   onSave,
   saving
 }: Props) {
@@ -60,7 +60,7 @@ export function CateringPanel({
 
   return (
     <div className="catering-panel-shell">
-      <CateringSubmoduleNav view={view} incomingCount={incomingCount} onChange={setView} />
+      <CateringSubmoduleNav view={view} newOrderCount={newOrderCount} onChange={setView} />
 
       <div className="catering-panel-content">
         {view === "overview" ? (

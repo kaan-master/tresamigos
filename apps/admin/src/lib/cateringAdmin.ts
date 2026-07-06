@@ -25,6 +25,7 @@ export const STATUS_BADGE_CLASS: Record<CateringOrderStatus, string> = {
 };
 
 export const INCOMING_STATUSES = new Set<CateringOrderStatus>(["nieuw", "bevestigd", "voorbereid"]);
+export const NEW_ORDER_STATUSES = new Set<CateringOrderStatus>(["nieuw"]);
 
 const CONFIG_LABELS: Record<string, string> = {
   servings: "Porties",

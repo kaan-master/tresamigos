@@ -1,21 +1,12 @@
 import type { ReactNode } from "react";
 import { useLanguage } from "../../i18n/LanguageProvider";
-import {
-  IconCheckCircle,
-  IconClipboard,
-  IconGrid,
-  IconPackage,
-  IconShoppingCart,
-  IconTruck
-} from "./CateringIcons";
+import { IconCheckCircle, IconClipboard, IconGrid, IconPackage, IconTruck } from "./CateringIcons";
 
 export type FlowStep = "method" | "category" | "package" | "checkout" | "done";
 
 interface Props {
   current: FlowStep;
   onNavigate?: (step: FlowStep) => void;
-  onOpenCart?: () => void;
-  cartCount?: number;
 }
 
 const STEPS: { id: FlowStep; labelKey: string; icon: ReactNode }[] = [
@@ -28,7 +19,7 @@ const STEPS: { id: FlowStep; labelKey: string; icon: ReactNode }[] = [
 
 const ORDER: FlowStep[] = ["method", "category", "package", "checkout", "done"];
 
-export function CateringFlowSteps({ current, onNavigate, onOpenCart, cartCount = 0 }: Props) {
+export function CateringFlowSteps({ current, onNavigate }: Props) {
   const { t } = useLanguage();
   const currentIndex = ORDER.indexOf(current);
 
@@ -54,15 +45,6 @@ export function CateringFlowSteps({ current, onNavigate, onOpenCart, cartCount =
           </button>
         );
       })}
-      {onOpenCart ? (
-        <button type="button" className="catering-flow-cart-btn" onClick={onOpenCart} aria-label={t("catering.cart")}>
-          <span className="catering-flow-step-icon" aria-hidden="true">
-            <IconShoppingCart />
-          </span>
-          <span className="catering-flow-step-label">{t("catering.cart")}</span>
-          {cartCount > 0 ? <em className="catering-flow-cart-count">{cartCount}</em> : null}
-        </button>
-      ) : null}
     </nav>
   );
 }
