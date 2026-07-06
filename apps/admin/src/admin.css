@@ -2513,8 +2513,36 @@ select {
 .ta-nav button{display:flex;align-items:center;gap:10px}
 .ta-kpi-clickable{cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}
 .ta-kpi-clickable:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(31,22,11,.08)}
-.catering-panel-shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px;align-items:start}
+.catering-panel-shell{display:grid;grid-template-columns:280px minmax(0,1fr);gap:24px;align-items:start}
 @media(max-width:980px){.catering-panel-shell{grid-template-columns:1fr}}
+.catering-submodule-nav{display:grid;gap:18px;position:sticky;top:104px;max-height:calc(100vh - 180px);overflow:auto}
+.catering-submodule-section{display:grid;gap:8px}
+.catering-submodule-section-label{
+  margin:0;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:var(--ta-muted)
+}
+.catering-submodule-items{display:grid;gap:8px}
+.catering-submodule-item{
+  display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--ta-line);
+  border-radius:16px;background:rgba(255,255,255,.82);font:inherit;text-align:left;cursor:pointer
+}
+.catering-submodule-thumb{
+  width:56px;height:56px;border-radius:12px;overflow:hidden;background:#f7f0e4;display:grid;place-items:center
+}
+.catering-submodule-thumb img{width:100%;height:100%;object-fit:cover}
+.catering-submodule-copy{display:grid;gap:2px;min-width:0}
+.catering-submodule-copy strong{font-size:14px;line-height:1.2}
+.catering-submodule-copy small{font-size:12px;line-height:1.35;color:var(--ta-muted)}
+.catering-submodule-item.is-active{background:#fff9ea;border-color:#efd596;box-shadow:0 10px 24px rgba(154,103,0,.08)}
+.catering-submodule-item em{
+  min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#b42318;color:#fff;font-style:normal;
+  font-size:11px;font-weight:900;line-height:22px;text-align:center
+}
+.catering-ingredient-preview{
+  display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:center;margin-bottom:16px;padding:14px;
+  border:1px solid var(--ta-line);border-radius:18px;background:#fff
+}
+.catering-ingredient-preview img{width:96px;height:96px;object-fit:cover;border-radius:14px}
+.catering-ingredient-preview h4{margin:4px 0 0;font-size:20px}
 .catering-panel-nav{display:grid;gap:8px;position:sticky;top:104px}
 .catering-panel-nav button{
   display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--ta-line);

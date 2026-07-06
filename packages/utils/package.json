@@ -16,6 +16,10 @@
     "./navDefaults": {
       "types": "./dist/navDefaults.d.ts",
       "default": "./dist/navDefaults.js"
+    },
+    "./cateringHours": {
+      "types": "./dist/cateringHours.d.ts",
+      "default": "./dist/cateringHours.js"
     }
   },
   "scripts": {

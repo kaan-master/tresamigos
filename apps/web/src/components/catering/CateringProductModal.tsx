@@ -1,21 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CateringCartLine } from "@tresamigos/types";
+import type { CateringCartLine, CateringSettings } from "@tresamigos/types";
 import type { CateringProduct } from "../../lib/catering/catalog";
-import {
-  CREAM_OPTIONS,
-  PACKAGE_RULES,
-  PROTEINS,
-  SAUCES,
-  TORTILLAS,
-  TRIPLE_CREAM_OPTIONS,
-  toppingsForCategory
-} from "../../lib/catering/catalog";
+import { PACKAGE_RULES } from "../../lib/catering/catalog";
 import { createLineId, formatEuro, priceConfiguredProduct } from "../../lib/catering/cart";
 import { productDescription, productLabel } from "../../lib/catering/resolveCatalog";
+import { resolveCateringIngredients, type ResolvedIngredientOption } from "../../lib/catering/resolveIngredients";
+import { assetUrl } from "../../lib/api";
 import { useLanguage } from "../../i18n/LanguageProvider";
 
 interface Props {
   product: CateringProduct;
+  settings?: CateringSettings;
   onBack: () => void;
   onAdd: (line: CateringCartLine) => void;
 }
@@ -100,20 +95,54 @@ function SectionIcon({ name }: { name: SectionId | "check" }) {
 
 function ChoiceChip({
   label,
+  image,
   selected,
   onClick,
   disabled
 }: {
   label: string;
+  image?: string;
   selected: boolean;
   onClick: () => void;
   disabled?: boolean;
 }) {
   return (
-    <button type="button" className={`catering-choice${selected ? " is-selected" : ""}`} disabled={disabled} onClick={onClick}>
+    <button type="button" className={`catering-choice${image ? " has-image" : ""}${selected ? " is-selected" : ""}`} disabled={disabled} onClick={onClick}>
+      {image ? (
+        <span className="catering-choice-thumb">
+          <img src={assetUrl(image)} alt="" loading="lazy" />
+        </span>
+      ) : null}
       {selected ? <span className="catering-choice-check" aria-hidden="true">✓</span> : null}
       <span>{label}</span>
     </button>
+  );
+}
+
+function IngredientChoices({
+  options,
+  selected,
+  multiple,
+  onSelect
+}: {
+  options: ResolvedIngredientOption[];
+  selected: string | string[];
+  multiple?: boolean;
+  onSelect: (value: string) => void;
+}) {
+  const selectedList = Array.isArray(selected) ? selected : selected ? [selected] : [];
+  return (
+    <div className="catering-choice-grid">
+      {options.map((option) => (
+        <ChoiceChip
+          key={option.id}
+          label={option.label}
+          image={option.image}
+          selected={multiple ? selectedList.includes(option.label) : selected === option.label}
+          onClick={() => onSelect(option.label)}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -121,10 +150,12 @@ function pickHint(count: number, t: (key: string) => string) {
   return count === 1 ? t("catering.modal.pickOne") : t("catering.modal.pickCount").replace("{count}", String(count));
 }
 
-export function CateringProductConfigurator({ product, onBack, onAdd }: Props) {
-  const { t } = useLanguage();
+export function CateringProductConfigurator({ product, settings, onBack, onAdd }: Props) {
+  const { t, lang } = useLanguage();
   const rules = product.tier ? PACKAGE_RULES[product.tier] : null;
-  const toppings = toppingsForCategory(product.categoryId);
+  const ingredients = useMemo(() => resolveCateringIngredients(settings, lang), [settings, lang]);
+  const toppings = ingredients.toppingsFor(product.categoryId);
+  const creamOptions = ingredients.creamFor(product.tier);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Partial<Record<SectionId, HTMLElement | null>>>({});
 
@@ -138,7 +169,6 @@ export function CateringProductConfigurator({ product, onBack, onAdd }: Props) {
   const [errors, setErrors] = useState<Partial<Record<SectionId, string>>>({});
   const [activeSection, setActiveSection] = useState<SectionId>("servings");
 
-  const creamOptions = rules?.cream === "and" ? TRIPLE_CREAM_OPTIONS : CREAM_OPTIONS;
 
   useEffect(() => {
     setServings(product.servingOptions?.[0]?.servings || 10);
@@ -285,6 +315,7 @@ export function CateringProductConfigurator({ product, onBack, onAdd }: Props) {
       productId: product.id,
       categoryId: product.categoryId,
       name: productLabel(product, t),
+      imageUrl: product.image,
       tier: product.tier,
       servings,
       quantity,
@@ -435,16 +466,11 @@ export function CateringProductConfigurator({ product, onBack, onAdd }: Props) {
                         <p className="catering-slot-label">
                           {t("catering.field.protein")} {rules.proteins > 1 ? index + 1 : ""}
                         </p>
-                        <div className="catering-choice-grid">
-                          {PROTEINS.map((item) => (
-                            <ChoiceChip
-                              key={`${index}-${item}`}
-                              label={item}
-                              selected={proteins[index] === item}
-                              onClick={() => setProteinAt(index, item)}
-                            />
-                          ))}
-                        </div>
+                        <IngredientChoices
+                          options={ingredients.proteins}
+                          selected={proteins[index] || ""}
+                          onSelect={(value) => setProteinAt(index, value)}
+                        />
                       </div>
                     ))}
                     {errors.proteins ? <p className="catering-section-error">{errors.proteins}</p> : null}
@@ -463,19 +489,15 @@ export function CateringProductConfigurator({ product, onBack, onAdd }: Props) {
                         {toppingChoices.length}/{rules.toppings}
                       </span>
                     </header>
-                    <div className="catering-choice-grid">
-                      {toppings.map((item) => (
-                        <ChoiceChip
-                          key={item}
-                          label={item}
-                          selected={toppingChoices.includes(item)}
-                          onClick={() => {
-                            setToppingChoices((current) => setLimited(current, item, rules.toppings));
-                            setErrors((current) => ({ ...current, toppings: undefined }));
-                          }}
-                        />
-                      ))}
-                    </div>
+                    <IngredientChoices
+                      options={toppings}
+                      selected={toppingChoices}
+                      multiple
+                      onSelect={(value) => {
+                        setToppingChoices((current) => setLimited(current, value, rules.toppings));
+                        setErrors((current) => ({ ...current, toppings: undefined }));
+                      }}
+                    />
                     {errors.toppings ? <p className="catering-section-error">{errors.toppings}</p> : null}
                   </section>
 
@@ -492,19 +514,15 @@ export function CateringProductConfigurator({ product, onBack, onAdd }: Props) {
                         {sauceChoices.length}/{rules.sauces}
                       </span>
                     </header>
-                    <div className="catering-choice-grid">
-                      {SAUCES.map((item) => (
-                        <ChoiceChip
-                          key={item}
-                          label={item}
-                          selected={sauceChoices.includes(item)}
-                          onClick={() => {
-                            setSauceChoices((current) => setLimited(current, item, rules.sauces));
-                            setErrors((current) => ({ ...current, sauces: undefined }));
-                          }}
-                        />
-                      ))}
-                    </div>
+                    <IngredientChoices
+                      options={ingredients.sauces}
+                      selected={sauceChoices}
+                      multiple
+                      onSelect={(value) => {
+                        setSauceChoices((current) => setLimited(current, value, rules.sauces));
+                        setErrors((current) => ({ ...current, sauces: undefined }));
+                      }}
+                    />
                     {errors.sauces ? <p className="catering-section-error">{errors.sauces}</p> : null}
                   </section>
 
@@ -522,19 +540,15 @@ export function CateringProductConfigurator({ product, onBack, onAdd }: Props) {
                           {tortillas.length}/{rules.tortillas}
                         </span>
                       </header>
-                      <div className="catering-choice-grid">
-                        {TORTILLAS.map((item) => (
-                          <ChoiceChip
-                            key={item}
-                            label={item}
-                            selected={tortillas.includes(item)}
-                            onClick={() => {
-                              setTortillas((current) => setLimited(current, item, rules.tortillas));
-                              setErrors((current) => ({ ...current, tortilla: undefined }));
-                            }}
-                          />
-                        ))}
-                      </div>
+                      <IngredientChoices
+                        options={ingredients.tortillas}
+                        selected={tortillas}
+                        multiple
+                        onSelect={(value) => {
+                          setTortillas((current) => setLimited(current, value, rules.tortillas));
+                          setErrors((current) => ({ ...current, tortilla: undefined }));
+                        }}
+                      />
                       {errors.tortilla ? <p className="catering-section-error">{errors.tortilla}</p> : null}
                     </section>
                   ) : null}
@@ -551,19 +565,14 @@ export function CateringProductConfigurator({ product, onBack, onAdd }: Props) {
                         </div>
                         <span className="catering-config-badge">{cream ? "✓" : "1"}</span>
                       </header>
-                      <div className="catering-choice-grid">
-                        {creamOptions.map((item) => (
-                          <ChoiceChip
-                            key={item}
-                            label={item}
-                            selected={cream === item}
-                            onClick={() => {
-                              setCream(item);
-                              setErrors((current) => ({ ...current, cream: undefined }));
-                            }}
-                          />
-                        ))}
-                      </div>
+                      <IngredientChoices
+                        options={creamOptions}
+                        selected={cream}
+                        onSelect={(value) => {
+                          setCream(value);
+                          setErrors((current) => ({ ...current, cream: undefined }));
+                        }}
+                      />
                       {errors.cream ? <p className="catering-section-error">{errors.cream}</p> : null}
                     </section>
                   ) : null}

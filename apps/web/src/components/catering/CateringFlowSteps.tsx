@@ -1,24 +1,34 @@
+import type { ReactNode } from "react";
 import { useLanguage } from "../../i18n/LanguageProvider";
+import {
+  IconCheckCircle,
+  IconClipboard,
+  IconGrid,
+  IconPackage,
+  IconShoppingCart,
+  IconTruck
+} from "./CateringIcons";
 
-export type FlowStep = "method" | "category" | "package" | "cart" | "checkout" | "done";
+export type FlowStep = "method" | "category" | "package" | "checkout" | "done";
 
 interface Props {
   current: FlowStep;
   onNavigate?: (step: FlowStep) => void;
+  onOpenCart?: () => void;
+  cartCount?: number;
 }
 
-const STEPS: { id: FlowStep; labelKey: string; icon: string }[] = [
-  { id: "method", labelKey: "catering.flow.method", icon: "🚗" },
-  { id: "category", labelKey: "catering.flow.category", icon: "📂" },
-  { id: "package", labelKey: "catering.flow.package", icon: "🌮" },
-  { id: "cart", labelKey: "catering.flow.cart", icon: "🛒" },
-  { id: "checkout", labelKey: "catering.flow.checkout", icon: "✍️" },
-  { id: "done", labelKey: "catering.flow.done", icon: "✓" }
+const STEPS: { id: FlowStep; labelKey: string; icon: ReactNode }[] = [
+  { id: "method", labelKey: "catering.flow.method", icon: <IconTruck /> },
+  { id: "category", labelKey: "catering.flow.category", icon: <IconGrid /> },
+  { id: "package", labelKey: "catering.flow.package", icon: <IconPackage /> },
+  { id: "checkout", labelKey: "catering.flow.checkout", icon: <IconClipboard /> },
+  { id: "done", labelKey: "catering.flow.done", icon: <IconCheckCircle /> }
 ];
 
-const ORDER: FlowStep[] = ["method", "category", "package", "cart", "checkout", "done"];
+const ORDER: FlowStep[] = ["method", "category", "package", "checkout", "done"];
 
-export function CateringFlowSteps({ current, onNavigate }: Props) {
+export function CateringFlowSteps({ current, onNavigate, onOpenCart, cartCount = 0 }: Props) {
   const { t } = useLanguage();
   const currentIndex = ORDER.indexOf(current);
 
@@ -44,6 +54,15 @@ export function CateringFlowSteps({ current, onNavigate }: Props) {
           </button>
         );
       })}
+      {onOpenCart ? (
+        <button type="button" className="catering-flow-cart-btn" onClick={onOpenCart} aria-label={t("catering.cart")}>
+          <span className="catering-flow-step-icon" aria-hidden="true">
+            <IconShoppingCart />
+          </span>
+          <span className="catering-flow-step-label">{t("catering.cart")}</span>
+          {cartCount > 0 ? <em className="catering-flow-cart-count">{cartCount}</em> : null}
+        </button>
+      ) : null}
     </nav>
   );
 }

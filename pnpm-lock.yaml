@@ -126,6 +126,9 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.2.7
+      react-day-picker:
+        specifier: 9.6.7
+        version: 9.6.7(react@19.2.7)
       react-dom:
         specifier: ^19.0.0
         version: 19.2.7(react@19.2.7)
@@ -290,6 +293,9 @@ packages:
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
+
+  '@date-fns/tz@1.2.0':
+    resolution: {integrity: sha512-LBrd7MiJZ9McsOgxqWX7AaxrDjcFVjWH/tIKJd7pnR7McaslGYOP1QmmiBXdJH/H/yLCT+rcQ7FaPBUxRGUtrg==}
 
   '@date-fns/tz@1.5.0':
     resolution: {integrity: sha512-lwYN/vDPeNRULcepoE/LO2Pgx+7/RV+S9ARfbc9lr2DtGkOD7pAiruHvbR1RX3Qyf6ja47EWJDMsNK5vK08DJg==}
@@ -1429,6 +1435,9 @@ packages:
   date-fns-jalali@4.1.0-0:
     resolution: {integrity: sha512-hTIP/z+t+qKwBDcmmsnmjWTduxCg+5KfdqWQvb2X/8C9+knYY6epN/pfxdDuyVlSVeFz0sM5eEfwIUQ70U4ckg==}
 
+  date-fns@4.1.0:
+    resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
+
   date-fns@4.4.0:
     resolution: {integrity: sha512-+1UMbeh68lH1SegH83CGWwpb6OHHbpSgr3+s5Eww5M4CAgswBpoWS0AjTOfEJ33HiYKz1hdj/KTFprzXHmq/6w==}
 
@@ -2073,6 +2082,12 @@ packages:
     peerDependencies:
       react: '>=16.8.0'
 
+  react-day-picker@9.6.7:
+    resolution: {integrity: sha512-rCSt6X8FXQWpjykns/azRXjJk3cMSzkzGbDEXuEveFGNZgOjZULdJQ5wsu8Zfyo8ZgPBoYCBKQ5wRrgJfhJGbg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      react: '>=16.8.0'
+
   react-dom@19.2.7:
     resolution: {integrity: sha512-t0BRVXvbiE/o20Hfw669rLbMCDWtYZLvmJigy2f0MxsXF+71pxhR3xOkspmsO8h3ZlNzyibAmtCa3l4lYKk6gQ==}
     peerDependencies:
@@ -2671,6 +2686,8 @@ snapshots:
 
   '@colors/colors@1.5.0':
     optional: true
+
+  '@date-fns/tz@1.2.0': {}
 
   '@date-fns/tz@1.5.0': {}
 
@@ -3681,6 +3698,8 @@ snapshots:
 
   date-fns-jalali@4.1.0-0: {}
 
+  date-fns@4.1.0: {}
+
   date-fns@4.4.0: {}
 
   debug@2.6.9:
@@ -4364,6 +4383,13 @@ snapshots:
       '@date-fns/tz': 1.5.0
       '@tabby_ai/hijri-converter': 1.0.5
       date-fns: 4.4.0
+      date-fns-jalali: 4.1.0-0
+      react: 19.2.7
+
+  react-day-picker@9.6.7(react@19.2.7):
+    dependencies:
+      '@date-fns/tz': 1.2.0
+      date-fns: 4.1.0
       date-fns-jalali: 4.1.0-0
       react: 19.2.7
 

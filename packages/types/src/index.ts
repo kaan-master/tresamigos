@@ -571,6 +571,37 @@ export interface CateringCategoryConfig {
   visible: boolean;
 }
 
+export const CATERING_INGREDIENT_GROUPS = [
+  "protein",
+  "buffetTopping",
+  "burritoTopping",
+  "sauce",
+  "tortilla",
+  "cream",
+  "tripleCream"
+] as const;
+
+export type CateringIngredientGroup = (typeof CATERING_INGREDIENT_GROUPS)[number];
+
+export const CATERING_INGREDIENT_GROUP_LABELS: Record<CateringIngredientGroup, string> = {
+  protein: "Eiwitten",
+  buffetTopping: "Buffet toppings",
+  burritoTopping: "Burrito toppings",
+  sauce: "Sauzen / salsa's",
+  tortilla: "Tortilla's",
+  cream: "Guacamole / sour cream",
+  tripleCream: "Triple cream opties"
+};
+
+export interface CateringIngredientConfig {
+  id: string;
+  group: CateringIngredientGroup;
+  label: CateringLocalizedText;
+  image: string;
+  active: boolean;
+  sortOrder: number;
+}
+
 export interface CateringFormFieldConfig {
   id: string;
   label: CateringLocalizedText;
@@ -582,6 +613,17 @@ export interface CateringNotificationsSettings {
   recipientEmail: string;
   notifyOnNewOrder: boolean;
   notifyOnStatusChange: boolean;
+}
+
+export interface CateringFulfillmentModeSettings {
+  enabled: boolean;
+  openTime: string;
+  closeTime: string;
+}
+
+export interface CateringFulfillmentSettings {
+  pickup: CateringFulfillmentModeSettings;
+  delivery: CateringFulfillmentModeSettings;
 }
 
 export interface CateringProductConfig {
@@ -605,8 +647,10 @@ export interface CateringSettings {
   largeGroupEmail: string;
   categories: CateringCategoryConfig[];
   products: CateringProductConfig[];
+  ingredients: CateringIngredientConfig[];
   formFields: CateringFormFieldConfig[];
   notifications: CateringNotificationsSettings;
+  fulfillment: CateringFulfillmentSettings;
 }
 
 export interface CateringCartLine {
@@ -614,6 +658,7 @@ export interface CateringCartLine {
   productId: string;
   categoryId: CateringCategoryId;
   name: string;
+  imageUrl?: string;
   tier?: CateringPackageTier;
   servings: number;
   quantity: number;

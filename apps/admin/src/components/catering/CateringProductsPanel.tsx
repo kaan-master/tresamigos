@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { CateringCategoryId, CateringPackageTier, CateringProductConfig, CateringSettings } from "@tresamigos/types";
 import { createSlugId } from "../../lib/id";
+import { mediaAssetUrl } from "../../lib/media";
 import { AdminFilterChips, AdminListRow, AdminSearchBar } from "../AdminListUi";
 import { FormSaveBar } from "../FormSaveBar";
 import { MediaField } from "../MediaPickerModal";
@@ -124,6 +125,7 @@ export function CateringProductsPanel({ settings, onSettingsChange, saving }: Ca
                   key={product.id}
                   title={localizedLabel(product.name)}
                   meta={`${localizedLabel(settings.categories.find((c) => c.id === product.categoryId)?.label || { nl: product.categoryId, en: product.categoryId })} · € ${formatEuroInput(product.basePriceCents)}`}
+                  thumb={mediaAssetUrl(product.image)}
                   badge={product.active ? "Actief" : "Uit"}
                   badgeClassName={product.active ? "catering-status-afgerond" : "catering-status-geannuleerd"}
                   active={product.id === selectedId}

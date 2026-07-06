@@ -69,8 +69,25 @@ function UtilityNavLink({ id, label }: { id: NavItemId; label: string }) {
 
 function CartNavLink({ mobile }: { mobile?: boolean }) {
   const { t } = useLanguage();
-  const { itemCount } = useCateringCart();
+  const location = useLocation();
+  const { itemCount, openDrawer } = useCateringCart();
   const className = mobile ? "nav-icon-link nav-cart-link nav-mobile-only" : "nav-icon-link nav-cart-link";
+  const isCatering = location.pathname === "/catering";
+
+  if (isCatering) {
+    return (
+      <button
+        className={className}
+        type="button"
+        aria-label={itemCount > 0 ? `${t("nav.cart")} (${itemCount})` : t("nav.cart")}
+        onClick={openDrawer}
+      >
+        <IconCart />
+        {itemCount > 0 ? <span className="nav-cart-badge">{itemCount}</span> : null}
+      </button>
+    );
+  }
+
   return (
     <Link
       className={className}

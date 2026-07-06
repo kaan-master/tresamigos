@@ -24,6 +24,7 @@ export function buildSimpleLine(product: CateringProduct, quantity: number): Cat
     productId: product.id,
     categoryId: product.categoryId,
     name: product.nameKey,
+    imageUrl: product.image,
     servings: 0,
     quantity,
     unitPriceCents: product.basePriceCents,

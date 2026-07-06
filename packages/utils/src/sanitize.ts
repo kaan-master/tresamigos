@@ -6,6 +6,8 @@ import type {
   CateringCategoryId,
   CateringFormFieldConfig,
   CateringFulfillment,
+  CateringIngredientConfig,
+  CateringIngredientGroup,
   CateringLocalizedText,
   CateringNotificationsSettings,
   CateringOrder,
@@ -25,6 +27,7 @@ import type {
 } from "@tresamigos/types";
 import { SEO_PAGE_KEYS, WEEK_DAYS } from "@tresamigos/types";
 import { DEFAULT_CATERING_SETTINGS } from "./cateringDefaults";
+import { sanitizeCateringFulfillmentSettings } from "./cateringHours";
 import { DEFAULT_NAV_SETTINGS, sanitizeNavSettings } from "./navDefaults";
 
 export function cleanText(value: unknown, fallback = "", max = 1000): string {
@@ -663,6 +666,7 @@ function sanitizeCartLines(value: unknown): CateringCartLine[] {
       productId: cleanText(item.productId, "", 80),
       categoryId: cleanText(item.categoryId, "buffet", 40) as CateringCartLine["categoryId"],
       name: cleanText(item.name, "Product", 160),
+      imageUrl: cleanText(item.imageUrl, "", 300) || undefined,
       tier: cleanText(item.tier, "", 20) as CateringCartLine["tier"],
       servings: Math.min(30, Math.max(0, Number(item.servings) || 0)),
       quantity: Math.min(99, Math.max(1, Number(item.quantity) || 1)),
@@ -731,6 +735,15 @@ export function sanitizeUpdateCateringOrderInput(input: UpdateCateringOrderInput
 
 const CATERING_CATEGORY_IDS = ["buffet", "burrito", "drinks", "sauces", "team-thanks"] as const;
 const CATERING_TIERS = ["budget", "single", "double", "triple"] as const;
+const CATERING_INGREDIENT_GROUPS = [
+  "protein",
+  "buffetTopping",
+  "burritoTopping",
+  "sauce",
+  "tortilla",
+  "cream",
+  "tripleCream"
+] as const;
 
 function sanitizeLocalizedText(value: unknown, fallback: CateringLocalizedText): CateringLocalizedText {
   if (typeof value === "string") {
@@ -801,6 +814,39 @@ function sanitizeCateringCategory(value: unknown, index: number): CateringCatego
   };
 }
 
+function sanitizeCateringIngredient(value: unknown, index: number): CateringIngredientConfig | null {
+  const raw = value && typeof value === "object" ? (value as Partial<CateringIngredientConfig>) : {};
+  const groupRaw = cleanText(raw.group, DEFAULT_CATERING_SETTINGS.ingredients[index]?.group || "protein", 40);
+  const group = CATERING_INGREDIENT_GROUPS.includes(groupRaw as CateringIngredientGroup)
+    ? (groupRaw as CateringIngredientGroup)
+    : "protein";
+  const fallback =
+    DEFAULT_CATERING_SETTINGS.ingredients.find((item) => item.id === raw.id) ||
+    DEFAULT_CATERING_SETTINGS.ingredients.find((item) => item.group === group);
+  const label = sanitizeLocalizedText(raw.label, fallback?.label || { nl: `Ingredient ${index + 1}`, en: `Ingredient ${index + 1}` });
+  const id = cleanSlug(raw.id, cleanSlug(label.nl, `ingredient-${index + 1}`));
+
+  return {
+    id,
+    group,
+    label,
+    image: cleanUrl(raw.image) || fallback?.image || "/assets/brand/breakfast-lunch-dinner.png",
+    active: raw.active !== false,
+    sortOrder: Math.min(200, Math.max(0, Number(raw.sortOrder) ?? index))
+  };
+}
+
+function mergeCateringIngredients(items: CateringIngredientConfig[]): CateringIngredientConfig[] {
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const merged = DEFAULT_CATERING_SETTINGS.ingredients.map((defaults) => byId.get(defaults.id) || defaults);
+  for (const item of items) {
+    if (!merged.some((entry) => entry.id === item.id)) merged.push(item);
+  }
+  return merged
+    .sort((a, b) => a.group.localeCompare(b.group) || a.sortOrder - b.sortOrder)
+    .map((item, index) => ({ ...item, sortOrder: index }));
+}
+
 function sanitizeCateringFormField(value: unknown, index: number): CateringFormFieldConfig | null {
   const raw = value && typeof value === "object" ? (value as Partial<CateringFormFieldConfig>) : {};
   const id = cleanSlug(raw.id, DEFAULT_CATERING_SETTINGS.formFields[index]?.id || `field-${index + 1}`);
@@ -842,14 +888,24 @@ export function sanitizeCateringSettings(value: unknown): CateringSettings {
         .filter((field): field is CateringFormFieldConfig => Boolean(field))
         .slice(0, 20)
     : [];
+  const ingredients = Array.isArray(raw.ingredients)
+    ? mergeCateringIngredients(
+        raw.ingredients
+          .map((ingredient, index) => sanitizeCateringIngredient(ingredient, index))
+          .filter((ingredient): ingredient is CateringIngredientConfig => Boolean(ingredient))
+          .slice(0, 120)
+      )
+    : DEFAULT_CATERING_SETTINGS.ingredients;
 
   return {
     maxOnlineServings: Math.min(500, Math.max(1, Number(raw.maxOnlineServings) || DEFAULT_CATERING_SETTINGS.maxOnlineServings)),
     largeGroupEmail: cleanText(raw.largeGroupEmail, DEFAULT_CATERING_SETTINGS.largeGroupEmail, 180),
     categories: categories.length ? categories : DEFAULT_CATERING_SETTINGS.categories,
     products: products.length ? products : DEFAULT_CATERING_SETTINGS.products,
+    ingredients,
     formFields: formFields.length ? formFields : DEFAULT_CATERING_SETTINGS.formFields,
-    notifications: sanitizeCateringNotifications(raw.notifications)
+    notifications: sanitizeCateringNotifications(raw.notifications),
+    fulfillment: sanitizeCateringFulfillmentSettings(raw.fulfillment)
   };
 }
 

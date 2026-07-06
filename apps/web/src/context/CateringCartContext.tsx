@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { CateringCartLine } from "@tresamigos/types";
 import { cartItemCount, cartSubtotal } from "../lib/catering";
 
@@ -12,6 +12,12 @@ interface CateringCartContextValue {
   clearCart: () => void;
   itemCount: number;
   subtotalCents: number;
+  drawerOpen: boolean;
+  setDrawerOpen: (open: boolean) => void;
+  openDrawer: () => void;
+  closeDrawer: () => void;
+  lastAddedId: string | null;
+  cartPulse: boolean;
 }
 
 const CateringCartContext = createContext<CateringCartContextValue | null>(null);
@@ -30,22 +36,42 @@ function readStoredCart(): CateringCartLine[] {
 
 export function CateringCartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CateringCartLine[]>(readStoredCart);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+  const [cartPulse, setCartPulse] = useState(false);
 
   useEffect(() => {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
   }, [cart]);
 
+  const openDrawer = useCallback(() => setDrawerOpen(true), []);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+
+  const addLine = useCallback((line: CateringCartLine) => {
+    setCart((current) => [...current, line]);
+    setLastAddedId(line.id);
+    setCartPulse(true);
+    setDrawerOpen(true);
+    window.setTimeout(() => setCartPulse(false), 600);
+  }, []);
+
   const value = useMemo(
     () => ({
       cart,
       setCart,
-      addLine: (line: CateringCartLine) => setCart((current) => [...current, line]),
+      addLine,
       removeLine: (id: string) => setCart((current) => current.filter((line) => line.id !== id)),
       clearCart: () => setCart([]),
       itemCount: cartItemCount(cart),
-      subtotalCents: cartSubtotal(cart)
+      subtotalCents: cartSubtotal(cart),
+      drawerOpen,
+      setDrawerOpen,
+      openDrawer,
+      closeDrawer,
+      lastAddedId,
+      cartPulse
     }),
-    [cart]
+    [cart, addLine, drawerOpen, openDrawer, closeDrawer, lastAddedId, cartPulse]
   );
 
   return <CateringCartContext.Provider value={value}>{children}</CateringCartContext.Provider>;

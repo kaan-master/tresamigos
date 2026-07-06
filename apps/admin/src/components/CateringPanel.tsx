@@ -2,13 +2,15 @@ import { useState } from "react";
 import type { CateringOrder, CateringSettings, SiteContent } from "@tresamigos/types";
 import { CateringCategoriesPanel } from "./catering/CateringCategoriesPanel";
 import { CateringFormSettingsPanel } from "./catering/CateringFormSettingsPanel";
+import { CateringFulfillmentPanel } from "./catering/CateringFulfillmentPanel";
 import { CateringGuideView } from "./CateringGuideView";
+import { CateringIngredientsPanel } from "./catering/CateringIngredientsPanel";
 import { CateringNotificationsPanel } from "./catering/CateringNotificationsPanel";
 import { CateringOverviewPanel } from "./catering/CateringOverviewPanel";
 import { CateringOrdersPanel } from "./CateringOrdersPanel";
 import { CateringProductsPanel } from "./catering/CateringProductsPanel";
-
-type CateringView = "overview" | "orders" | "products" | "categories" | "form" | "notifications" | "guide";
+import { CateringSubmoduleNav } from "./catering/CateringSubmoduleNav";
+import type { CateringView } from "./catering/cateringNav";
 
 interface Props {
   content: SiteContent;
@@ -20,16 +22,6 @@ interface Props {
   onSave: () => void | Promise<void>;
   saving: boolean;
 }
-
-const NAV_ITEMS: { id: CateringView; label: string; icon: string; badge?: boolean }[] = [
-  { id: "overview", label: "Overzicht", icon: "📊" },
-  { id: "orders", label: "Bestellingen", icon: "📥", badge: true },
-  { id: "products", label: "Producten", icon: "🌮" },
-  { id: "categories", label: "Categorieën", icon: "📂" },
-  { id: "form", label: "Formulier", icon: "📝" },
-  { id: "notifications", label: "Meldingen", icon: "🔔" },
-  { id: "guide", label: "Werkwijze", icon: "🧭" }
-];
 
 export function CateringPanel({
   content,
@@ -68,17 +60,7 @@ export function CateringPanel({
 
   return (
     <div className="catering-panel-shell">
-      <nav className="catering-panel-nav" aria-label="Catering submenu">
-        {NAV_ITEMS.map((item) => (
-          <button key={item.id} type="button" className={view === item.id ? "is-active" : ""} onClick={() => setView(item.id)}>
-            <span className="catering-panel-nav-icon" aria-hidden="true">
-              {item.icon}
-            </span>
-            <span>{item.label}</span>
-            {item.badge && incomingCount > 0 ? <em>{incomingCount}</em> : null}
-          </button>
-        ))}
-      </nav>
+      <CateringSubmoduleNav view={view} incomingCount={incomingCount} onChange={setView} />
 
       <div className="catering-panel-content">
         {view === "overview" ? (
@@ -94,7 +76,9 @@ export function CateringPanel({
         ) : null}
         {view === "products" ? <CateringProductsPanel {...settingsProps} /> : null}
         {view === "categories" ? <CateringCategoriesPanel {...settingsProps} /> : null}
+        {view === "ingredients" ? <CateringIngredientsPanel {...settingsProps} /> : null}
         {view === "form" ? <CateringFormSettingsPanel {...settingsProps} /> : null}
+        {view === "fulfillment" ? <CateringFulfillmentPanel {...settingsProps} /> : null}
         {view === "notifications" ? <CateringNotificationsPanel {...settingsProps} /> : null}
         {view === "guide" ? <CateringGuideView /> : null}
       </div>

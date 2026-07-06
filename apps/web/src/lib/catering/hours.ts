@@ -1,32 +1,35 @@
-import type { FulfillmentMode } from "./catalog";
+import type { CateringFulfillmentSettings } from "@tresamigos/types";
+import {
+  cateringHoursLabel,
+  isCateringModeEnabled,
+  isScheduledWithinCateringHours,
+  isWithinCateringHours,
+  type CateringFulfillmentMode
+} from "@tresamigos/utils";
 
-const PICKUP_OPEN = 11;
-const PICKUP_CLOSE = 22.5;
-const DELIVERY_OPEN = 17;
-const DELIVERY_CLOSE = 22.5;
+export type FulfillmentMode = CateringFulfillmentMode;
 
-function hourDecimal(date: Date) {
-  return date.getHours() + date.getMinutes() / 60;
+export function isWithinHours(mode: FulfillmentMode, settings?: CateringFulfillmentSettings, date = new Date()) {
+  return isWithinCateringHours(mode, settings, date);
 }
 
-export function isWithinHours(mode: FulfillmentMode, date = new Date()) {
-  const hour = hourDecimal(date);
-  if (mode === "pickup") return hour >= PICKUP_OPEN && hour <= PICKUP_CLOSE;
-  return hour >= DELIVERY_OPEN && hour <= DELIVERY_CLOSE;
+export function isDeliveryAvailableToday(settings?: CateringFulfillmentSettings) {
+  return isCateringModeEnabled("delivery", settings);
 }
 
-export function isDeliveryAvailableToday(date = new Date()) {
-  return isWithinHours("delivery", date);
+export function isPickupAvailable(settings?: CateringFulfillmentSettings) {
+  return isCateringModeEnabled("pickup", settings);
 }
 
-export function fulfillmentHoursLabel(mode: FulfillmentMode) {
-  if (mode === "pickup") return "11:00 – 22:30";
-  return "17:00 – 22:30";
+export function fulfillmentHoursLabel(mode: FulfillmentMode, settings?: CateringFulfillmentSettings) {
+  return cateringHoursLabel(mode, settings);
 }
 
-export function isScheduledWithinHours(mode: FulfillmentMode, date: string, time: string) {
-  if (!date || !time) return false;
-  const scheduled = new Date(`${date}T${time}`);
-  if (Number.isNaN(scheduled.getTime())) return false;
-  return isWithinHours(mode, scheduled);
+export function isScheduledWithinHours(
+  mode: FulfillmentMode,
+  date: string,
+  time: string,
+  settings?: CateringFulfillmentSettings
+) {
+  return isScheduledWithinCateringHours(mode, date, time, settings);
 }

@@ -9,7 +9,14 @@ import type {
   UpdateCateringOrderInput,
   CateringSettings
 } from "@tresamigos/types";
-import { sanitizeCateringOrder, sanitizeCateringSettings, sanitizeUpdateCateringOrderInput } from "@tresamigos/utils";
+import {
+  cateringHoursLabel,
+  isCateringModeEnabled,
+  isScheduledWithinCateringHours,
+  sanitizeCateringOrder,
+  sanitizeCateringSettings,
+  sanitizeUpdateCateringOrderInput
+} from "@tresamigos/utils";
 import { ContentService } from "../content/content.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.module";
@@ -106,6 +113,25 @@ export class CateringService {
       throw new BadRequestException({ message: "Vul een volledig bezorgadres in." });
     }
 
+    const content = await this.contentService.getContent();
+    const fulfillmentSettings = sanitizeCateringSettings(content.site.catering).fulfillment;
+    if (!isCateringModeEnabled(order.fulfillment, fulfillmentSettings)) {
+      throw new BadRequestException({
+        message: order.fulfillment === "delivery" ? "Bezorgen is niet beschikbaar." : "Afhalen is niet beschikbaar."
+      });
+    }
+    if (!isScheduledWithinCateringHours(order.fulfillment, order.eventDate, order.eventTime, fulfillmentSettings)) {
+      const hours = cateringHoursLabel(order.fulfillment, fulfillmentSettings);
+      throw new BadRequestException({
+        message:
+          order.fulfillment === "delivery"
+            ? `Bezorgtijd moet tussen ${hours} liggen.`
+            : `Afhaaltijd moet tussen ${hours} liggen.`
+      });
+    }
+
+    const locationName = this.resolveLocationName(content, order.locationId);
+
     if (isCartOrder) {
       if (!order.items.length) {
         throw new BadRequestException({ message: "Je winkelwagen is leeg." });
@@ -123,8 +149,6 @@ export class CateringService {
       }
     }
 
-    const content = await this.contentService.getContent();
-    const locationName = this.resolveLocationName(content, order.locationId);
     const totalServings = isCartOrder
       ? order.items.reduce((sum, line) => sum + line.servings * line.quantity, 0)
       : order.quantity;
