@@ -94,23 +94,25 @@ export function AdminStartMenu({
       </div>
 
       {searchResults.length ? (
-        <section className="ta-win-start-section">
-          <header className="ta-win-start-section-head">
-            <h3>Zoekresultaten</h3>
-          </header>
-          <ul className="ta-win-start-search-list">
-            {searchResults.map((item) => (
-              <li key={item.id}>
-                <button type="button" onClick={() => pickSearch(item)}>
-                  <strong>{item.label}</strong>
-                  <span>{item.group}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <div className="ta-win-start-body">
+          <section className="ta-win-start-section">
+            <header className="ta-win-start-section-head">
+              <h3>Zoekresultaten</h3>
+            </header>
+            <ul className="ta-win-start-search-list">
+              {searchResults.map((item) => (
+                <li key={item.id}>
+                  <button type="button" onClick={() => pickSearch(item)}>
+                    <strong>{item.label}</strong>
+                    <span>{item.group}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
       ) : (
-        <>
+        <div className="ta-win-start-body">
           <section className="ta-win-start-section">
             <header className="ta-win-start-section-head">
               <h3>Vastgezet</h3>
@@ -167,7 +169,7 @@ export function AdminStartMenu({
               <p className="ta-win-start-empty">Nog geen recente bestellingen.</p>
             )}
           </section>
-        </>
+        </div>
       )}
 
       <footer className="ta-win-start-foot">
