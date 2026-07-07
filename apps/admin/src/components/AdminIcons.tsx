@@ -194,6 +194,31 @@ export function IconGrid(props: IconProps) {
   );
 }
 
+export function IconSearch(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-4.2-4.2" />
+    </Icon>
+  );
+}
+
+export function IconMaximize(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
+    </Icon>
+  );
+}
+
+export function IconMinimize(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M8 7V5a2 2 0 0 1 2-2h1M16 7V5a2 2 0 0 0-2-2h-1M8 17v2a2 2 0 0 0 2 2h1M16 17v2a2 2 0 0 1-2 2h-1" />
+    </Icon>
+  );
+}
+
 export const tabIcons = {
   overview: IconOverview,
   home: IconHome,

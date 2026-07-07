@@ -1,12 +1,16 @@
 import type { ReactNode } from "react";
+import { AdminTabletSearch } from "./AdminTabletSearch";
 import { useAdminTablet } from "../../context/AdminTabletContext";
+import type { AdminSearchItem } from "../../lib/adminTabletSearch";
 
 interface Props {
   children: ReactNode;
   footer?: ReactNode;
+  searchItems?: AdminSearchItem[];
+  onSearchSelect?: (item: AdminSearchItem) => void;
 }
 
-export function AdminStartDock({ children, footer }: Props) {
+export function AdminStartDock({ children, footer, searchItems, onSearchSelect }: Props) {
   const { enabled, menuOpen, toggleMenu, setMenuOpen } = useAdminTablet();
 
   if (!enabled) return null;
@@ -25,6 +29,9 @@ export function AdminStartDock({ children, footer }: Props) {
                 Sluiten
               </button>
             </header>
+            {searchItems && onSearchSelect ? (
+              <AdminTabletSearch items={searchItems} onSelect={onSearchSelect} compact placeholder="Zoeken..." />
+            ) : null}
             <div className="ta-start-menu-grid">{children}</div>
             {footer ? <footer className="ta-start-menu-foot">{footer}</footer> : null}
           </div>

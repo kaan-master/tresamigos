@@ -2623,33 +2623,6 @@ select {
   align-items: center;
 }
 
-.ta-tablet-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border: 1px solid var(--ta-line);
-  border-radius: 999px;
-  background: #fff;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--ta-text);
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    transform 180ms ease,
-    border-color 180ms ease,
-    background 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.ta-tablet-toggle.is-active {
-  border-color: var(--ta-cherry);
-  background: #fff4f2;
-  box-shadow: 0 8px 20px rgba(202, 58, 47, 0.12);
-}
-
 .ta-tablet-bar {
   margin: 0 0 16px;
   padding: 12px 14px;
@@ -2683,6 +2656,163 @@ select {
   color: var(--ta-text);
   cursor: pointer;
   padding: 6px 0;
+}
+
+.ta-tablet-bar-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.ta-tablet-tool,
+.ta-tablet-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--ta-line);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ta-text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.ta-tablet-tool.is-active,
+.ta-tablet-toggle.is-active {
+  border-color: var(--ta-cherry);
+  background: #fff4f2;
+  box-shadow: 0 8px 20px rgba(202, 58, 47, 0.12);
+}
+
+.ta-tablet-search {
+  position: relative;
+  margin-top: 12px;
+}
+
+.ta-tablet-search.is-compact {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.ta-tablet-search-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  min-height: 48px;
+  border: 1px solid var(--ta-line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.ta-tablet-search-field svg {
+  flex-shrink: 0;
+  color: var(--ta-muted);
+}
+
+.ta-tablet-search-field input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--ta-text);
+}
+
+.ta-tablet-search-field input:focus {
+  outline: none;
+}
+
+.ta-tablet-search-clear {
+  border: 0;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ta-muted);
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.ta-tablet-search-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  border: 1px solid var(--ta-line);
+  border-radius: 16px;
+  background: #fffdf8;
+  box-shadow: 0 20px 50px rgba(19, 12, 5, 0.14);
+  max-height: 320px;
+  overflow: auto;
+}
+
+.ta-tablet-search-results button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ta-tablet-search-results button:hover {
+  background: #fff9ea;
+}
+
+.ta-tablet-search-results strong {
+  font-size: 14px;
+}
+
+.ta-tablet-search-results span {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ta-cherry);
+}
+
+.ta-tablet-search-results em {
+  font-size: 12px;
+  font-style: normal;
+  color: var(--ta-muted);
+}
+
+.ta-tablet-search-empty {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff9ea;
+  color: var(--ta-muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.ta-tile-hub-empty {
+  margin: 0;
+  padding: 18px;
+  border: 1px dashed var(--ta-line);
+  border-radius: 18px;
+  color: var(--ta-muted);
+  font-weight: 650;
+  text-align: center;
 }
 
 .ta-tile-hub {
@@ -2888,6 +3018,38 @@ select {
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--ta-line);
+}
+
+.ta-start-menu-grid .ta-tile-hub-menu {
+  display: block;
+}
+
+.ta-start-menu .ta-tile {
+  min-height: 104px;
+  padding: 12px 8px;
+  gap: 8px;
+}
+
+.ta-start-menu .ta-tile-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+
+.ta-start-menu .ta-tile strong {
+  display: block;
+  font-size: 12px;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+body.admin-tablet-mode.admin-fullscreen .ta-shell.is-tablet-mode {
+  min-height: 100dvh;
+}
+
+body.admin-tablet-mode.admin-fullscreen .ta-main {
+  padding-top: 16px;
 }
 
 body.admin-tablet-mode .ta-action-dock {

@@ -1,12 +1,17 @@
+import { AdminTabletFullscreen } from "./AdminTabletFullscreen";
+import { AdminTabletSearch } from "./AdminTabletSearch";
 import { AdminTabletToggle } from "./AdminTabletToggle";
 import { useAdminTablet } from "../../context/AdminTabletContext";
+import type { AdminSearchItem } from "../../lib/adminTabletSearch";
 
 interface Props {
   title: string;
   showBack?: boolean;
+  searchItems?: AdminSearchItem[];
+  onSearchSelect?: (item: AdminSearchItem) => void;
 }
 
-export function AdminTabletBar({ title, showBack }: Props) {
+export function AdminTabletBar({ title, showBack, searchItems, onSearchSelect }: Props) {
   const { goHub } = useAdminTablet();
 
   return (
@@ -20,8 +25,14 @@ export function AdminTabletBar({ title, showBack }: Props) {
           <span className="ta-tablet-bar-spacer" aria-hidden="true" />
         )}
         <strong className="ta-tablet-bar-title">{title}</strong>
-        <AdminTabletToggle />
+        <div className="ta-tablet-bar-tools">
+          <AdminTabletFullscreen />
+          <AdminTabletToggle />
+        </div>
       </div>
+      {searchItems && onSearchSelect ? (
+        <AdminTabletSearch items={searchItems} onSelect={onSearchSelect} />
+      ) : null}
     </div>
   );
 }

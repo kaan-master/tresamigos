@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CateringOrder, CateringSettings, SiteContent } from "@tresamigos/types";
 import { CateringCategoriesPanel } from "./catering/CateringCategoriesPanel";
 import { CateringFormSettingsPanel } from "./catering/CateringFormSettingsPanel";
@@ -21,6 +21,7 @@ interface Props {
   newOrderCount: number;
   onSave: () => void | Promise<void>;
   saving: boolean;
+  navigateToView?: CateringView | null;
 }
 
 export function CateringPanel({
@@ -31,10 +32,16 @@ export function CateringPanel({
   isActive,
   newOrderCount,
   onSave,
-  saving
+  saving,
+  navigateToView = null
 }: Props) {
   const [view, setView] = useState<CateringView>("overview");
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!navigateToView) return;
+    setView(navigateToView);
+  }, [navigateToView]);
 
   function updateSettings(settings: CateringSettings) {
     onContentChange({

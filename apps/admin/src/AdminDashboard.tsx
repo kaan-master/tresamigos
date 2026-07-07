@@ -12,7 +12,9 @@ import { MediaLibraryPanel } from "./components/MediaLibraryPanel";
 import { ProductsPanel } from "./components/ProductsPanel";
 import { ApplicationsPanel } from "./components/ApplicationsPanel";
 import { CateringPanel } from "./components/CateringPanel";
+import type { CateringView } from "./components/catering/cateringNav";
 import { INCOMING_STATUSES } from "./lib/cateringAdmin";
+import { buildAdminSearchItems, type AdminSearchItem } from "./lib/adminTabletSearch";
 import { FooterPanel } from "./components/FooterPanel";
 import { NavbarPanel } from "./components/NavbarPanel";
 import { HomePanel } from "./components/HomePanel";
@@ -51,6 +53,7 @@ interface Props {
 export function AdminDashboard({ user, onLogout }: Props) {
   const { enabled: tabletMode, screen: tabletScreen, openPanel } = useAdminTablet();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [cateringNavigateView, setCateringNavigateView] = useState<CateringView | null>(null);
   const [content, setContent] = useState<SiteContent | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [cateringOrders, setCateringOrders] = useState<CateringOrder[]>([]);
@@ -176,6 +179,8 @@ export function AdminDashboard({ user, onLogout }: Props) {
     [visibleTabs, newCateringOrderCount]
   );
 
+  const searchItems = useMemo(() => buildAdminSearchItems(visibleTabs), [visibleTabs]);
+
   if (loading || !content) {
     return (
       <>
@@ -189,6 +194,17 @@ export function AdminDashboard({ user, onLogout }: Props) {
 
   function selectTab(id: TabId) {
     setActiveTab(id);
+    openPanel();
+  }
+
+  function handleSearchSelect(item: AdminSearchItem) {
+    if (item.target.kind === "tab") {
+      selectTab(item.target.tabId as TabId);
+      setCateringNavigateView(null);
+      return;
+    }
+    setActiveTab("catering");
+    setCateringNavigateView(item.target.view);
     openPanel();
   }
 
@@ -293,6 +309,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
             newOrderCount={newCateringOrderCount}
             onSave={saveContent}
             saving={saving}
+            navigateToView={cateringNavigateView}
           />
         </section>
       ) : null}
@@ -412,12 +429,21 @@ export function AdminDashboard({ user, onLogout }: Props) {
           {tabletMode ? (
             tabletScreen === "hub" ? (
               <>
-                <AdminTabletBar title="Dashboard" />
+                <AdminTabletBar
+                  title="Dashboard"
+                  searchItems={searchItems}
+                  onSearchSelect={handleSearchSelect}
+                />
                 <AdminTabletHub items={tabletHubItems} activeId={activeTab} onSelect={(id) => selectTab(id as TabId)} />
               </>
             ) : (
               <>
-                <AdminTabletBar title={activeLabel} showBack />
+                <AdminTabletBar
+                  title={activeLabel}
+                  showBack
+                  searchItems={searchItems}
+                  onSearchSelect={handleSearchSelect}
+                />
                 {panels}
               </>
             )
@@ -437,7 +463,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
       </div>
 
       {tabletMode ? (
-        <AdminStartDock footer={dockFooter}>
+        <AdminStartDock footer={dockFooter} searchItems={searchItems} onSearchSelect={handleSearchSelect}>
           <AdminTabletHub items={tabletHubItems} activeId={activeTab} onSelect={(id) => selectTab(id as TabId)} variant="menu" />
         </AdminStartDock>
       ) : (

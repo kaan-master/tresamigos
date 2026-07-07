@@ -15,6 +15,10 @@ interface AdminTabletContextValue {
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
   toggleMenu: () => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  isFullscreen: boolean;
+  toggleFullscreen: () => Promise<void>;
 }
 
 const AdminTabletContext = createContext<AdminTabletContextValue | null>(null);
@@ -32,6 +36,8 @@ export function AdminTabletProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabledState] = useState(readEnabled);
   const [screen, setScreen] = useState<AdminTabletScreen>("hub");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const setEnabled = useCallback((value: boolean) => {
     setEnabledState(value);
@@ -42,6 +48,10 @@ export function AdminTabletProvider({ children }: { children: ReactNode }) {
     }
     setScreen(value ? "hub" : "panel");
     setMenuOpen(false);
+    setSearchQuery("");
+    if (!value && document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => undefined);
+    }
   }, []);
 
   const toggleEnabled = useCallback(() => setEnabled(!enabled), [enabled, setEnabled]);
@@ -49,6 +59,7 @@ export function AdminTabletProvider({ children }: { children: ReactNode }) {
   const goHub = useCallback(() => {
     setScreen("hub");
     setMenuOpen(false);
+    setSearchQuery("");
   }, []);
 
   const openPanel = useCallback(() => {
@@ -58,10 +69,36 @@ export function AdminTabletProvider({ children }: { children: ReactNode }) {
 
   const toggleMenu = useCallback(() => setMenuOpen((open) => !open), []);
 
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      /* browser may block without user gesture */
+    }
+  }, []);
+
   useEffect(() => {
     document.body.classList.toggle("admin-tablet-mode", enabled);
     return () => document.body.classList.remove("admin-tablet-mode");
   }, [enabled]);
+
+  useEffect(() => {
+    function onFullscreenChange() {
+      const active = Boolean(document.fullscreenElement);
+      setIsFullscreen(active);
+      document.body.classList.toggle("admin-fullscreen", active);
+    }
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    onFullscreenChange();
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      document.body.classList.remove("admin-fullscreen");
+    };
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -74,9 +111,25 @@ export function AdminTabletProvider({ children }: { children: ReactNode }) {
       openPanel,
       menuOpen,
       setMenuOpen,
-      toggleMenu
+      toggleMenu,
+      searchQuery,
+      setSearchQuery,
+      isFullscreen,
+      toggleFullscreen
     }),
-    [enabled, setEnabled, toggleEnabled, screen, goHub, openPanel, menuOpen, toggleMenu]
+    [
+      enabled,
+      setEnabled,
+      toggleEnabled,
+      screen,
+      goHub,
+      openPanel,
+      menuOpen,
+      toggleMenu,
+      searchQuery,
+      isFullscreen,
+      toggleFullscreen
+    ]
   );
 
   return <AdminTabletContext.Provider value={value}>{children}</AdminTabletContext.Provider>;
