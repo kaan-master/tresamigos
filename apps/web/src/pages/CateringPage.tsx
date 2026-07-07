@@ -7,13 +7,8 @@ import { CateringDateTimeFields } from "../components/catering/CateringDateTimeF
 import { CateringProductConfigurator } from "../components/catering/CateringProductModal";
 import { CateringSimpleProductCard } from "../components/catering/CateringSimpleProductCard";
 import { CateringFlowSteps, type FlowStep } from "../components/catering/CateringFlowSteps";
-import { CateringStartDock } from "../components/catering/tablet/CateringStartDock";
-import { CateringTabletBar } from "../components/catering/tablet/CateringTabletBar";
-import { CateringTabletHub } from "../components/catering/tablet/CateringTabletHub";
-import { CateringTabletToggle } from "../components/catering/tablet/CateringTabletToggle";
 import { Helmet } from "../components/Helmet";
 import { useCateringCart } from "../context/CateringCartContext";
-import { useCateringTablet } from "../context/CateringTabletContext";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { submitCatering } from "../lib/api";
 import {
@@ -71,7 +66,6 @@ export function CateringPage({ content }: { content: SiteContent }) {
     closeDrawer,
     drawerOpen
   } = useCateringCart();
-  const { enabled: tabletMode, screen: tabletScreen, setScreen: setTabletScreen, goHub } = useCateringTablet();
 
   const fulfillmentSettings = content.site.catering.fulfillment;
   const pickupEnabled = isPickupAvailable(fulfillmentSettings);
@@ -101,16 +95,6 @@ export function CateringPage({ content }: { content: SiteContent }) {
     if (fromSettings.length) return fromSettings.map((entry) => ({ id: entry.id }));
     return CATERING_CATEGORIES.map((entry) => ({ id: entry.id }));
   }, [catalog.categories]);
-
-  const hubCategories = useMemo(
-    () =>
-      categoryTabs.map((entry) => ({
-        id: entry.id,
-        label: catalog.categoryLabel(entry.id, t),
-        image: catalog.productsByCategory(entry.id)[0]?.image
-      })),
-    [categoryTabs, catalog, t]
-  );
 
   const resolveLineImage = useCallback(
     (line: CateringCartLine) => cateringImageUrl(line.imageUrl || productImageMap.get(line.productId)),
@@ -149,22 +133,10 @@ export function CateringPage({ content }: { content: SiteContent }) {
     return () => document.body.classList.remove("catering-drawer-open");
   }, [drawerOpen]);
 
-  useEffect(() => {
-    if (tabletMode && view === "landing") setView("shop");
-  }, [tabletMode, view]);
-
-  useEffect(() => {
-    if (!tabletMode) return;
-    if (view === "configure") setTabletScreen("configure");
-    else if (view === "checkout") setTabletScreen("checkout");
-    else if (view === "success") setTabletScreen("success");
-  }, [view, tabletMode, setTabletScreen]);
-
   function openProduct(product: CateringProduct) {
     if (!product.configurable) return;
     setActiveProduct(product);
     setView("configure");
-    if (tabletMode) setTabletScreen("configure");
   }
 
   function flowStep(): FlowStep {
@@ -189,30 +161,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
   function goToCheckout() {
     closeDrawer();
     setView("checkout");
-    if (tabletMode) setTabletScreen("checkout");
   }
-
-  const hubProps = useMemo(
-    () => ({
-      categories: hubCategories,
-      pickupEnabled,
-      deliveryEnabled,
-      fulfillment,
-      onFulfillment: (mode: FulfillmentMode) => {
-        setFulfillment(mode);
-        setView("shop");
-        setTabletScreen("browse");
-      },
-      onCategory: (id: CateringCategoryId) => {
-        setCategory(id);
-        setView("shop");
-        setTabletScreen("browse");
-      },
-      onCheckout: goToCheckout,
-      onOpenCart: openDrawer
-    }),
-    [hubCategories, pickupEnabled, deliveryEnabled, fulfillment, openDrawer]
-  );
 
   function validateCheckout() {
     setMessage("");
@@ -275,7 +224,6 @@ export function CateringPage({ content }: { content: SiteContent }) {
       setOrderNumber(response.order?.orderNumber || "");
       clearCart();
       setView("success");
-      if (tabletMode) setTabletScreen("success");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t("contact.errorSend"));
     } finally {
@@ -289,17 +237,13 @@ export function CateringPage({ content }: { content: SiteContent }) {
     setCheckout(emptyCheckout());
     setOrderNumber("");
     setMessage("");
-    if (tabletMode) goHub();
   }
 
-  if (view === "landing" && !tabletMode) {
+  if (view === "landing") {
     return (
       <>
         <Helmet title={t("catering.seoTitle")} description={t("catering.seoDesc")} />
         <section className="catering-landing">
-          <div className="catering-landing-toggle">
-            <CateringTabletToggle />
-          </div>
           <div className="shell catering-landing-grid">
             <div className="catering-landing-copy">
               <p className="eyebrow">{t("catering.eyebrow")}</p>
@@ -322,27 +266,14 @@ export function CateringPage({ content }: { content: SiteContent }) {
     <>
       <Helmet title={t("catering.seoTitle")} description={t("catering.seoDesc")} />
       {view === "configure" && activeProduct ? (
-        <div className={`shell${tabletMode ? " catering-tablet-panel" : ""}`}>
-          {tabletMode ? (
-            <CateringTabletBar
-              title={productLabel(activeProduct, t)}
-              showBack
-              onBack={() => {
-                setActiveProduct(null);
-                setView("shop");
-                setTabletScreen("browse");
-              }}
-            />
-          ) : (
-            <CateringFlowSteps current="package" onNavigate={navigateFlow} />
-          )}
+        <div className="shell">
+          <CateringFlowSteps current="package" onNavigate={navigateFlow} />
           <CateringProductConfigurator
             product={activeProduct}
             settings={content.site.catering}
             onBack={() => {
               setActiveProduct(null);
               setView("shop");
-              if (tabletMode) setTabletScreen("browse");
             }}
             onAdd={addLine}
           />
@@ -350,39 +281,18 @@ export function CateringPage({ content }: { content: SiteContent }) {
       ) : (
         <section className="catering-page catering-shop">
           <div className="shell catering-shell">
-            {tabletMode ? (
-              tabletScreen === "hub" ? (
-                <>
-                  <CateringTabletBar title={t("catering.tablet.hubTitle")} />
-                  <CateringTabletHub {...hubProps} />
-                </>
-              ) : (
-                <CateringTabletBar
-                  title={
-                    view === "checkout"
-                      ? t("catering.step.orderDetails")
-                      : view === "success"
-                        ? t("catering.success.title")
-                        : catalog.categoryLabel(category, t)
-                  }
-                  showBack
-                  onBack={goHub}
-                />
-              )
-            ) : (
-              <CateringFlowSteps current={flowStep()} onNavigate={navigateFlow} />
-            )}
+            <CateringFlowSteps current={flowStep()} onNavigate={navigateFlow} />
 
-            {!tabletMode || tabletScreen !== "hub" ? (
-              <>
-            <div className={`catering-shop-head${tabletMode ? " catering-shop-head-tablet" : ""}`}>
+            <div className="catering-shop-head">
               <div>
-                {!tabletMode ? <p className="eyebrow">{t("catering.eyebrow")}</p> : null}
-                {!tabletMode ? (
+                <p className="eyebrow">{t("catering.eyebrow")}</p>
                 <h1>
-                  {view === "checkout" ? t("catering.step.orderDetails") : view === "success" ? t("catering.success.title") : t("catering.shopTitle")}
+                  {view === "checkout"
+                    ? t("catering.step.orderDetails")
+                    : view === "success"
+                      ? t("catering.success.title")
+                      : t("catering.shopTitle")}
                 </h1>
-                ) : null}
                 {view === "shop" ? (
                   <>
                     <p className="catering-hours">
@@ -402,7 +312,6 @@ export function CateringPage({ content }: { content: SiteContent }) {
                   </>
                 ) : null}
               </div>
-              {!tabletMode ? <CateringTabletToggle /> : null}
             </div>
 
             {view === "success" ? (
@@ -417,34 +326,28 @@ export function CateringPage({ content }: { content: SiteContent }) {
               </div>
             ) : null}
 
-            {view === "shop" && (!tabletMode || tabletScreen === "browse") ? (
+            {view === "shop" ? (
               <>
-                {!tabletMode ? (
-                  <div className="catering-mode-grid">
-                    {pickupEnabled ? (
-                      <button
-                        type="button"
-                        className={`catering-mode${fulfillment === "pickup" ? " is-selected" : ""}`}
-                        onClick={() => setFulfillment("pickup")}
-                      >
-                        {t("catering.mode.pickup")}
-                      </button>
-                    ) : null}
-                    {deliveryEnabled ? (
-                      <button
-                        type="button"
-                        className={`catering-mode${fulfillment === "delivery" ? " is-selected" : ""}`}
-                        onClick={() => setFulfillment("delivery")}
-                      >
-                        {t("catering.mode.delivery")}
-                      </button>
-                    ) : null}
-                  </div>
-                ) : (
-                  <p className="catering-tablet-fulfillment-pill">
-                    {fulfillment === "pickup" ? t("catering.mode.pickup") : t("catering.mode.delivery")}
-                  </p>
-                )}
+                <div className="catering-mode-grid">
+                  {pickupEnabled ? (
+                    <button
+                      type="button"
+                      className={`catering-mode${fulfillment === "pickup" ? " is-selected" : ""}`}
+                      onClick={() => setFulfillment("pickup")}
+                    >
+                      {t("catering.mode.pickup")}
+                    </button>
+                  ) : null}
+                  {deliveryEnabled ? (
+                    <button
+                      type="button"
+                      className={`catering-mode${fulfillment === "delivery" ? " is-selected" : ""}`}
+                      onClick={() => setFulfillment("delivery")}
+                    >
+                      {t("catering.mode.delivery")}
+                    </button>
+                  ) : null}
+                </div>
 
                 <div className="catering-category-tabs">
                   {categoryTabs.map((entry) => (
@@ -454,7 +357,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
                   ))}
                 </div>
 
-                <div className={`catering-product-grid${tabletMode ? " catering-product-grid-tablet" : ""}`}>
+                <div className="catering-product-grid">
                   {visibleProducts.map((product) =>
                     product.configurable ? (
                       <button key={product.id} type="button" className="catering-product-card" onClick={() => openProduct(product)}>
@@ -553,14 +456,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
                 {message ? <p className="contact-form-message error">{message}</p> : null}
 
                 <div className="catering-actions">
-                  <button
-                    type="button"
-                    className="btn alt"
-                    onClick={() => {
-                      if (tabletMode) goHub();
-                      else setView("shop");
-                    }}
-                  >
+                  <button type="button" className="btn alt" onClick={() => setView("shop")}>
                     {t("common.back")}
                   </button>
                   <button type="submit" className="btn primary" disabled={submitting}>
@@ -569,15 +465,10 @@ export function CateringPage({ content }: { content: SiteContent }) {
                 </div>
               </form>
             ) : null}
-              </>
-            ) : null}
 
-          <CateringCartDrawer resolveImage={resolveLineImage} onPlaceOrder={goToCheckout} />
-          <CateringStartDock>
-            <CateringTabletHub {...hubProps} variant="menu" />
-          </CateringStartDock>
-        </div>
-      </section>
+            <CateringCartDrawer resolveImage={resolveLineImage} onPlaceOrder={goToCheckout} />
+          </div>
+        </section>
       )}
     </>
   );

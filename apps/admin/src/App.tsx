@@ -3,6 +3,7 @@ import type { AdminSessionUser } from "@tresamigos/types";
 import { clearToken, fetchMe, login, logoutApi, setToken } from "./lib/api";
 import { AdminLogin } from "./components/AdminLogin";
 import { AdminDashboard } from "./AdminDashboard";
+import { AdminTabletProvider } from "./context/AdminTabletContext";
 
 type AuthPhase = "login" | "leaving" | "entering" | "dashboard";
 
@@ -66,7 +67,9 @@ export default function App() {
 
   return (
     <div className={`ta-auth-stage${phase === "entering" ? " is-entering" : ""}`}>
-      <AdminDashboard user={user} onLogout={() => void handleLogout()} />
+      <AdminTabletProvider>
+        <AdminDashboard user={user} onLogout={() => void handleLogout()} />
+      </AdminTabletProvider>
     </div>
   );
 }

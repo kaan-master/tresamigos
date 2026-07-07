@@ -19,6 +19,11 @@ import { HomePanel } from "./components/HomePanel";
 import { SeoPanel } from "./components/SeoPanel";
 import { ReviewsPanel } from "./components/ReviewsPanel";
 import { UsersPanel } from "./components/UsersPanel";
+import { AdminStartDock } from "./components/tablet/AdminStartDock";
+import { AdminTabletBar } from "./components/tablet/AdminTabletBar";
+import { AdminTabletHub } from "./components/tablet/AdminTabletHub";
+import { AdminTabletToggle } from "./components/tablet/AdminTabletToggle";
+import { useAdminTablet } from "./context/AdminTabletContext";
 import type { AdminSessionUser, AdminTabId } from "@tresamigos/types";
 
 const tabs = [
@@ -44,6 +49,7 @@ interface Props {
 }
 
 export function AdminDashboard({ user, onLogout }: Props) {
+  const { enabled: tabletMode, screen: tabletScreen, openPanel } = useAdminTablet();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [content, setContent] = useState<SiteContent | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -159,6 +165,17 @@ export function AdminDashboard({ user, onLogout }: Props) {
     }
   }
 
+  const tabletHubItems = useMemo(
+    () =>
+      visibleTabs.map(([id, label]) => ({
+        id,
+        label,
+        Icon: tabIcons[id],
+        badge: id === "catering" && newCateringOrderCount > 0 ? newCateringOrderCount : undefined
+      })),
+    [visibleTabs, newCateringOrderCount]
+  );
+
   if (loading || !content) {
     return (
       <>
@@ -170,223 +187,262 @@ export function AdminDashboard({ user, onLogout }: Props) {
 
   const activeLabel = tabs.find(([id]) => id === activeTab)?.[1] || "Dashboard";
 
+  function selectTab(id: TabId) {
+    setActiveTab(id);
+    openPanel();
+  }
+
+  const panels = (
+    <>
+      {activeTab === "overview" ? (
+        <section className="ta-panel ta-fade-in">
+          <OverviewPanel />
+          <div className="ta-kpis" style={{ marginTop: 18 }}>
+            {kpis.map(([label, value]) => (
+              <article
+                className={`ta-kpi${label === "Catering inkomend" ? " ta-kpi-clickable" : ""}`}
+                key={label}
+                {...(label === "Catering inkomend"
+                  ? {
+                      role: "button",
+                      tabIndex: 0,
+                      onClick: () => selectTab("catering"),
+                      onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
+                        if (event.key === "Enter" || event.key === " ") selectTab("catering");
+                      }
+                    }
+                  : {})}
+              >
+                <span>{label}</span>
+                <strong>{value}</strong>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {activeTab === "home" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Home</h2>
+            <p>Hero, openingstijden en Our Story — per onderdeel bewerken met live preview waar het kan.</p>
+          </header>
+          <HomePanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+        </section>
+      ) : null}
+
+      {activeTab === "locations" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Vestigingen</h2>
+            <p>Kies links een locatie. Rechts pas je gegevens en bestelknoppen aan — zonder geneste lijsten.</p>
+          </header>
+          <LocationsPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+        </section>
+      ) : null}
+
+      {activeTab === "products" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Producten</h2>
+            <p>Kies een categorie, bewerk producten en afbeeldingen.</p>
+          </header>
+          <ProductsPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+        </section>
+      ) : null}
+
+      {activeTab === "media" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Media plaza</h2>
+            <p>Upload afbeeldingen en video&apos;s, beheer homepage-video&apos;s en sectieteksten.</p>
+          </header>
+          <MediaLibraryPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+        </section>
+      ) : null}
+
+      {activeTab === "applications" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Sollicitaties</h2>
+            <p>Inkomende sollicitaties bekijken, functies beheren en vacaturepagina instellen.</p>
+          </header>
+          <ApplicationsPanel content={content} applications={applications} onChange={setContent} onSave={saveContent} saving={saving} />
+        </section>
+      ) : null}
+
+      {activeTab === "catering" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Catering</h2>
+            <p>
+              Beheer bestellingen, producten en werkwijze vanuit één overzicht.
+              {newCateringOrderCount > 0
+                ? ` ${newCateringOrderCount} nieuwe bestelling${newCateringOrderCount === 1 ? "" : "en"} wacht${newCateringOrderCount === 1 ? "" : "en"} op actie.`
+                : incomingCateringCount > 0
+                  ? ` ${incomingCateringCount} order(s) in behandeling.`
+                  : ""}
+            </p>
+          </header>
+          <CateringPanel
+            content={content}
+            onContentChange={setContent}
+            orders={cateringOrders}
+            onOrdersChange={setCateringOrders}
+            isActive={activeTab === "catering"}
+            newOrderCount={newCateringOrderCount}
+            onSave={saveContent}
+            saving={saving}
+          />
+        </section>
+      ) : null}
+
+      {activeTab === "reviews" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Reviews & Instagram</h2>
+            <p>Modereer ingezonden reviews, beheer vaste reviews en stel de Instagram-slider in.</p>
+          </header>
+          <ReviewsPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+        </section>
+      ) : null}
+
+      {activeTab === "seo" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>SEO & Search Console</h2>
+            <p>Site-brede instellingen, verificatiecodes en SEO per pagina.</p>
+          </header>
+          <SeoPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+        </section>
+      ) : null}
+
+      {activeTab === "users" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Medewerkers</h2>
+            <p>Subaccounts voor medewerkers met rechten per onderdeel.</p>
+          </header>
+          <UsersPanel />
+        </section>
+      ) : null}
+
+      {activeTab === "navigation" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Navigatie</h2>
+            <p>Menu-items tonen of verbergen en de volgorde aanpassen — zoals in Shopify.</p>
+          </header>
+          <NavbarPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+        </section>
+      ) : null}
+
+      {activeTab === "footer" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Footer & extras</h2>
+            <p>Footer, promo-mail en contactformulier — per onderdeel bewerken.</p>
+          </header>
+          <FooterPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+        </section>
+      ) : null}
+    </>
+  );
+
+  const dockFooter = (
+    <>
+      {canSaveContent ? (
+        <AdminButton
+          variant="primary"
+          icon={<IconSave width={16} height={16} />}
+          loading={saving}
+          loadingText="Opslaan..."
+          onClick={() => void saveContent()}
+        >
+          Opslaan
+        </AdminButton>
+      ) : null}
+      <AdminButton variant="ghost" icon={<IconLogout width={16} height={16} />} onClick={onLogout}>
+        Uitloggen
+      </AdminButton>
+    </>
+  );
+
   return (
     <>
-      <div className="ta-shell">
-        <aside className="ta-sidebar">
-          <div className="ta-brand">
-            <img src="/assets/site/tres-amigos-logo-new.png" alt="Tres Amigos logo" />
-            <div>
-              <strong>Dashboard</strong>
-              <span>Content beheer</span>
+      <div className={`ta-shell${tabletMode ? " is-tablet-mode" : ""}`}>
+        {!tabletMode ? (
+          <aside className="ta-sidebar">
+            <div className="ta-brand">
+              <img src="/assets/site/tres-amigos-logo-new.png" alt="Tres Amigos logo" />
+              <div>
+                <strong>Dashboard</strong>
+                <span>Content beheer</span>
+              </div>
             </div>
-          </div>
 
-          <nav className="ta-nav">
-            {visibleTabs.map(([id, label]) => {
-              const Icon = tabIcons[id];
-              const badge = id === "catering" && newCateringOrderCount > 0 ? newCateringOrderCount : null;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={`${activeTab === id ? "is-active" : ""}${id === "catering" && newCateringOrderCount > 0 ? " has-notification" : ""}`}
-                  onClick={() => setActiveTab(id)}
-                >
-                  <Icon width={18} height={18} />
-                  <span>{label}</span>
-                  {badge ? <span className="ta-nav-badge">{badge}</span> : null}
-                </button>
-              );
-            })}
-          </nav>
-          {user ? (
-            <div className="ta-sidebar-user">
-              <strong>{user.name}</strong>
-              <span>{user.role === "master" ? "Beheerder" : user.email}</span>
-            </div>
-          ) : null}
-        </aside>
+            <nav className="ta-nav">
+              {visibleTabs.map(([id, label]) => {
+                const Icon = tabIcons[id];
+                const badge = id === "catering" && newCateringOrderCount > 0 ? newCateringOrderCount : null;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`${activeTab === id ? "is-active" : ""}${id === "catering" && newCateringOrderCount > 0 ? " has-notification" : ""}`}
+                    onClick={() => setActiveTab(id)}
+                  >
+                    <Icon width={18} height={18} />
+                    <span>{label}</span>
+                    {badge ? <span className="ta-nav-badge">{badge}</span> : null}
+                  </button>
+                );
+              })}
+            </nav>
+            {user ? (
+              <div className="ta-sidebar-user">
+                <strong>{user.name}</strong>
+                <span>{user.role === "master" ? "Beheerder" : user.email}</span>
+              </div>
+            ) : null}
+          </aside>
+        ) : null}
 
         <main className="ta-main">
-          <header className="ta-main-head ta-fade-in">
-            <div>
-              <AdminBadge />
-              <h1>{activeLabel}</h1>
-            </div>
-          </header>
-
-          {activeTab === "overview" ? (
-            <section className="ta-panel ta-fade-in">
-              <OverviewPanel />
-              <div className="ta-kpis" style={{ marginTop: 18 }}>
-                {kpis.map(([label, value]) => (
-                  <article
-                    className={`ta-kpi${label === "Catering inkomend" ? " ta-kpi-clickable" : ""}`}
-                    key={label}
-                    {...(label === "Catering inkomend"
-                      ? {
-                          role: "button",
-                          tabIndex: 0,
-                          onClick: () => setActiveTab("catering"),
-                          onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
-                            if (event.key === "Enter" || event.key === " ") setActiveTab("catering");
-                          }
-                        }
-                      : {})}
-                  >
-                    <span>{label}</span>
-                    <strong>{value}</strong>
-                  </article>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          {activeTab === "home" ? (
-            <section className="ta-panel ta-fade-in">
-              <header className="ta-panel-head">
-                <h2>Home</h2>
-                <p>Hero, openingstijden en Our Story — per onderdeel bewerken met live preview waar het kan.</p>
+          {tabletMode ? (
+            tabletScreen === "hub" ? (
+              <>
+                <AdminTabletBar title="Dashboard" />
+                <AdminTabletHub items={tabletHubItems} activeId={activeTab} onSelect={(id) => selectTab(id as TabId)} />
+              </>
+            ) : (
+              <>
+                <AdminTabletBar title={activeLabel} showBack />
+                {panels}
+              </>
+            )
+          ) : (
+            <>
+              <header className="ta-main-head ta-fade-in">
+                <div>
+                  <AdminBadge />
+                  <h1>{activeLabel}</h1>
+                </div>
+                <AdminTabletToggle />
               </header>
-              <HomePanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
-            </section>
-          ) : null}
-
-          {activeTab === "locations" ? (
-            <section className="ta-panel ta-fade-in">
-              <header className="ta-panel-head">
-                <h2>Vestigingen</h2>
-                <p>Kies links een locatie. Rechts pas je gegevens en bestelknoppen aan — zonder geneste lijsten.</p>
-              </header>
-              <LocationsPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
-            </section>
-          ) : null}
-
-          {activeTab === "products" ? (
-            <section className="ta-panel ta-fade-in">
-              <header className="ta-panel-head">
-                <h2>Producten</h2>
-                <p>Kies een categorie, bewerk producten en afbeeldingen.</p>
-              </header>
-              <ProductsPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
-            </section>
-          ) : null}
-
-          {activeTab === "media" ? (
-            <section className="ta-panel ta-fade-in">
-              <header className="ta-panel-head">
-                <h2>Media plaza</h2>
-                <p>Upload afbeeldingen en video&apos;s, beheer homepage-video&apos;s en sectieteksten.</p>
-              </header>
-              <MediaLibraryPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
-            </section>
-          ) : null}
-
-          {activeTab === "applications" ? (
-            <section className="ta-panel ta-fade-in">
-              <header className="ta-panel-head">
-                <h2>Sollicitaties</h2>
-                <p>Inkomende sollicitaties bekijken, functies beheren en vacaturepagina instellen.</p>
-              </header>
-              <ApplicationsPanel content={content} applications={applications} onChange={setContent} onSave={saveContent} saving={saving} />
-            </section>
-          ) : null}
-
-          {activeTab === "catering" ? (
-            <section className="ta-panel ta-fade-in">
-              <header className="ta-panel-head">
-                <h2>Catering</h2>
-                <p>
-                  Beheer bestellingen, producten en werkwijze vanuit één overzicht.
-                  {newCateringOrderCount > 0
-                    ? ` ${newCateringOrderCount} nieuwe bestelling${newCateringOrderCount === 1 ? "" : "en"} wacht${newCateringOrderCount === 1 ? "" : "en"} op actie.`
-                    : incomingCateringCount > 0
-                      ? ` ${incomingCateringCount} order(s) in behandeling.`
-                      : ""}
-                </p>
-              </header>
-              <CateringPanel
-                content={content}
-                onContentChange={setContent}
-                orders={cateringOrders}
-                onOrdersChange={setCateringOrders}
-                isActive={activeTab === "catering"}
-                newOrderCount={newCateringOrderCount}
-                onSave={saveContent}
-                saving={saving}
-              />
-            </section>
-          ) : null}
-
-          {activeTab === "reviews" ? (
-            <section className="ta-panel ta-fade-in">
-              <header className="ta-panel-head">
-                <h2>Reviews & Instagram</h2>
-                <p>Modereer ingezonden reviews, beheer vaste reviews en stel de Instagram-slider in.</p>
-              </header>
-              <ReviewsPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
-            </section>
-          ) : null}
-
-          {activeTab === "seo" ? (
-            <section className="ta-panel ta-fade-in">
-              <header className="ta-panel-head">
-                <h2>SEO & Search Console</h2>
-                <p>Site-brede instellingen, verificatiecodes en SEO per pagina.</p>
-              </header>
-              <SeoPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
-            </section>
-          ) : null}
-
-          {activeTab === "users" ? (
-            <section className="ta-panel ta-fade-in">
-              <header className="ta-panel-head">
-                <h2>Medewerkers</h2>
-                <p>Subaccounts voor medewerkers met rechten per onderdeel.</p>
-              </header>
-              <UsersPanel />
-            </section>
-          ) : null}
-
-          {activeTab === "navigation" ? (
-            <section className="ta-panel ta-fade-in">
-              <header className="ta-panel-head">
-                <h2>Navigatie</h2>
-                <p>Menu-items tonen of verbergen en de volgorde aanpassen — zoals in Shopify.</p>
-              </header>
-              <NavbarPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
-            </section>
-          ) : null}
-
-          {activeTab === "footer" ? (
-            <section className="ta-panel ta-fade-in">
-              <header className="ta-panel-head">
-                <h2>Footer & extras</h2>
-                <p>Footer, promo-mail en contactformulier — per onderdeel bewerken.</p>
-              </header>
-              <FooterPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
-            </section>
-          ) : null}
+              {panels}
+            </>
+          )}
         </main>
       </div>
 
-      <div className="ta-action-dock">
-        {canSaveContent ? (
-          <AdminButton
-            variant="primary"
-            icon={<IconSave width={16} height={16} />}
-            loading={saving}
-            loadingText="Opslaan..."
-            onClick={() => void saveContent()}
-          >
-            Opslaan
-          </AdminButton>
-        ) : null}
-        <AdminButton variant="ghost" icon={<IconLogout width={16} height={16} />} onClick={onLogout}>
-          Uitloggen
-        </AdminButton>
-      </div>
+      {tabletMode ? (
+        <AdminStartDock footer={dockFooter}>
+          <AdminTabletHub items={tabletHubItems} activeId={activeTab} onSelect={(id) => selectTab(id as TabId)} variant="menu" />
+        </AdminStartDock>
+      ) : (
+        <div className="ta-action-dock">{dockFooter}</div>
+      )}
 
       <AdminLoadingPopup
         visible={Boolean(popup)}

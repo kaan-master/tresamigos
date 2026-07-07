@@ -1,22 +1,23 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-const STORAGE_KEY = "tresamigos-catering-tablet-mode";
+const STORAGE_KEY = "tresamigos-admin-tablet-mode";
 
-export type CateringTabletScreen = "hub" | "browse" | "configure" | "checkout" | "success";
+export type AdminTabletScreen = "hub" | "panel";
 
-interface CateringTabletContextValue {
+interface AdminTabletContextValue {
   enabled: boolean;
   setEnabled: (value: boolean) => void;
   toggleEnabled: () => void;
-  screen: CateringTabletScreen;
-  setScreen: (screen: CateringTabletScreen) => void;
+  screen: AdminTabletScreen;
+  setScreen: (screen: AdminTabletScreen) => void;
   goHub: () => void;
+  openPanel: () => void;
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
   toggleMenu: () => void;
 }
 
-const CateringTabletContext = createContext<CateringTabletContextValue | null>(null);
+const AdminTabletContext = createContext<AdminTabletContextValue | null>(null);
 
 function readEnabled() {
   if (typeof window === "undefined") return false;
@@ -27,9 +28,9 @@ function readEnabled() {
   }
 }
 
-export function CateringTabletProvider({ children }: { children: ReactNode }) {
+export function AdminTabletProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabledState] = useState(readEnabled);
-  const [screen, setScreen] = useState<CateringTabletScreen>("hub");
+  const [screen, setScreen] = useState<AdminTabletScreen>("hub");
   const [menuOpen, setMenuOpen] = useState(false);
 
   const setEnabled = useCallback((value: boolean) => {
@@ -39,13 +40,8 @@ export function CateringTabletProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore */
     }
-    if (value) {
-      setScreen("hub");
-      setMenuOpen(false);
-    } else {
-      setMenuOpen(false);
-      setScreen("hub");
-    }
+    setScreen(value ? "hub" : "panel");
+    setMenuOpen(false);
   }, []);
 
   const toggleEnabled = useCallback(() => setEnabled(!enabled), [enabled, setEnabled]);
@@ -55,11 +51,16 @@ export function CateringTabletProvider({ children }: { children: ReactNode }) {
     setMenuOpen(false);
   }, []);
 
+  const openPanel = useCallback(() => {
+    setScreen("panel");
+    setMenuOpen(false);
+  }, []);
+
   const toggleMenu = useCallback(() => setMenuOpen((open) => !open), []);
 
   useEffect(() => {
-    document.body.classList.toggle("catering-tablet-mode", enabled);
-    return () => document.body.classList.remove("catering-tablet-mode");
+    document.body.classList.toggle("admin-tablet-mode", enabled);
+    return () => document.body.classList.remove("admin-tablet-mode");
   }, [enabled]);
 
   const value = useMemo(
@@ -70,20 +71,21 @@ export function CateringTabletProvider({ children }: { children: ReactNode }) {
       screen,
       setScreen,
       goHub,
+      openPanel,
       menuOpen,
       setMenuOpen,
       toggleMenu
     }),
-    [enabled, setEnabled, toggleEnabled, screen, goHub, menuOpen, toggleMenu]
+    [enabled, setEnabled, toggleEnabled, screen, goHub, openPanel, menuOpen, toggleMenu]
   );
 
-  return <CateringTabletContext.Provider value={value}>{children}</CateringTabletContext.Provider>;
+  return <AdminTabletContext.Provider value={value}>{children}</AdminTabletContext.Provider>;
 }
 
-export function useCateringTablet() {
-  const context = useContext(CateringTabletContext);
+export function useAdminTablet() {
+  const context = useContext(AdminTabletContext);
   if (!context) {
-    throw new Error("useCateringTablet must be used within CateringTabletProvider");
+    throw new Error("useAdminTablet must be used within AdminTabletProvider");
   }
   return context;
 }
