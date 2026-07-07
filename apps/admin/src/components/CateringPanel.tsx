@@ -22,6 +22,7 @@ interface Props {
   onSave: () => void | Promise<void>;
   saving: boolean;
   navigateToView?: CateringView | null;
+  openOrderId?: string | null;
 }
 
 export function CateringPanel({
@@ -33,7 +34,8 @@ export function CateringPanel({
   newOrderCount,
   onSave,
   saving,
-  navigateToView = null
+  navigateToView = null,
+  openOrderId = null
 }: Props) {
   const [view, setView] = useState<CateringView>("overview");
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
@@ -42,6 +44,12 @@ export function CateringPanel({
     if (!navigateToView) return;
     setView(navigateToView);
   }, [navigateToView]);
+
+  useEffect(() => {
+    if (!openOrderId) return;
+    setPendingOrderId(openOrderId);
+    setView("orders");
+  }, [openOrderId]);
 
   function updateSettings(settings: CateringSettings) {
     onContentChange({

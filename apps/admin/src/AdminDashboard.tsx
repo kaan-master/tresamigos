@@ -54,6 +54,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
   const { enabled: tabletMode, screen: tabletScreen, openPanel } = useAdminTablet();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [cateringNavigateView, setCateringNavigateView] = useState<CateringView | null>(null);
+  const [cateringOpenOrderId, setCateringOpenOrderId] = useState<string | null>(null);
   const [content, setContent] = useState<SiteContent | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [cateringOrders, setCateringOrders] = useState<CateringOrder[]>([]);
@@ -181,6 +182,11 @@ export function AdminDashboard({ user, onLogout }: Props) {
 
   const searchItems = useMemo(() => buildAdminSearchItems(visibleTabs), [visibleTabs]);
 
+  const recentOrders = useMemo(
+    () => [...cateringOrders].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6),
+    [cateringOrders]
+  );
+
   if (loading || !content) {
     return (
       <>
@@ -201,11 +207,25 @@ export function AdminDashboard({ user, onLogout }: Props) {
     if (item.target.kind === "tab") {
       selectTab(item.target.tabId as TabId);
       setCateringNavigateView(null);
+      setCateringOpenOrderId(null);
       return;
     }
     setActiveTab("catering");
     setCateringNavigateView(item.target.view);
+    setCateringOpenOrderId(null);
     openPanel();
+  }
+
+  function handleOpenOrders() {
+    setActiveTab("catering");
+    setCateringNavigateView("orders");
+    setCateringOpenOrderId(null);
+  }
+
+  function handleOpenOrder(orderId: string) {
+    setActiveTab("catering");
+    setCateringNavigateView("orders");
+    setCateringOpenOrderId(orderId);
   }
 
   const panels = (
@@ -310,6 +330,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
             onSave={saveContent}
             saving={saving}
             navigateToView={cateringNavigateView}
+            openOrderId={cateringOpenOrderId}
           />
         </section>
       ) : null}
@@ -463,9 +484,18 @@ export function AdminDashboard({ user, onLogout }: Props) {
       </div>
 
       {tabletMode ? (
-        <AdminStartDock footer={dockFooter} searchItems={searchItems} onSearchSelect={handleSearchSelect}>
-          <AdminTabletHub items={tabletHubItems} activeId={activeTab} onSelect={(id) => selectTab(id as TabId)} variant="menu" />
-        </AdminStartDock>
+        <AdminStartDock
+          hubItems={tabletHubItems}
+          activeId={activeTab}
+          onSelectTab={(id) => selectTab(id as TabId)}
+          searchItems={searchItems}
+          onSearchSelect={handleSearchSelect}
+          user={user}
+          onLogout={onLogout}
+          recentOrders={recentOrders}
+          onOpenOrders={handleOpenOrders}
+          onOpenOrder={handleOpenOrder}
+        />
       ) : (
         <div className="ta-action-dock">{dockFooter}</div>
       )}
