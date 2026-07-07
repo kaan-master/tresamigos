@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { LanguageProvider } from "./i18n/LanguageProvider";
 import { CateringCartProvider } from "./context/CateringCartContext";
+import { CateringTabletProvider } from "./context/CateringTabletContext";
 import "./styles.css";
 
 const queryClient = new QueryClient({
@@ -22,7 +23,9 @@ createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <LanguageProvider>
           <CateringCartProvider>
-            <App />
+            <CateringTabletProvider>
+              <App />
+            </CateringTabletProvider>
           </CateringCartProvider>
         </LanguageProvider>
       </BrowserRouter>
