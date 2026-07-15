@@ -1,7 +1,10 @@
+import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { useLanguage } from "./i18n/LanguageProvider";
+import { useSiteBoot } from "./hooks/useSiteBoot";
 import { useSiteContent } from "./hooks/useSiteContent";
+import { dismissSiteBoot } from "./lib/waitForPageImages";
 import { CateringPage } from "./pages/CateringPage";
 import { ContactPage } from "./pages/ContactPage";
 import { HomePage } from "./pages/HomePage";
@@ -15,12 +18,13 @@ import { VacancyPage } from "./pages/VacancyPage";
 function ShellRoutes() {
   const { t } = useLanguage();
   const { data, isLoading, error } = useSiteContent();
+  const failed = Boolean(error) || (!isLoading && !data);
 
-  if (isLoading) {
-    return <div className="shell" style={{ padding: "80px 0" }}>{t("common.loading")}</div>;
-  }
+  useSiteBoot({ active: Boolean(data) || failed, skipImages: failed });
 
-  if (error || !data) {
+  if (isLoading) return null;
+
+  if (failed || !data) {
     return <div className="shell" style={{ padding: "80px 0" }}>{t("common.error")}</div>;
   }
 
@@ -42,10 +46,18 @@ function ShellRoutes() {
   );
 }
 
+function LoginRoute() {
+  useEffect(() => {
+    dismissSiteBoot();
+  }, []);
+
+  return <LoginPage />;
+}
+
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login" element={<LoginRoute />} />
       <Route path="/*" element={<ShellRoutes />} />
     </Routes>
   );

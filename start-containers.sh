@@ -7,6 +7,9 @@
 # Sla git pull over:
 #   SKIP_PULL=1 ./start-containers.sh
 #
+# Seed overslaan (als seed hangt of je content wilt behouden):
+#   SKIP_SEED=1 ./start-containers.sh
+#
 # Productie (apart houden):
 #   ./start.sh production
 set -euo pipefail

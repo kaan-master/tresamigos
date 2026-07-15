@@ -146,12 +146,20 @@ git_sync_development() {
 stop_conflicting_dev_processes() {
   echo "  · oude dev-processen stoppen..."
 
+  # Systemd API vasthouden aan DB-locks voorkomt seed/migraties — altijd stoppen.
+  if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet tresamigos-api 2>/dev/null; then
+    echo "  · systemctl stop tresamigos-api (voorkomt seed-lock)"
+    systemctl stop tresamigos-api 2>/dev/null || true
+  fi
+
   pkill -f "pnpm -r --parallel" 2>/dev/null || true
   pkill -f "@tresamigos/api.*dev" 2>/dev/null || true
   pkill -f "@tresamigos/web.*dev" 2>/dev/null || true
   pkill -f "@tresamigos/admin.*dev" 2>/dev/null || true
+  pkill -f "nest start" 2>/dev/null || true
+  pkill -f "tsx.*prisma/seed" 2>/dev/null || true
 
-  for port in 3100 5180 5181; do
+  for port in 3100 3101 5180 5181; do
     if command -v fuser >/dev/null 2>&1; then
       fuser -k "${port}/tcp" 2>/dev/null || true
     elif command -v lsof >/dev/null 2>&1; then
@@ -177,6 +185,22 @@ stop_conflicting_dev_processes() {
       exit 1
     fi
   done
+}
+
+run_seed_safe() {
+  if [[ "${SKIP_SEED:-}" == "1" ]]; then
+    warn "SKIP_SEED=1 — seed overgeslagen"
+    return 0
+  fi
+
+  local seed_timeout="${SEED_TIMEOUT:-120}"
+  if command -v timeout >/dev/null 2>&1; then
+    if ! timeout "${seed_timeout}s" $PNPM db:seed; then
+      fail "Seed mislukt of timeout na ${seed_timeout}s (probeer SKIP_SEED=1 ./start-containers.sh)"
+    fi
+  else
+    $PNPM db:seed || fail "Seed mislukt"
+  fi
 }
 
 port_3100_pids() {
@@ -352,7 +376,7 @@ run_production() {
   ok "Migraties toegepast"
 
   step "Database seed"
-  $PNPM db:seed
+  run_seed_safe
   ok "Seed voltooid"
 
   step "Production build (packages + web + admin + api)"
@@ -458,7 +482,7 @@ run_development() {
   echo "  · migraties..."
   $PNPM db:migrate
   echo "  · seed..."
-  $PNPM db:seed
+  run_seed_safe
   ok "Database up-to-date"
 
   step "Shared packages bouwen en dev servers starten"

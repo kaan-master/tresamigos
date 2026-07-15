@@ -314,10 +314,11 @@ main{background:var(--paper)}.hero{padding:54px 0 46px;background:linear-gradien
 .opening-hours-row dd{margin:0;color:var(--muted);text-align:right}
 .opening-hours-cta{width:100%;margin-top:18px;justify-content:center}
 .platform-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-top:20px}
-.platform-link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:88px;padding:14px 12px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 10px 24px rgba(31,22,11,.05);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;text-align:center;text-decoration:none}
-.platform-link:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(31,22,11,.1);border-color:#efd596}
+.platform-link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:88px;padding:14px 12px;border:1px solid #e5a41e;border-radius:16px;background:linear-gradient(180deg,#ffd058 0%,var(--corn) 100%);color:var(--text);box-shadow:0 8px 20px rgba(252,185,42,.28);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease,filter .16s ease;text-align:center;text-decoration:none}
+.platform-link:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(252,185,42,.38);border-color:#e5a41e;filter:brightness(1.03)}
+.platform-link:active{transform:translateY(0) scale(.98);box-shadow:0 4px 12px rgba(252,185,42,.22)}
 .platform-link img{display:block;height:28px;width:auto;max-width:110px;object-fit:contain}
-.platform-link-label{display:block;font-size:12px;font-weight:800;color:var(--mole);letter-spacing:.01em;line-height:1.25}
+.platform-link-label{display:block;font-size:12px;font-weight:800;color:var(--text);letter-spacing:.01em;line-height:1.25}
 .location-card .meta,.order-card .meta{display:grid;gap:6px;margin:0}
 .location-address,.order-card>p{margin:0;color:var(--muted);font-weight:650;line-height:1.55}
 .location-note{color:var(--muted)!important;font-size:15px;margin:0;line-height:1.55}
