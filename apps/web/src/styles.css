@@ -1224,9 +1224,9 @@ button.product-card:focus-visible{
 .catering-protein-slot:first-of-type{margin-top:0;padding-top:0;border-top:0}
 .catering-slot-label{margin:0 0 8px;font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .catering-choice-grid{display:flex;flex-wrap:wrap;gap:6px}
-.catering-choice-grid-wide .catering-choice{flex:1 1 calc(33.333% - 6px);min-width:108px}
+.catering-choice-grid-wide .catering-choice{flex:0 1 auto;min-width:0}
 .catering-choice{
-  display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;
+  display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;
   background:#fff;color:var(--text);font:inherit;font-size:13px;font-weight:800;cursor:pointer;text-align:left;
   transition:transform .15s ease,border-color .15s ease,background .15s ease,color .15s ease,box-shadow .15s ease
 }
@@ -1236,12 +1236,12 @@ button.product-card:focus-visible{
   display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.18);font-size:11px;font-weight:900
 }
 .catering-choice.has-image{
-  flex-direction:column;align-items:stretch;gap:8px;min-width:108px;padding:8px
+  flex-direction:row;align-items:center;gap:8px;min-width:0;max-width:100%;padding:6px 10px 6px 6px
 }
 .catering-choice-thumb{
-  width:100%;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--soft)
+  flex:0 0 40px;width:40px;height:40px;border-radius:10px;overflow:hidden;background:var(--soft)
 }
-.catering-choice-thumb img{width:100%;height:100%;object-fit:contain;background:#fff;display:block}
+.catering-choice-thumb img{width:40px;height:40px;object-fit:cover;display:block}
 .catering-choice.has-image.is-selected .catering-choice-thumb{box-shadow:inset 0 0 0 2px rgba(255,255,255,.45)}
 .catering-section-error{
   margin:8px 0 0;padding:8px 10px;border-radius:10px;background:#fff0f0;border:1px solid #efb4b4;
@@ -1278,7 +1278,7 @@ button.product-card:focus-visible{
   .catering-modal-footer{flex-direction:column;align-items:stretch}
   .catering-modal-footer-main{justify-content:space-between;width:100%}
   .catering-modal-add{width:100%}
-  .catering-choice-grid-wide .catering-choice{flex:1 1 calc(50% - 6px);min-width:96px}
+  .catering-choice-grid-wide .catering-choice{flex:0 1 auto;min-width:0}
 }
 @media(max-width:920px){
   .catering-product-grid{grid-template-columns:1fr 1fr}
