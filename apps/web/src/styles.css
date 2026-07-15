@@ -579,6 +579,8 @@ main{background:var(--paper)}.hero{padding:54px 0 46px;background:linear-gradien
 @keyframes form-pop{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:translateY(0)}}
 
 .nav{position:sticky;top:0;z-index:50}
+.nav.is-open{position:fixed;left:0;right:0;top:0;width:100%;background:rgba(255,253,248,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav-lock-spacer{height:var(--nav-h,88px);flex-shrink:0;pointer-events:none}
 .mobile-toggle{display:none;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:10px 14px;font-weight:850;color:var(--text);cursor:pointer;transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .22s ease,background .22s ease,border-color .22s ease}
 .mobile-toggle:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(31,22,11,.08)}
 .mobile-toggle:active{transform:scale(.97)}
@@ -591,7 +593,13 @@ main{background:var(--paper)}.hero{padding:54px 0 46px;background:linear-gradien
 .hamburger-icon.is-open .hamburger-line-bot{transform:translateY(-5px) rotate(-45deg);transform-origin:center}
 .nav-backdrop{position:fixed;inset:0;z-index:40;border:0;background:rgba(20,14,8,.42);backdrop-filter:blur(2px);animation:nav-backdrop-in .22s ease both}
 @keyframes nav-backdrop-in{from{opacity:0}to{opacity:1}}
-body.nav-open{overflow:hidden}
+body.nav-open{
+  position:fixed;
+  left:0;
+  right:0;
+  width:100%;
+  overflow:hidden;
+}
 @media(max-width:920px){
   .mobile-toggle{display:inline-flex}
   .nav-inner{position:relative;z-index:52}

@@ -185,8 +185,21 @@ export function Layout({ content }: LayoutProps) {
   }, [location.pathname]);
 
   useEffect(() => {
-    document.body.classList.toggle("nav-open", menuOpen);
-    return () => document.body.classList.remove("nav-open");
+    if (!menuOpen) {
+      document.body.classList.remove("nav-open");
+      document.body.style.removeProperty("top");
+      return;
+    }
+
+    const scrollY = window.scrollY;
+    document.body.classList.add("nav-open");
+    document.body.style.top = `-${scrollY}px`;
+
+    return () => {
+      document.body.classList.remove("nav-open");
+      document.body.style.removeProperty("top");
+      window.scrollTo(0, scrollY);
+    };
   }, [menuOpen]);
 
   return (
@@ -234,6 +247,7 @@ export function Layout({ content }: LayoutProps) {
         </div>
         {menuOpen ? <button className="nav-backdrop" type="button" aria-label={t("common.closeMenu")} onClick={() => setMenuOpen(false)} /> : null}
       </nav>
+      {menuOpen ? <div className="nav-lock-spacer" aria-hidden="true" /> : null}
       <div className="page-enter" key={location.pathname}>
         <Outlet />
       </div>
