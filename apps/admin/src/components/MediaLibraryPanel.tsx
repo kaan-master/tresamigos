@@ -118,6 +118,8 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
       if (filter === "image" && asset.kind !== "image") return false;
       if (filter === "uploads" && asset.section !== "uploads") return false;
       if (filter === "cms" && asset.section !== "cms") return false;
+      if (filter === "catering" && asset.section !== "catering") return false;
+      if (filter === "menu" && asset.section !== "menu") return false;
       if (filter === "site" && asset.section !== "site") return false;
       if (filter === "brand" && asset.section !== "brand") return false;
       if (!normalized) return true;
@@ -283,6 +285,8 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
           { value: "image", label: "Afbeeldingen" },
           { value: "cms", label: "CMS media" },
           { value: "uploads", label: "Uploads" },
+          { value: "catering", label: "Catering" },
+          { value: "menu", label: "Menu" },
           { value: "site", label: "Site" },
           { value: "brand", label: "Brand" }
         ]}

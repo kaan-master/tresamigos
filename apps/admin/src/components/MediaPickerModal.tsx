@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import type { MediaAsset } from "@tresamigos/types";
-import { listMedia, uploadMedia } from "../lib/api";
+import { deleteMedia, listMedia, uploadMedia } from "../lib/api";
 import { mediaAssetUrl } from "../lib/media";
 import { AdminButton } from "./AdminButton";
-import { IconUpload } from "./AdminIcons";
-import { AdminSearchBar } from "./AdminListUi";
+import { IconTrash, IconUpload } from "./AdminIcons";
+import { AdminFilterChips, AdminSearchBar } from "./AdminListUi";
 
 interface Props {
   open: boolean;
@@ -21,6 +21,7 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [query, setQuery] = useState("");
+  const [section, setSection] = useState("all");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -42,6 +43,8 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
 
   useEffect(() => {
     if (!open) return;
+    setQuery("");
+    setSection("all");
     void loadAssets();
   }, [open]);
 
@@ -50,10 +53,11 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
     return assets.filter((asset) => {
       if (filter === "image" && asset.kind !== "image") return false;
       if (filter === "video" && asset.kind !== "video") return false;
+      if (section !== "all" && asset.section !== section) return false;
       if (!normalized) return true;
-      return `${asset.filename} ${asset.url} ${asset.label || ""}`.toLowerCase().includes(normalized);
+      return `${asset.filename} ${asset.url} ${asset.section} ${asset.label || ""}`.toLowerCase().includes(normalized);
     });
-  }, [assets, query, filter]);
+  }, [assets, query, filter, section]);
 
   async function handleUpload(files: FileList | null) {
     if (!files?.length) return;
@@ -73,6 +77,19 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
       setUploading(false);
       setDragOver(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function handleDelete(asset: MediaAsset, event: MouseEvent) {
+    event.stopPropagation();
+    if (!asset.removable) return;
+    if (!window.confirm(`Verwijder ${asset.filename}?`)) return;
+    setError("");
+    try {
+      await deleteMedia(asset.url);
+      await loadAssets();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Verwijderen mislukt.");
     }
   }
 
@@ -125,7 +142,20 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
           />
         </div>
 
-        <AdminSearchBar value={query} onChange={setQuery} placeholder="Zoek bestandsnaam..." />
+        <AdminFilterChips
+          value={section}
+          onChange={setSection}
+          options={[
+            { value: "all", label: "Alles" },
+            { value: "catering", label: "Catering" },
+            { value: "menu", label: "Menu" },
+            { value: "uploads", label: "Uploads" },
+            { value: "brand", label: "Brand" },
+            { value: "site", label: "Site" }
+          ]}
+        />
+
+        <AdminSearchBar value={query} onChange={setQuery} placeholder="Zoek bestandsnaam of map..." />
 
         {error ? <div className="ta-alert is-error">{error}</div> : null}
 
@@ -134,25 +164,38 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
         ) : filtered.length ? (
           <div className="ta-media-picker-grid">
             {filtered.map((asset) => (
-              <button
-                className="ta-media-picker-item"
-                type="button"
-                key={asset.url}
-                onClick={() => onSelect(normalizePick(asset.url))}
-              >
-                <div className="ta-media-preview">
-                  {asset.kind === "video" ? (
-                    <video src={mediaAssetUrl(asset.url)} muted playsInline preload="metadata" />
-                  ) : (
-                    <img src={mediaAssetUrl(asset.url)} alt={asset.label || asset.filename} loading="lazy" />
-                  )}
-                </div>
-                <span>{asset.label || asset.filename}</span>
-              </button>
+              <div className="ta-media-picker-item-wrap" key={asset.url}>
+                <button
+                  className="ta-media-picker-item"
+                  type="button"
+                  onClick={() => onSelect(normalizePick(asset.url))}
+                >
+                  <div className="ta-media-preview">
+                    {asset.kind === "video" ? (
+                      <video src={mediaAssetUrl(asset.url)} muted playsInline preload="metadata" />
+                    ) : (
+                      <img src={mediaAssetUrl(asset.url)} alt={asset.label || asset.filename} loading="lazy" />
+                    )}
+                  </div>
+                  <em className="ta-media-picker-section">{asset.section}</em>
+                  <span>{asset.label || asset.filename}</span>
+                </button>
+                {asset.removable ? (
+                  <button
+                    className="ta-media-picker-delete"
+                    type="button"
+                    aria-label={`${asset.filename} verwijderen`}
+                    title="Verwijderen"
+                    onClick={(event) => void handleDelete(asset, event)}
+                  >
+                    <IconTrash width={14} height={14} />
+                  </button>
+                ) : null}
+              </div>
             ))}
           </div>
         ) : (
-          <div className="ta-empty">Geen media gevonden. Upload een bestand hierboven.</div>
+          <div className="ta-empty">Geen media gevonden. Upload een bestand hierboven of kies een andere map.</div>
         )}
       </div>
     </div>
@@ -180,6 +223,11 @@ export function MediaField({ label, value, onChange, placeholder, filter = "imag
           <button className="ta-btn ta-btn-ghost" type="button" onClick={() => setOpen(true)}>
             Kies media
           </button>
+          {value ? (
+            <button className="ta-btn ta-btn-ghost" type="button" onClick={() => onChange("")}>
+              Verwijderen
+            </button>
+          ) : null}
         </div>
         {preview ? <img className="ta-product-preview" src={preview} alt="" loading="lazy" /> : null}
       </label>

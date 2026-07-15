@@ -17,6 +17,8 @@ const MEDIA_EXTENSIONS = new Set([
   ".ico"
 ]);
 
+const DELETABLE_PREFIXES = ["/assets/uploads/", "/assets/catering/"];
+
 @Injectable()
 export class MediaService {
   private async walkSection(
@@ -59,25 +61,49 @@ export class MediaService {
     }
 
     await walk(sectionDir);
-    return assets.sort((left, right) => right.filename.localeCompare(left.filename));
+    return assets;
   }
 
   async list(): Promise<MediaLibraryResponse> {
     await mkdir(UPLOADS_DIR, { recursive: true });
-    const [site, brand, uploads, publicSite, publicBrand] = await Promise.all([
-      this.walkSection(join(ASSETS_ROOT, "site"), "site", false, ASSETS_ROOT),
-      this.walkSection(join(ASSETS_ROOT, "brand"), "brand", false, ASSETS_ROOT),
-      this.walkSection(UPLOADS_DIR, "uploads", true, ASSETS_ROOT),
-      this.walkSection(join(PUBLIC_ASSETS_ROOT, "site"), "site", false, PUBLIC_ASSETS_ROOT),
-      this.walkSection(join(PUBLIC_ASSETS_ROOT, "brand"), "brand", false, PUBLIC_ASSETS_ROOT)
-    ]);
+
+    const sectionSpecs: Array<{
+      dir: string;
+      section: MediaAsset["section"];
+      removable: boolean;
+      root: string;
+    }> = [
+      { dir: join(ASSETS_ROOT, "site"), section: "site", removable: false, root: ASSETS_ROOT },
+      { dir: join(ASSETS_ROOT, "brand"), section: "brand", removable: false, root: ASSETS_ROOT },
+      { dir: join(ASSETS_ROOT, "catering"), section: "catering", removable: true, root: ASSETS_ROOT },
+      { dir: join(ASSETS_ROOT, "menu"), section: "menu", removable: false, root: ASSETS_ROOT },
+      { dir: UPLOADS_DIR, section: "uploads", removable: true, root: ASSETS_ROOT },
+      { dir: join(PUBLIC_ASSETS_ROOT, "site"), section: "site", removable: false, root: PUBLIC_ASSETS_ROOT },
+      { dir: join(PUBLIC_ASSETS_ROOT, "brand"), section: "brand", removable: false, root: PUBLIC_ASSETS_ROOT },
+      { dir: join(PUBLIC_ASSETS_ROOT, "catering"), section: "catering", removable: true, root: PUBLIC_ASSETS_ROOT },
+      { dir: join(PUBLIC_ASSETS_ROOT, "menu"), section: "menu", removable: false, root: PUBLIC_ASSETS_ROOT }
+    ];
+
+    const batches = await Promise.all(
+      sectionSpecs.map((spec) => this.walkSection(spec.dir, spec.section, spec.removable, spec.root))
+    );
 
     const merged = new Map<string, MediaAsset>();
-    for (const asset of [...uploads, ...site, ...brand, ...publicSite, ...publicBrand]) {
-      merged.set(asset.url, asset);
+    // Prefer removable entries when the same URL appears in both roots.
+    for (const asset of batches.flat()) {
+      const previous = merged.get(asset.url);
+      if (!previous || (asset.removable && !previous.removable)) {
+        merged.set(asset.url, asset);
+      }
     }
 
-    return { assets: [...merged.values()] };
+    const assets = [...merged.values()].sort((left, right) => {
+      const sectionCmp = left.section.localeCompare(right.section);
+      if (sectionCmp !== 0) return sectionCmp;
+      return left.filename.localeCompare(right.filename);
+    });
+
+    return { assets };
   }
 
   async registerUpload(filename: string, size: number): Promise<MediaAsset> {
@@ -86,21 +112,32 @@ export class MediaService {
       filename,
       size,
       section: "uploads",
-      kind: [".mp4", ".webm", ".mov"].includes(filename.slice(filename.lastIndexOf(".")).toLowerCase()) ? "video" : "image",
+      kind: [".mp4", ".webm", ".mov"].includes(filename.slice(filename.lastIndexOf(".")).toLowerCase())
+        ? "video"
+        : "image",
       removable: true
     };
   }
 
   async delete(url: string) {
-    if (!url.startsWith("/assets/uploads/")) {
-      throw new BadRequestException("Alleen geüploade bestanden kunnen worden verwijderd.");
+    if (!DELETABLE_PREFIXES.some((prefix) => url.startsWith(prefix))) {
+      throw new BadRequestException("Alleen uploads en cateringbestanden kunnen worden verwijderd.");
     }
 
     const relativePath = url.replace(/^\/assets\//, "");
-    const fullPath = join(ASSETS_ROOT, relativePath);
-    try {
-      await unlink(fullPath);
-    } catch {
+    const candidates = [join(ASSETS_ROOT, relativePath), join(PUBLIC_ASSETS_ROOT, relativePath)];
+    let removed = false;
+
+    for (const fullPath of candidates) {
+      try {
+        await unlink(fullPath);
+        removed = true;
+      } catch {
+        // try next root
+      }
+    }
+
+    if (!removed) {
       throw new NotFoundException("Bestand niet gevonden.");
     }
 

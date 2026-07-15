@@ -367,7 +367,7 @@ export interface MediaAsset {
   url: string;
   filename: string;
   size: number;
-  section: "site" | "brand" | "uploads" | "cms";
+  section: "site" | "brand" | "uploads" | "cms" | "catering" | "menu";
   kind: "image" | "video";
   removable: boolean;
   label?: string;
