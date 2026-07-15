@@ -8,7 +8,71 @@ import { PrismaService } from "../prisma/prisma.module";
 export class ContentService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Volledige content voor admin. */
   async getContent(): Promise<SiteContent> {
+    return this.loadContent();
+  }
+
+  /** Publieke content zonder admin-/mail-secrets. */
+  async getPublicContent(): Promise<SiteContent> {
+    return this.toPublicContent(await this.loadContent());
+  }
+
+  private toPublicContent(content: SiteContent): SiteContent {
+    const catering = content.site.catering;
+    return {
+      ...content,
+      site: {
+        ...content.site,
+        seo: {
+          ...content.site.seo,
+          googleSiteVerification: "",
+          bingSiteVerification: ""
+        },
+        promoPopup: {
+          ...content.site.promoPopup,
+          discountCode: ""
+        },
+        mailRelay: {
+          enabled: false,
+          fromName: "",
+          replyTo: "",
+          subject: "",
+          bodyTemplate: ""
+        },
+        contactForm: {
+          ...content.site.contactForm,
+          notifySubject: ""
+        },
+        reviews: {
+          ...content.site.reviews,
+          googlePlaceId: ""
+        },
+        catering: {
+          ...catering,
+          notifications: {
+            recipientEmail: "",
+            notifyOnNewOrder: false,
+            notifyOnStatusChange: false
+          },
+          formFields: catering.formFields.filter((field) => field.enabled),
+          products: catering.products.filter((product) => product.active),
+          ingredients: catering.ingredients.filter((item) => item.active),
+          categories: catering.categories.filter((category) => category.visible)
+        }
+      },
+      videos: content.videos.filter((video) => video.active),
+      locations: content.locations.filter((location) => location.active),
+      menu: content.menu
+        .filter((category) => category.active)
+        .map((category) => ({
+          ...category,
+          items: category.items.filter((item) => item.active)
+        }))
+    };
+  }
+
+  private async loadContent(): Promise<SiteContent> {
     const [site, locations, videos, menuCategories] = await Promise.all([
       this.prisma.siteSettings.findUniqueOrThrow({ where: { id: "default" } }),
       this.prisma.location.findMany({

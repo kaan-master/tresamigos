@@ -296,6 +296,11 @@ export class CateringService {
     return content.site.catering;
   }
 
+  async getPublicSettings(): Promise<CateringSettings> {
+    const content = await this.contentService.getPublicContent();
+    return content.site.catering;
+  }
+
   async saveSettings(input: unknown): Promise<CateringSettings> {
     const settings = sanitizeCateringSettings(input);
     await this.prisma.siteSettings.update({

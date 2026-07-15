@@ -3,6 +3,7 @@ import type { CreateCateringOrderInput, UpdateCateringOrderInput } from "@tresam
 import { AdminGuard } from "../auth/admin.guard";
 import { PermissionsGuard } from "../auth/permissions.guard";
 import { RequirePermissions } from "../auth/permissions.decorator";
+import { PublicContentGuard } from "../content/public-content.guard";
 import { CateringService } from "./catering.service";
 
 @Controller("api")
@@ -15,8 +16,9 @@ export class PublicCateringController {
   }
 
   @Get("catering/catalog")
+  @UseGuards(PublicContentGuard)
   catalog() {
-    return this.cateringService.getSettings();
+    return this.cateringService.getPublicSettings();
   }
 }
 

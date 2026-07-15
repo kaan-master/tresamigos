@@ -3,14 +3,16 @@ import { AdminGuard } from "../auth/admin.guard";
 import { PermissionsGuard } from "../auth/permissions.guard";
 import { RequirePermissions } from "../auth/permissions.decorator";
 import { ContentService } from "./content.service";
+import { PublicContentGuard } from "./public-content.guard";
 
 @Controller("api")
 export class PublicContentController {
   constructor(private readonly contentService: ContentService) {}
 
   @Get("content")
+  @UseGuards(PublicContentGuard)
   getContent() {
-    return this.contentService.getContent();
+    return this.contentService.getPublicContent();
   }
 }
 
