@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CateringCartLine, CateringSettings } from "@tresamigos/types";
 import type { CateringProduct } from "../../lib/catering/catalog";
-import { PACKAGE_RULES } from "../../lib/catering/catalog";
+import { packageRulesFor } from "../../lib/catering/catalog";
 import { createLineId, formatEuro, priceConfiguredProduct } from "../../lib/catering/cart";
 import { productDescription, productLabel } from "../../lib/catering/resolveCatalog";
 import { resolveCateringIngredients, type ResolvedIngredientOption } from "../../lib/catering/resolveIngredients";
@@ -153,7 +153,7 @@ function pickHint(count: number, t: (key: string) => string) {
 
 export function CateringProductConfigurator({ product, settings, onBack, onAdd }: Props) {
   const { t, lang } = useLanguage();
-  const rules = product.tier ? PACKAGE_RULES[product.tier] : null;
+  const rules = product.tier ? packageRulesFor(product.categoryId, product.tier) : null;
   const ingredients = useMemo(() => resolveCateringIngredients(settings, lang), [settings, lang]);
   const toppings = ingredients.toppingsFor(product.categoryId);
   const creamOptions = ingredients.creamFor(product.tier);

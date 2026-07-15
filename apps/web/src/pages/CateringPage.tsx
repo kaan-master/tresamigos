@@ -309,6 +309,10 @@ export function CateringPage({ content }: { content: SiteContent }) {
                       ) : null}
                     </p>
                     {!deliveryEnabled ? <p className="catering-hint">{t("catering.deliveryUnavailable")}</p> : null}
+                    <p className="catering-group-notice">
+                      {t("catering.largeGroupNotice")}{" "}
+                      <a href={`mailto:${catalog.largeGroupEmail}`}>{catalog.largeGroupEmail}</a>.
+                    </p>
                   </>
                 ) : null}
               </div>

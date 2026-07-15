@@ -1103,7 +1103,7 @@ button.product-card:focus-visible{
   font:inherit;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease
 }
 .catering-product-card:hover{transform:translateY(-2px);box-shadow:0 18px 44px rgba(31,22,11,.08)}
-.catering-product-card img{width:100%;aspect-ratio:1.2;object-fit:cover;border-radius:16px}
+.catering-product-card img{width:100%;aspect-ratio:1.2;object-fit:contain;background:#fff;border-radius:16px}
 .catering-product-card strong{display:block;font-size:18px}
 .catering-product-card p{margin:6px 0;color:var(--muted);font-size:14px;font-weight:650;line-height:1.45}
 .catering-product-card span{font-weight:900}
@@ -1241,7 +1241,7 @@ button.product-card:focus-visible{
 .catering-choice-thumb{
   width:100%;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--soft)
 }
-.catering-choice-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.catering-choice-thumb img{width:100%;height:100%;object-fit:contain;background:#fff;display:block}
 .catering-choice.has-image.is-selected .catering-choice-thumb{box-shadow:inset 0 0 0 2px rgba(255,255,255,.45)}
 .catering-section-error{
   margin:8px 0 0;padding:8px 10px;border-radius:10px;background:#fff0f0;border:1px solid #efb4b4;
@@ -1315,19 +1315,19 @@ button.product-card:focus-visible{
   opacity:1;transform:scale(1)
 }
 .catering-product-card.is-added{animation:catering-card-added .65s ease}
-.catering-cart-drawer-root{position:fixed;inset:0;z-index:1200;pointer-events:none}
+.catering-cart-drawer-root{position:fixed;inset:0;z-index:1200;pointer-events:none;height:100%;max-height:100dvh;overflow:hidden}
 .catering-cart-drawer-backdrop{
   position:absolute;inset:0;border:0;background:rgba(19,12,5,.45);backdrop-filter:blur(4px);
   cursor:pointer;pointer-events:auto;animation:catering-fade-in .22s ease
 }
 .catering-cart-drawer{
-  position:absolute;top:0;right:0;bottom:0;width:min(420px,100vw);height:100dvh;max-height:100dvh;
-  display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-height:0;
+  position:absolute;inset:0 0 0 auto;width:min(420px,100%);height:100%;max-height:100%;
+  display:flex;flex-direction:column;min-height:0;overflow:hidden;
   background:#fffdf8;border-left:1px solid var(--line);box-shadow:-24px 0 80px rgba(19,12,5,.16);
   pointer-events:auto;animation:catering-drawer-in .28s cubic-bezier(.22,1,.36,1)
 }
 .catering-cart-drawer-head{
-  display:flex;justify-content:space-between;gap:12px;align-items:center;padding:18px 18px 14px;border-bottom:1px solid var(--line)
+  flex:0 0 auto;display:flex;justify-content:space-between;gap:12px;align-items:center;padding:18px 18px 14px;border-bottom:1px solid var(--line)
 }
 .catering-cart-drawer-title{display:flex;gap:12px;align-items:center}
 .catering-cart-drawer-title strong{display:block;font-size:16px}
@@ -1336,7 +1336,7 @@ button.product-card:focus-visible{
   display:grid;place-items:center;width:36px;height:36px;border:1px solid var(--line);border-radius:50%;
   background:#fff;color:var(--text);cursor:pointer
 }
-.catering-cart-drawer-body{overflow-y:auto;padding:12px 14px;min-height:0}
+.catering-cart-drawer-body{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding:12px 14px;min-height:0}
 .catering-cart-drawer-lines{display:grid;gap:10px;margin:0;padding:0;list-style:none}
 .catering-cart-drawer-line{
   display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:start;padding:10px;border:1px solid var(--line);
@@ -1356,7 +1356,7 @@ button.product-card:focus-visible{
 .catering-cart-drawer-remove:hover{background:#fff0f0;color:#b42318}
 .catering-cart-drawer-empty{margin:24px 0;color:var(--muted);font-weight:650;text-align:center}
 .catering-cart-drawer-foot{
-  flex-shrink:0;padding:14px 18px max(18px,env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#fff9ea
+  flex:0 0 auto;padding:14px 18px max(14px,env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#fff9ea
 }
 .catering-cart-drawer-actions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
 .catering-cart-drawer-actions .btn{width:100%;justify-content:center;min-height:48px}
@@ -1441,8 +1441,10 @@ body.catering-drawer-open{overflow:hidden}
 .catering-config-page{padding:8px 0 40px}
 .catering-config-top{display:grid;gap:14px;margin-bottom:18px}
 .catering-config-back{align-self:start}
-.catering-config-hero{display:grid;grid-template-columns:88px 1fr;gap:14px;align-items:center;padding:16px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(135deg,#fff9ea,#fff)}
-.catering-config-hero img{width:88px;height:88px;border-radius:16px;object-fit:cover}
+.catering-config-hero{display:grid;grid-template-columns:72px 1fr;gap:14px;align-items:center;padding:16px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(135deg,#fff9ea,#fff)}
+.catering-config-hero img{width:72px;height:72px;border-radius:14px;object-fit:contain;background:#fff;border:1px solid var(--line)}
+.catering-group-notice{margin:12px 0 0;max-width:640px;color:var(--muted);font-weight:650;line-height:1.45}
+.catering-group-notice a{color:var(--cherry);font-weight:850;text-decoration:underline;text-underline-offset:2px}
 .catering-config-hero h2{margin:4px 0;font-size:clamp(22px,3vw,30px)}
 .catering-config-hero p{margin:0;color:var(--muted);font-weight:650}
 .catering-config-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;align-items:start}

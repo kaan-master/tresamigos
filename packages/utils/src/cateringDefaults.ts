@@ -143,53 +143,111 @@ function ingredient(
 }
 
 export const DEFAULT_CATERING_INGREDIENTS: CateringIngredientConfig[] = [
-  ingredient("pulled-chicken", "protein", "Pulled chicken", "Pulled chicken", "/assets/menu/pulled-chicken-burrito-150x150.jpg", 0),
-  ingredient("pulled-beef", "protein", "Pulled beef", "Pulled beef", "/assets/menu/pulled-beef-taco-150x150.jpg", 1),
-  ingredient("ground-beef", "protein", "Ground beef", "Ground beef", "/assets/menu/pulled-beef-taco-150x150.jpg", 2),
-  ingredient("jackfruit", "protein", "Jackfruit", "Jackfruit", "/assets/menu/Jackfruit-bowl-2-e1751149625253-150x150.jpg", 3),
-  ingredient("cilantro", "buffetTopping", "Cilantro", "Cilantro", "/assets/menu/pulled-chicken-burrito-150x150.jpg", 0),
-  ingredient("jalapeno-crunch", "buffetTopping", "Jalapeño Crunch", "Jalapeño Crunch", "/assets/menu/pulled-beef-taco-150x150.jpg", 1),
-  ingredient("pico-de-gallo", "buffetTopping", "Pico de gallo", "Pico de gallo", "/assets/menu/cheese-quesedilla-2-150x150.jpg", 2),
-  ingredient("mexican-corn-salad", "buffetTopping", "Mexican Corn Salad", "Mexican Corn Salad", "/assets/menu/Jackfruit-bowl-2-e1751149625253-150x150.jpg", 3),
-  ingredient("cebolla-fresca", "buffetTopping", "Cebolla Fresca", "Cebolla Fresca", "/assets/menu/pulled-chicken-burrito-150x150.jpg", 4),
-  ingredient("corn", "burritoTopping", "Corn", "Corn", "/assets/menu/Jackfruit-bowl-2-e1751149625253-150x150.jpg", 0),
-  ingredient("pico-burrito", "burritoTopping", "Pico de Gallo", "Pico de Gallo", "/assets/menu/cheese-quesedilla-2-150x150.jpg", 1),
-  ingredient("bell-peppers", "burritoTopping", "Bell peppers", "Bell peppers", "/assets/menu/pulled-beef-taco-150x150.jpg", 2),
-  ingredient("diced-onion", "burritoTopping", "Diced Onion", "Diced Onion", "/assets/menu/pulled-chicken-burrito-150x150.jpg", 3),
-  ingredient("lettuce", "burritoTopping", "Lettuce", "Lettuce", "/assets/menu/pulled-chicken-burrito-150x150.jpg", 4),
-  ingredient("jalapeno", "burritoTopping", "Jalapeño", "Jalapeño", "/assets/menu/pulled-beef-taco-150x150.jpg", 5),
-  ingredient("pickled-onions", "burritoTopping", "Pickled Onions", "Pickled Onions", "/assets/menu/cheese-quesedilla-2-150x150.jpg", 6),
-  ingredient("chipotle", "sauce", "Chipotle", "Chipotle", "/assets/menu/pulled-chicken-burrito-150x150.jpg", 0),
-  ingredient("garlic-sauce", "sauce", "Garlic sauce", "Garlic sauce", "/assets/menu/pulled-chicken-burrito-150x150.jpg", 1),
-  ingredient("el-cielo", "sauce", "El cielo", "El cielo", "/assets/menu/pulled-beef-taco-150x150.jpg", 2),
-  ingredient("salsa-verde", "sauce", "Salsa verde", "Salsa verde", "/assets/menu/Jackfruit-bowl-2-e1751149625253-150x150.jpg", 3),
-  ingredient("salsa-cilantro", "sauce", "Salsa Cilantro", "Salsa Cilantro", "/assets/menu/cheese-quesedilla-2-150x150.jpg", 4),
+  ingredient("pulled-chicken", "protein", "Pulled chicken", "Pulled chicken", "/assets/catering/ingredients/pulled-chicken.png", 0),
+  ingredient("pulled-beef", "protein", "Pulled beef", "Pulled beef", "/assets/catering/ingredients/pulled-beef.png", 1),
+  ingredient("ground-beef", "protein", "Ground beef", "Ground beef", "/assets/catering/ingredients/ground-beef.png", 2),
+  ingredient("jackfruit", "protein", "Jackfruit", "Jackfruit", "/assets/catering/ingredients/jackfruit.png", 3),
+  ingredient("cilantro", "buffetTopping", "Cilantro", "Cilantro", "/assets/catering/ingredients/cilantro.png", 0),
+  ingredient("jalapeno-crunch", "buffetTopping", "Jalapeño Crunch", "Jalapeño Crunch", "/assets/catering/ingredients/jalapeno-crunch.png", 1),
+  ingredient("pico-de-gallo", "buffetTopping", "Pico de gallo", "Pico de gallo", "/assets/catering/ingredients/pico-de-gallo.png", 2),
+  ingredient("mexican-corn-salad", "buffetTopping", "Mexican Corn Salad", "Mexican Corn Salad", "/assets/catering/ingredients/mexican-corn-salad.png", 3),
+  ingredient("cebolla-fresca", "buffetTopping", "Cebolla Fresca", "Cebolla Fresca", "/assets/catering/ingredients/cebolla-fresca.png", 4),
+  ingredient("corn", "burritoTopping", "Corn", "Corn", "/assets/catering/ingredients/corn.png", 0),
+  ingredient("pico-burrito", "burritoTopping", "Pico de Gallo", "Pico de Gallo", "/assets/catering/ingredients/pico-de-gallo.png", 1),
+  ingredient("bell-peppers", "burritoTopping", "Bell peppers", "Bell peppers", "/assets/catering/ingredients/bell-peppers.png", 2),
+  ingredient("diced-onion", "burritoTopping", "Diced Onion", "Diced Onion", "/assets/catering/ingredients/diced-onion.png", 3),
+  ingredient("lettuce", "burritoTopping", "Lettuce", "Lettuce", "/assets/catering/ingredients/lettuce.png", 4),
+  ingredient("jalapeno", "burritoTopping", "Jalapeño", "Jalapeño", "/assets/catering/ingredients/jalapeno.png", 5),
+  ingredient("pickled-onions", "burritoTopping", "Pickled Onions", "Pickled Onions", "/assets/catering/ingredients/pickled-onions.png", 6),
+  ingredient("chipotle", "sauce", "Chipotle", "Chipotle", "/assets/catering/sauces/chipotle.png", 0),
+  ingredient("garlic-sauce", "sauce", "Garlic sauce", "Garlic sauce", "/assets/catering/sauces/garlic.png", 1),
+  ingredient("el-cielo", "sauce", "El cielo", "El cielo", "/assets/catering/sauces/el-cielo.png", 2),
+  ingredient("salsa-verde", "sauce", "Salsa verde", "Salsa verde", "/assets/catering/sauces/salsa-verde.png", 3),
+  ingredient("salsa-cilantro", "sauce", "Salsa Cilantro", "Salsa Cilantro", "/assets/catering/ingredients/cilantro.png", 4),
   ingredient("tortilla-30", "tortilla", "Tortilla 30cm", "Tortilla 30cm", "/assets/menu/cheese-quesedilla-2-150x150.jpg", 0),
   ingredient("tortilla-16", "tortilla", "Tortilla 16cm", "Tortilla 16cm", "/assets/menu/pulled-chicken-burrito-150x150.jpg", 1),
-  ingredient("guacamole", "cream", "Guacamole", "Guacamole", "/assets/menu/pulled-chicken-burrito-150x150.jpg", 0),
-  ingredient("sour-cream", "cream", "Sour cream", "Sour cream", "/assets/menu/pulled-beef-taco-150x150.jpg", 1),
+  ingredient("guacamole", "cream", "Guacamole", "Guacamole", "/assets/catering/ingredients/guacamole.png", 0),
+  ingredient("sour-cream", "cream", "Sour cream", "Sour cream", "/assets/catering/ingredients/sour-cream.png", 1),
   ingredient("cream-none", "cream", "None", "None", "/assets/brand/breakfast-lunch-dinner.png", 2),
-  ingredient("guac-and-sour", "tripleCream", "Guacamole and sour cream", "Guacamole and sour cream", "/assets/menu/pulled-chicken-burrito-150x150.jpg", 0),
-  ingredient("double-guac", "tripleCream", "Double Guacamole", "Double Guacamole", "/assets/menu/pulled-chicken-burrito-150x150.jpg", 1),
-  ingredient("double-sour", "tripleCream", "Double sour cream", "Double sour cream", "/assets/menu/pulled-beef-taco-150x150.jpg", 2),
+  ingredient("guac-and-sour", "tripleCream", "Guacamole and sour cream", "Guacamole and sour cream", "/assets/catering/ingredients/guac-and-sour.png", 0),
+  ingredient("double-guac", "tripleCream", "Double Guacamole", "Double Guacamole", "/assets/catering/ingredients/double-guac.png", 1),
+  ingredient("double-sour", "tripleCream", "Double sour cream", "Double sour cream", "/assets/catering/ingredients/double-sour.png", 2),
   ingredient("triple-cream-none", "tripleCream", "None", "None", "/assets/brand/breakfast-lunch-dinner.png", 3)
 ];
 
+const BUFFET_BUDGET_DESC = text(
+  "Onze rice en beans zijn altijd inbegrepen als verse basis. Stel je eigen bord samen met 1 proteïne naar keuze, 1 topping, 1 saus en 1 soort tortilla.",
+  "Our rice and beans are always included as a fresh base. Build your own plate with 1 protein of your choice, 1 topping, 1 sauce, and 1 type of tortilla."
+);
+
+const BUFFET_SINGLE_DESC = text(
+  "Onze rice en beans zijn altijd inbegrepen als verse basis. Kies jouw favoriete combinatie met 1 proteïne, 2 toppings, guacamole of sour cream, 2 sauzen en 1 tortilla soort. Meer variatie, één geweldige smaak.",
+  "Our rice and beans are always included as a fresh base. Choose your favourite combination with 1 protein, 2 toppings, guacamole or sour cream, 2 sauces and 1 type of tortilla. More variety, one great taste."
+);
+
+const BUFFET_DOUBLE_DESC = text(
+  "Onze rice en beans zijn altijd inbegrepen als verse basis. Geniet van een uitgebreider buffet met 2 proteïnes naar keuze, 2 toppings, guacamole of sour cream, 2 sauzen en 1 tortilla soort. Perfect voor wie wil variëren.",
+  "Our rice and beans are always included as a fresh base. Enjoy a more generous buffet with 2 proteins of your choice, 2 toppings, guacamole or sour cream, 2 sauces and 1 type of tortilla. Perfect for those who love variety."
+);
+
+const BUFFET_TRIPLE_DESC = text(
+  "Onze rice en beans zijn altijd inbegrepen als verse basis. De ultieme Tres Amigos ervaring: 3 proteïnes, 3 toppings, guacamole én sour cream, 3 sauzen en beide tortilla soorten. Het complete Mexicaanse buffet voor de echte liefhebber.",
+  "Our rice and beans are always included as a fresh base. The ultimate Tres Amigos experience: 3 proteins, 3 toppings, guacamole and sour cream, 3 sauces and both tortilla types. The complete Mexican buffet for true fans."
+);
+
+const BURRITO_SINGLE_DESC = text(
+  "Onze rice, beans en cheese zijn altijd inbegrepen als verse basis. Stel jouw eigen combinatie samen met 1 proteïne naar keuze, 1 topping en 1 saus. Simpel, fris en heerlijk Mexicaans — stevig gerold en vol smaak.",
+  "Our rice, beans, and cheese are always included as a fresh base. Create your own combination with 1 protein of your choice, 1 topping, and 1 sauce. Simple, fresh, and deliciously Mexican - tightly rolled and packed with flavor."
+);
+
+const BURRITO_DOUBLE_DESC = text(
+  "Onze rice, beans en cheese zijn altijd inbegrepen als verse basis. Meer variatie in iedere hap: kies 1 proteïne, 2 toppings en 2 sauzen. De perfecte burrito voor wie iets extra’s wil.",
+  "Our rice, beans, and cheese are always included as a fresh base. Enjoy more variety in every bite: choose 1 protein, 2 toppings, and 2 sauces. The perfect burrito for those who want a little extra."
+);
+
+const BURRITO_TRIPLE_DESC = text(
+  "Onze rice, beans en cheese zijn altijd inbegrepen als verse basis. De ultieme burrito-ervaring: kies 1 proteïne, 3 toppings en 3 sauzen. Maximale smaak, stevig gerold in één burrito.",
+  "Our rice, beans, and cheese are always included as a fresh base. The ultimate burrito experience: choose 1 protein, 3 toppings, and 3 sauces. Maximum flavor, all wrapped up in one perfectly rolled burrito."
+);
+
+const DRINK_IMG = "/assets/catering/drinks/drinks-cover.webp";
+
 export const DEFAULT_CATERING_PRODUCTS: CateringProductConfig[] = [
-  buffet("budget", text("Budget buffet", "Budget buffet"), text("Rijst en bonen. 1 eiwit, 1 topping, 1 salsa, 1 tortilla.", "Rice and beans. 1 protein, 1 topping, 1 sauce, 1 tortilla."), 120, [0, 60, 110, 160, 210], "/assets/menu/Jackfruit-bowl-2-e1751149625253-150x150.jpg", 0),
-  buffet("single", text("Single buffet", "Single buffet"), text("Rijst en bonen. 1 eiwit, 2 toppings, 2 salsa's.", "Rice and beans. 1 protein, 2 toppings, 2 sauces."), 150, [0, 75, 150, 225, 300], "/assets/menu/pulled-chicken-burrito-150x150.jpg", 1),
-  buffet("double", text("Double buffet", "Double buffet"), text("Rijst en bonen. 2 eiwitten, 2 toppings, 2 salsa's.", "Rice and beans. 2 proteins, 2 toppings, 2 sauces."), 170, [0, 85, 170, 255, 340], "/assets/menu/pulled-beef-taco-150x150.jpg", 2),
-  buffet("triple", text("Triple buffet", "Triple buffet"), text("Rijst en bonen. 3 eiwitten, 3 toppings, 3 salsa's.", "Rice and beans. 3 proteins, 3 toppings, 3 sauces."), 200, [0, 100, 200, 300, 400], "/assets/menu/cheese-quesedilla-2-150x150.jpg", 3),
-  burrito("single", text("Single burrito box", "Single burrito box"), text("Rijst, bonen en kaas. 1 eiwit, 2 toppings, 2 salsa's.", "Rice, beans and cheese. 1 protein, 2 toppings, 2 sauces."), 150, [0, 75, 150, 225, 300], "/assets/menu/pulled-chicken-burrito-150x150.jpg", 0),
-  burrito("double", text("Double burrito box", "Double burrito box"), text("Rijst, bonen en kaas. 1 eiwit, 2 toppings, 2 salsa's.", "Rice, beans and cheese. 1 protein, 2 toppings, 2 sauces."), 165, [0, 82.5, 165, 247.5, 330], "/assets/menu/pulled-beef-taco-150x150.jpg", 1),
-  burrito("triple", text("Triple burrito box", "Triple burrito box"), text("Rijst, bonen en kaas. 1 eiwit, 3 toppings, 3 salsa's.", "Rice, beans and cheese. 1 protein, 3 toppings, 3 sauces."), 180, [0, 90, 180, 270, 360], "/assets/menu/cheese-quesedilla-2-150x150.jpg", 2),
-  simple("drink-jarritos-cola", "drinks", text("Jarritos Mexican cola", "Jarritos Mexican cola"), text("370ml", "370ml"), "/assets/brand/breakfast-lunch-dinner.png", 395, 0),
-  simple("drink-jarritos-lime", "drinks", text("Jarritos lime", "Jarritos lime"), text("370ml", "370ml"), "/assets/brand/breakfast-lunch-dinner.png", 395, 1),
-  simple("drink-coca-cola", "drinks", text("Coca-Cola", "Coca-Cola"), text("330ml", "330ml"), "/assets/brand/breakfast-lunch-dinner.png", 300, 2),
-  simple("drink-spa-blauw", "drinks", text("Spa blauw", "Spa blauw"), text("Stille water", "Still water"), "/assets/brand/breakfast-lunch-dinner.png", 300, 3),
-  simple("sauce-chipotle", "sauces", text("Homemade chipotle sauce", "Homemade chipotle sauce"), text("Extra portie", "Extra portion"), "/assets/menu/pulled-chicken-burrito-150x150.jpg", 100, 0),
-  simple("sauce-garlic", "sauces", text("Homemade garlic sauce", "Homemade garlic sauce"), text("Extra portie", "Extra portion"), "/assets/menu/pulled-chicken-burrito-150x150.jpg", 100, 1),
-  simple("sauce-guacamole", "sauces", text("Guacamole", "Guacamole"), text("Extra portie", "Extra portion"), "/assets/menu/pulled-chicken-burrito-150x150.jpg", 250, 2),
+  buffet("budget", text("Budget", "Budget"), BUFFET_BUDGET_DESC, 120, [0, 60, 110, 160, 210], "/assets/catering/packages/buffet-budget.png", 0),
+  buffet("single", text("Single", "Single"), BUFFET_SINGLE_DESC, 150, [0, 75, 150, 225, 300], "/assets/catering/packages/buffet-single.png", 1),
+  buffet("double", text("Double", "Double"), BUFFET_DOUBLE_DESC, 170, [0, 85, 170, 255, 340], "/assets/catering/packages/buffet-double.png", 2),
+  buffet("triple", text("Triple", "Triple"), BUFFET_TRIPLE_DESC, 200, [0, 100, 200, 300, 400], "/assets/catering/packages/buffet-triple.png", 3),
+  burrito("single", text("Single", "Single"), BURRITO_SINGLE_DESC, 150, [0, 75, 150, 225, 300], "/assets/catering/packages/burrito-single.png", 0),
+  burrito("double", text("Double", "Double"), BURRITO_DOUBLE_DESC, 165, [0, 82.5, 165, 247.5, 330], "/assets/catering/packages/burrito-double.png", 1),
+  burrito("triple", text("Triple", "Triple"), BURRITO_TRIPLE_DESC, 180, [0, 90, 180, 270, 360], "/assets/catering/packages/burrito-triple.png", 2),
+  simple("drink-jarritos-cola", "drinks", text("Jarritos Mexican cola 370ml", "Jarritos Mexican cola 370ml"), text("Mexicaanse frisdrank", "Mexican soft drink"), DRINK_IMG, 395, 0),
+  simple("drink-jarritos-fruit-punch", "drinks", text("Jarritos fruit punch 370ml", "Jarritos fruit punch 370ml"), text("Mexicaanse frisdrank", "Mexican soft drink"), DRINK_IMG, 395, 1),
+  simple("drink-jarritos-lime", "drinks", text("Jarritos lime 370ml", "Jarritos lime 370ml"), text("Mexicaanse frisdrank", "Mexican soft drink"), DRINK_IMG, 395, 2),
+  simple("drink-jarritos-passion-fruit", "drinks", text("Jarritos passion fruit 370ml", "Jarritos passion fruit 370ml"), text("Mexicaanse frisdrank", "Mexican soft drink"), DRINK_IMG, 395, 3),
+  simple("drink-jarritos-mandarin", "drinks", text("Jarritos mandarin orange 370ml", "Jarritos mandarin orange 370ml"), text("Mexicaanse frisdrank", "Mexican soft drink"), DRINK_IMG, 395, 4),
+  simple("drink-jarritos-strawberry", "drinks", text("Jarritos strawberry 370ml", "Jarritos strawberry 370ml"), text("Mexicaanse frisdrank", "Mexican soft drink"), DRINK_IMG, 395, 5),
+  simple("drink-jarritos-guava", "drinks", text("Jarritos guava 370ml", "Jarritos guava 370ml"), text("Mexicaanse frisdrank", "Mexican soft drink"), DRINK_IMG, 395, 6),
+  simple("drink-jarritos-pineapple", "drinks", text("Jarritos pineapple 370ml", "Jarritos pineapple 370ml"), text("Mexicaanse frisdrank", "Mexican soft drink"), DRINK_IMG, 395, 7),
+  simple("drink-coca-cola", "drinks", text("Coca-Cola 330ml", "Coca-Cola 330ml"), text("Classic cola", "Classic cola"), DRINK_IMG, 300, 8),
+  simple("drink-coca-cola-zero", "drinks", text("Coca-Cola Zero Sugar 330ml", "Coca-Cola Zero Sugar 330ml"), text("Suikervrije cola", "Sugar-free cola"), DRINK_IMG, 300, 9),
+  simple("drink-fanta-exotic", "drinks", text("Fanta exotic 330ml", "Fanta exotic 330ml"), text("Fruitige frisdrank", "Fruity soft drink"), DRINK_IMG, 300, 10),
+  simple("drink-lipton-green", "drinks", text("Lipton ice tea green 330ml", "Lipton ice tea green 330ml"), text("Ice tea", "Ice tea"), DRINK_IMG, 300, 11),
+  simple("drink-lipton-peach", "drinks", text("Lipton ice tea peach 330ml", "Lipton ice tea peach 330ml"), text("Ice tea", "Ice tea"), DRINK_IMG, 300, 12),
+  simple("drink-spa-blauw", "drinks", text("Spa blauw", "Spa blauw"), text("Plat water", "Still water"), DRINK_IMG, 300, 13),
+  simple("drink-red-bull", "drinks", text("Red Bull Energy Drink 250ml", "Red Bull Energy Drink 250ml"), text("Energy drink", "Energy drink"), DRINK_IMG, 395, 14),
+  simple("drink-spa-rood", "drinks", text("Spa Rood", "Spa Rood"), text("Bruisend water", "Sparkling water"), DRINK_IMG, 300, 15),
+  simple("drink-fanta-orange", "drinks", text("Fanta orange 330ml", "Fanta orange 330ml"), text("Sinaasappel", "Orange soft drink"), DRINK_IMG, 300, 16),
+  simple("drink-spa-strawberry-watermelon", "drinks", text("Spa strawberry watermelon 400ml", "Spa strawberry watermelon 400ml"), text("Gearomatiseerd water", "Flavoured water"), DRINK_IMG, 395, 17),
+  simple("sauce-chipotle", "sauces", text("Homemade chipotle sauce", "Homemade chipotle sauce"), text("Homemade chipotle sauce.", "Homemade chipotle sauce."), "/assets/catering/sauces/chipotle.png", 100, 0),
+  simple("sauce-garlic", "sauces", text("Homemade garlic sauce", "Homemade garlic Sauce"), text("Saus van knoflook, mayonaise en kruiden.", "A homemade sauce made of garlic, mayonnaise with added spices."), "/assets/catering/sauces/garlic.png", 100, 1),
+  simple("sauce-el-cielo", "sauces", text("El cielo sauce", "El cielo sauce"), text("Pittige saus van mayonaise, ketchup en harissa.", "A spicy sauce made of mayonnaise, ketchup, and harissa."), "/assets/catering/sauces/el-cielo.png", 100, 2),
+  simple("sauce-cilantro", "sauces", text("Homemade cilantro sauce", "Homemade cilantro sauce"), text("Dagelijks verse saus van cilantro, munt en limoensap.", "A daily fresh made sauce of cilantro, mint and fresh lime juice."), "/assets/catering/ingredients/cilantro.png", 150, 3),
+  simple("sauce-sour-cream", "sauces", text("Sour cream", "Sour cream"), text("Romige, pittige topping.", "Creamy and spicy topping. Perfect for adding richness."), "/assets/catering/sauces/sour-cream.png", 250, 4),
+  simple("sauce-guacamole", "sauces", text("Homemade Guacamole", "Homemade Guacamole"), text("Homemade guacamole", "Homemade guacamole"), "/assets/catering/sauces/guacamole.png", 250, 5),
+  simple("sauce-salsa-verde", "sauces", text("Salsa verde", "Salsa verde"), text("Authentieke Mexicaanse salsa van tomatillos, groene chili, ui, knoflook, koriander en limoensap.", "Authentic Mexican salsa made from tomatillos, green chillies, onion, garlic, coriander and lime juice."), "/assets/catering/sauces/salsa-verde.png", 150, 6),
+  simple("sauce-habanero", "sauces", text("Habanero", "Habanero"), text("Zeer scherp", "Very sharp"), "/assets/catering/sauces/habanero.png", 150, 7),
+  simple("sauce-mayonnaise", "sauces", text("Mayonnaise", "mayonnaise"), text("Saus", "saus"), "/assets/catering/sauces/sour-cream.png", 100, 8),
+  simple("sauce-ketchup", "sauces", text("Ketchup", "Ketchup"), text("Saus", "saus"), "/assets/catering/sauces/birria.png", 100, 9),
   simple("team-thanks-050", "team-thanks", text("Team bedankje €0,50", "Team thank-you €0.50"), text("Klein bedankje", "Small thank-you"), "/assets/brand/breakfast-lunch-dinner.png", 50, 0),
   simple("team-thanks-100", "team-thanks", text("Team bedankje €1,00", "Team thank-you €1.00"), text("Groter bedankje", "Larger thank-you"), "/assets/brand/breakfast-lunch-dinner.png", 100, 1)
 ];
@@ -201,7 +259,7 @@ export const DEFAULT_CATERING_FULFILLMENT: CateringFulfillmentSettings = {
 
 export const DEFAULT_CATERING_SETTINGS: CateringSettings = {
   maxOnlineServings: 30,
-  largeGroupEmail: "info@tresamigos.nl",
+  largeGroupEmail: "catering@tresamigos.nl",
   categories: DEFAULT_CATERING_CATEGORIES,
   products: DEFAULT_CATERING_PRODUCTS,
   ingredients: DEFAULT_CATERING_INGREDIENTS,

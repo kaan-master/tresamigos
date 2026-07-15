@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import type { CateringCartLine } from "@tresamigos/types";
 import { formatEuro } from "../../lib/catering";
 import { useCateringCart } from "../../context/CateringCartContext";
@@ -27,12 +29,21 @@ export function CateringCartDrawer({ resolveImage, onPlaceOrder }: Props) {
   const { t } = useLanguage();
   const { cart, removeLine, updateLineQuantity, subtotalCents, drawerOpen, closeDrawer, lastAddedId } = useCateringCart();
 
+  useEffect(() => {
+    if (!drawerOpen) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") closeDrawer();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [drawerOpen, closeDrawer]);
+
   if (!drawerOpen) return null;
 
-  return (
+  return createPortal(
     <div className="catering-cart-drawer-root" role="presentation">
       <button type="button" className="catering-cart-drawer-backdrop" aria-label={t("common.close")} onClick={closeDrawer} />
-      <aside className="catering-cart-drawer" aria-label={t("catering.cart")}>
+      <aside className="catering-cart-drawer" role="dialog" aria-modal="true" aria-label={t("catering.cart")}>
         <header className="catering-cart-drawer-head">
           <div className="catering-cart-drawer-title">
             <IconShoppingCart width={20} height={20} />
@@ -115,6 +126,7 @@ export function CateringCartDrawer({ resolveImage, onPlaceOrder }: Props) {
           </div>
         </footer>
       </aside>
-    </div>
+    </div>,
+    document.body
   );
 }
