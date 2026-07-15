@@ -35,8 +35,17 @@ function buildCalendarDays(month: Date) {
   return cells;
 }
 
-const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, "0"));
-const MINUTES = ["00", "15", "30", "45"];
+/** Snap HH:MM to nearest 15 minutes when possible. */
+function normalizeTime(value: string) {
+  const match = value.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return value;
+  const hours = Math.min(23, Math.max(0, Number(match[1])));
+  const rawMinutes = Math.min(59, Math.max(0, Number(match[2])));
+  const snapped = Math.round(rawMinutes / 15) * 15;
+  const minutes = snapped === 60 ? 0 : snapped;
+  const nextHours = snapped === 60 ? (hours + 1) % 24 : hours;
+  return `${String(nextHours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
 
 interface Props {
   date: string;
@@ -49,10 +58,8 @@ export function CateringDateTimeFields({ date, time, onDateChange, onTimeChange 
   const { t, lang } = useLanguage();
   const todayKey = useMemo(() => toDateKey(new Date()), []);
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [timeOpen, setTimeOpen] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(() => (date ? parseDateKey(date) : new Date()));
   const calendarRef = useRef<HTMLDivElement>(null);
-  const timeRef = useRef<HTMLDivElement>(null);
 
   const locale = lang === "nl" ? "nl-NL" : "en-GB";
   const weekdayLabels = useMemo(() => {
@@ -64,15 +71,17 @@ export function CateringDateTimeFields({ date, time, onDateChange, onTimeChange 
 
   const monthLabel = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(visibleMonth);
   const selectedDate = date ? parseDateKey(date) : null;
-  const [hour, minute] = time ? time.split(":") : ["", ""];
 
   useEffect(() => {
-    function handleClick(event: MouseEvent) {
+    function handleClick(event: MouseEvent | TouchEvent) {
       if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) setCalendarOpen(false);
-      if (timeRef.current && !timeRef.current.contains(event.target as Node)) setTimeOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("touchstart", handleClick);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("touchstart", handleClick);
+    };
   }, []);
 
   function selectDate(next: Date) {
@@ -80,16 +89,9 @@ export function CateringDateTimeFields({ date, time, onDateChange, onTimeChange 
     setCalendarOpen(false);
   }
 
-  function selectTime(nextHour: string, nextMinute: string) {
-    onTimeChange(`${nextHour}:${nextMinute}`);
-    setTimeOpen(false);
-  }
-
   const dateLabel = selectedDate
     ? selectedDate.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "long", year: "numeric" })
     : t("catering.field.datePlaceholder");
-
-  const timeLabel = time ? time : t("catering.field.timePlaceholder");
 
   return (
     <div className="catering-datetime-fields">
@@ -141,51 +143,23 @@ export function CateringDateTimeFields({ date, time, onDateChange, onTimeChange 
         ) : null}
       </div>
 
-      <div className="catering-picker" ref={timeRef}>
-        <button type="button" className={`catering-picker-trigger${timeOpen ? " is-open" : ""}`} onClick={() => setTimeOpen((open) => !open)}>
+      <label className="catering-picker catering-time-field">
+        <span className="catering-picker-trigger catering-time-trigger">
           <IconClock width={18} height={18} />
           <span>
             <em>{t("catering.field.time")}</em>
-            <strong>{timeLabel}</strong>
+            <strong>{time || t("catering.field.timePlaceholder")}</strong>
           </span>
-        </button>
-        {timeOpen ? (
-          <div className="catering-picker-popover catering-time-popover">
-            <div className="catering-time-columns">
-              <div>
-                <span className="catering-time-label">{t("catering.field.hour")}</span>
-                <div className="catering-time-scroll">
-                  {HOURS.map((entry) => (
-                    <button
-                      key={entry}
-                      type="button"
-                      className={`catering-time-option${hour === entry ? " is-selected" : ""}`}
-                      onClick={() => selectTime(entry, minute || "00")}
-                    >
-                      {entry}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <span className="catering-time-label">{t("catering.field.minute")}</span>
-                <div className="catering-time-scroll">
-                  {MINUTES.map((entry) => (
-                    <button
-                      key={entry}
-                      type="button"
-                      className={`catering-time-option${minute === entry ? " is-selected" : ""}`}
-                      onClick={() => selectTime(hour || "12", entry)}
-                    >
-                      {entry}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
+        </span>
+        <input
+          className="catering-time-input"
+          type="time"
+          step={900}
+          value={time}
+          onChange={(event) => onTimeChange(normalizeTime(event.target.value))}
+          aria-label={t("catering.field.time")}
+        />
+      </label>
     </div>
   );
 }

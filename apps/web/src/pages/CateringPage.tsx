@@ -73,7 +73,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
 
   const [view, setView] = useState<ShopView>("shop");
   const [fulfillment, setFulfillment] = useState<FulfillmentMode>(() => (pickupEnabled ? "pickup" : "delivery"));
-  const [category, setCategory] = useState<CateringCategoryId>("buffet");
+  const [category, setCategory] = useState<CateringCategoryId>("tacos");
   const [activeProduct, setActiveProduct] = useState<CateringProduct | null>(null);
   const [checkout, setCheckout] = useState<CheckoutForm>(emptyCheckout);
   const [message, setMessage] = useState("");
@@ -92,9 +92,9 @@ export function CateringPage({ content }: { content: SiteContent }) {
 
   const categoryTabs = useMemo(() => {
     const fromSettings = catalog.categories.filter((entry) => entry.visible).sort((a, b) => a.sortOrder - b.sortOrder);
-    if (fromSettings.length) return fromSettings.map((entry) => ({ id: entry.id }));
-    return CATERING_CATEGORIES.map((entry) => ({ id: entry.id }));
-  }, [catalog.categories]);
+    const base = fromSettings.length ? fromSettings.map((entry) => ({ id: entry.id })) : CATERING_CATEGORIES.map((entry) => ({ id: entry.id }));
+    return base.filter((entry) => catalog.productsByCategory(entry.id).length > 0);
+  }, [catalog]);
 
   const resolveLineImage = useCallback(
     (line: CateringCartLine) => cateringImageUrl(line.imageUrl || productImageMap.get(line.productId)),
@@ -143,6 +143,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
     if (view === "success") return "done";
     if (view === "checkout") return "checkout";
     if (view === "configure") return "package";
+    if (view === "shop") return "category";
     return "method";
   }
 

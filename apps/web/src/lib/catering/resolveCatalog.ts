@@ -70,7 +70,11 @@ export function resolveCateringCatalog(settings?: CateringSettings, lang: "nl" |
           .filter((product) => product.active && (!visibleCategories.size || visibleCategories.has(product.categoryId)))
           .sort((a, b) => a.sortOrder - b.sortOrder)
           .map((product) => configToProduct(product, lang))
-      : CATERING_PRODUCTS;
+      : CATERING_PRODUCTS.map((product) => ({
+          ...product,
+          nameKey: product.nameKey,
+          descKey: product.descKey
+        }));
 
   const maxOnlineServings = settings?.maxOnlineServings ?? MAX_ONLINE_SERVINGS;
   const largeGroupEmail = settings?.largeGroupEmail ?? LARGE_GROUP_EMAIL;

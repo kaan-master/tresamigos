@@ -3,7 +3,6 @@ import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { MenuTabs } from "../components/MenuTabs";
 import { ProductDetailModal } from "../components/ProductDetailModal";
-import { useMenuSectionCollapse } from "../hooks/useMenuSectionCollapse";
 import { productImageUrl } from "../lib/productImage";
 import { pageSeo } from "../lib/seo";
 
@@ -14,7 +13,6 @@ export function MenuPage({ content }: { content: SiteContent }) {
   const seo = pageSeo(content, "menu");
   const activeMenu = menu.filter((category) => category.active !== false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  useMenuSectionCollapse();
 
   return (
     <>

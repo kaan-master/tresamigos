@@ -1,4 +1,5 @@
 import type { CateringCategoryId, CateringPackageTier } from "@tresamigos/types";
+import { DEFAULT_CATERING_CATEGORIES, DEFAULT_CATERING_PRODUCTS } from "@tresamigos/utils";
 
 export type FulfillmentMode = "pickup" | "delivery";
 
@@ -28,13 +29,27 @@ export interface CateringProduct {
   servingOptions?: ServingOption[];
 }
 
-export const CATERING_CATEGORIES: { id: CateringCategoryId; labelKey: string }[] = [
-  { id: "buffet", labelKey: "catering.cat.buffet" },
-  { id: "burrito", labelKey: "catering.cat.burrito" },
-  { id: "drinks", labelKey: "catering.cat.drinks" },
-  { id: "sauces", labelKey: "catering.cat.sauces" },
-  { id: "team-thanks", labelKey: "catering.cat.teamThanks" }
-];
+const CATEGORY_LABEL_KEYS: Record<CateringCategoryId, string> = {
+  buffet: "catering.cat.buffet",
+  burrito: "catering.cat.burrito",
+  tacos: "catering.cat.tacos",
+  burritos: "catering.cat.burritos",
+  quesadillas: "catering.cat.quesadillas",
+  "burrito-bowls": "catering.cat.burritoBowls",
+  sides: "catering.cat.sides",
+  sauces: "catering.cat.sauces",
+  desserts: "catering.cat.desserts",
+  drinks: "catering.cat.drinks",
+  deals: "catering.cat.deals",
+  "team-thanks": "catering.cat.teamThanks"
+};
+
+export const CATERING_CATEGORIES: { id: CateringCategoryId; labelKey: string }[] = DEFAULT_CATERING_CATEGORIES.map(
+  (category) => ({
+    id: category.id,
+    labelKey: CATEGORY_LABEL_KEYS[category.id]
+  })
+);
 
 export const PROTEINS = ["Pulled chicken", "Pulled beef", "Ground beef", "Jackfruit"] as const;
 export const BUFFET_TOPPINGS = ["Cilantro", "Jalapeño Crunch", "Pico de gallo", "Mexican Corn Salad", "Cebolla Fresca"] as const;
@@ -65,108 +80,25 @@ export function packageRulesFor(categoryId: CateringCategoryId, tier: CateringPa
   return PACKAGE_RULES[tier];
 }
 
-const buffetServings = (extras: number[]) =>
-  [10, 15, 20, 25, 30].map((servings, index) => ({
-    servings,
-    extraCents: extras[index] * 100,
-    labelKey: `catering.servings.${servings}`
-  }));
-
-const burritoServings = (extras: number[]) =>
-  [10, 15, 20, 25, 30].map((servings, index) => ({
-    servings,
-    extraCents: extras[index] * 100,
-    labelKey: `catering.servings.${servings}`
-  }));
-
-function buffetProduct(tier: CateringPackageTier, baseEuro: number, extras: number[], image: string): CateringProduct {
-  return {
-    id: `buffet-${tier}`,
-    categoryId: "buffet",
-    nameKey: `catering.tier.${tier}`,
-    descKey: `catering.tier.${tier}BuffetDesc`,
-    image,
-    basePriceCents: baseEuro * 100,
-    tier,
-    configurable: true,
-    servingOptions: buffetServings(extras)
-  };
-}
-
-function burritoProduct(tier: CateringPackageTier, baseEuro: number, extras: number[], image: string): CateringProduct {
-  return {
-    id: `burrito-${tier}`,
-    categoryId: "burrito",
-    nameKey: `catering.tier.${tier}`,
-    descKey: `catering.tier.${tier}BurritoDesc`,
-    image,
-    basePriceCents: baseEuro * 100,
-    tier,
-    configurable: true,
-    servingOptions: burritoServings(extras)
-  };
-}
-
-function simpleProduct(
-  id: string,
-  categoryId: CateringCategoryId,
-  nameKey: string,
-  descKey: string,
-  image: string,
-  priceCents: number
-): CateringProduct {
-  return {
-    id,
-    categoryId,
-    nameKey,
-    descKey,
-    image,
-    basePriceCents: priceCents,
-    configurable: false
-  };
-}
-
-const DRINK_IMG = "/assets/catering/drinks/drinks-cover.webp";
-
-export const CATERING_PRODUCTS: CateringProduct[] = [
-  buffetProduct("budget", 120, [0, 60, 110, 160, 210], "/assets/catering/packages/buffet-budget.png"),
-  buffetProduct("single", 150, [0, 75, 150, 225, 300], "/assets/catering/packages/buffet-single.png"),
-  buffetProduct("double", 170, [0, 85, 170, 255, 340], "/assets/catering/packages/buffet-double.png"),
-  buffetProduct("triple", 200, [0, 100, 200, 300, 400], "/assets/catering/packages/buffet-triple.png"),
-  burritoProduct("single", 150, [0, 75, 150, 225, 300], "/assets/catering/packages/burrito-single.png"),
-  burritoProduct("double", 165, [0, 82.5, 165, 247.5, 330], "/assets/catering/packages/burrito-double.png"),
-  burritoProduct("triple", 180, [0, 90, 180, 270, 360], "/assets/catering/packages/burrito-triple.png"),
-  simpleProduct("drink-jarritos-cola", "drinks", "catering.drink.jarritosCola", "catering.drink.softDesc", DRINK_IMG, 395),
-  simpleProduct("drink-jarritos-fruit-punch", "drinks", "catering.drink.jarritosFruitPunch", "catering.drink.softDesc", DRINK_IMG, 395),
-  simpleProduct("drink-jarritos-lime", "drinks", "catering.drink.jarritosLime", "catering.drink.softDesc", DRINK_IMG, 395),
-  simpleProduct("drink-jarritos-passion-fruit", "drinks", "catering.drink.jarritosPassionFruit", "catering.drink.softDesc", DRINK_IMG, 395),
-  simpleProduct("drink-jarritos-mandarin", "drinks", "catering.drink.jarritosMandarin", "catering.drink.softDesc", DRINK_IMG, 395),
-  simpleProduct("drink-jarritos-strawberry", "drinks", "catering.drink.jarritosStrawberry", "catering.drink.softDesc", DRINK_IMG, 395),
-  simpleProduct("drink-jarritos-guava", "drinks", "catering.drink.jarritosGuava", "catering.drink.softDesc", DRINK_IMG, 395),
-  simpleProduct("drink-jarritos-pineapple", "drinks", "catering.drink.jarritosPineapple", "catering.drink.softDesc", DRINK_IMG, 395),
-  simpleProduct("drink-coca-cola", "drinks", "catering.drink.cocaCola", "catering.drink.cocaColaDesc", DRINK_IMG, 300),
-  simpleProduct("drink-coca-cola-zero", "drinks", "catering.drink.cocaColaZero", "catering.drink.cocaColaZeroDesc", DRINK_IMG, 300),
-  simpleProduct("drink-fanta-exotic", "drinks", "catering.drink.fantaExotic", "catering.drink.fantaExoticDesc", DRINK_IMG, 300),
-  simpleProduct("drink-lipton-green", "drinks", "catering.drink.liptonGreen", "catering.drink.iceTeaDesc", DRINK_IMG, 300),
-  simpleProduct("drink-lipton-peach", "drinks", "catering.drink.liptonPeach", "catering.drink.iceTeaDesc", DRINK_IMG, 300),
-  simpleProduct("drink-spa-blauw", "drinks", "catering.drink.spaBlauw", "catering.drink.spaBlauwDesc", DRINK_IMG, 300),
-  simpleProduct("drink-red-bull", "drinks", "catering.drink.redBull", "catering.drink.redBullDesc", DRINK_IMG, 395),
-  simpleProduct("drink-spa-rood", "drinks", "catering.drink.spaRood", "catering.drink.spaRoodDesc", DRINK_IMG, 300),
-  simpleProduct("drink-fanta-orange", "drinks", "catering.drink.fantaOrange", "catering.drink.fantaOrangeDesc", DRINK_IMG, 300),
-  simpleProduct("drink-spa-strawberry-watermelon", "drinks", "catering.drink.spaStrawberryWatermelon", "catering.drink.spaFlavouredDesc", DRINK_IMG, 395),
-  simpleProduct("sauce-chipotle", "sauces", "catering.sauce.chipotle", "catering.sauce.chipotleDesc", "/assets/catering/sauces/chipotle.png", 100),
-  simpleProduct("sauce-garlic", "sauces", "catering.sauce.garlic", "catering.sauce.garlicDesc", "/assets/catering/sauces/garlic.png", 100),
-  simpleProduct("sauce-el-cielo", "sauces", "catering.sauce.elCielo", "catering.sauce.elCieloDesc", "/assets/catering/sauces/el-cielo.png", 100),
-  simpleProduct("sauce-cilantro", "sauces", "catering.sauce.cilantro", "catering.sauce.cilantroDesc", "/assets/catering/ingredients/cilantro.png", 150),
-  simpleProduct("sauce-sour-cream", "sauces", "catering.sauce.sourCream", "catering.sauce.sourCreamDesc", "/assets/catering/sauces/sour-cream.png", 250),
-  simpleProduct("sauce-guacamole", "sauces", "catering.sauce.guacamole", "catering.sauce.guacamoleDesc", "/assets/catering/sauces/guacamole.png", 250),
-  simpleProduct("sauce-salsa-verde", "sauces", "catering.sauce.salsaVerde", "catering.sauce.salsaVerdeDesc", "/assets/catering/sauces/salsa-verde.png", 150),
-  simpleProduct("sauce-habanero", "sauces", "catering.sauce.habanero", "catering.sauce.habaneroDesc", "/assets/catering/sauces/habanero.png", 150),
-  simpleProduct("sauce-mayonnaise", "sauces", "catering.sauce.mayonnaise", "catering.sauce.mayoKetchupDesc", "/assets/catering/sauces/sour-cream.png", 100),
-  simpleProduct("sauce-ketchup", "sauces", "catering.sauce.ketchup", "catering.sauce.mayoKetchupDesc", "/assets/catering/sauces/birria.png", 100),
-  simpleProduct("team-thanks-050", "team-thanks", "catering.team.thanks050", "catering.team.thanks050Desc", "/assets/brand/breakfast-lunch-dinner.png", 50),
-  simpleProduct("team-thanks-100", "team-thanks", "catering.team.thanks100", "catering.team.thanks100Desc", "/assets/brand/breakfast-lunch-dinner.png", 100)
-];
+export const CATERING_PRODUCTS: CateringProduct[] = DEFAULT_CATERING_PRODUCTS.filter((product) => product.active).map(
+  (product) => ({
+    id: product.id,
+    categoryId: product.categoryId,
+    nameKey: product.name.en,
+    descKey: product.description.en,
+    image: product.image,
+    basePriceCents: product.basePriceCents,
+    tier: product.tier,
+    configurable: product.configurable,
+    servingOptions: product.servingOptions.length
+      ? product.servingOptions.map((option) => ({
+          servings: option.servings,
+          extraCents: option.extraCents,
+          labelKey: `catering.servings.${option.servings}`
+        }))
+      : undefined
+  })
+);
 
 export function getProduct(id: string) {
   return CATERING_PRODUCTS.find((product) => product.id === id);

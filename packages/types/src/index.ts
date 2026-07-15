@@ -551,7 +551,19 @@ export const WEEK_DAYS: WeekDay[] = [
 export const CATERING_BOX_IDS = ["burrito-box", "bowl-box", "quesadilla-box", "taco-box", "shop"] as const;
 export type CateringBoxId = (typeof CATERING_BOX_IDS)[number];
 export type CateringFulfillment = "pickup" | "delivery";
-export type CateringCategoryId = "buffet" | "burrito" | "drinks" | "sauces" | "team-thanks";
+export type CateringCategoryId =
+  | "buffet"
+  | "burrito"
+  | "tacos"
+  | "burritos"
+  | "quesadillas"
+  | "burrito-bowls"
+  | "sides"
+  | "sauces"
+  | "desserts"
+  | "drinks"
+  | "deals"
+  | "team-thanks";
 export type CateringPackageTier = "budget" | "single" | "double" | "triple";
 
 export interface CateringLocalizedText {

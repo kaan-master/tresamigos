@@ -733,7 +733,20 @@ export function sanitizeUpdateCateringOrderInput(input: UpdateCateringOrderInput
   };
 }
 
-const CATERING_CATEGORY_IDS = ["buffet", "burrito", "drinks", "sauces", "team-thanks"] as const;
+const CATERING_CATEGORY_IDS = [
+  "buffet",
+  "burrito",
+  "tacos",
+  "burritos",
+  "quesadillas",
+  "burrito-bowls",
+  "sides",
+  "sauces",
+  "desserts",
+  "drinks",
+  "deals",
+  "team-thanks"
+] as const;
 const CATERING_TIERS = ["budget", "single", "double", "triple"] as const;
 const CATERING_INGREDIENT_GROUPS = [
   "protein",
@@ -745,14 +758,14 @@ const CATERING_INGREDIENT_GROUPS = [
   "tripleCream"
 ] as const;
 
-function sanitizeLocalizedText(value: unknown, fallback: CateringLocalizedText): CateringLocalizedText {
+function sanitizeLocalizedText(value: unknown, fallback: CateringLocalizedText, max = 200): CateringLocalizedText {
   if (typeof value === "string") {
-    return { nl: cleanText(value, fallback.nl, 200), en: cleanText(value, fallback.en, 200) };
+    return { nl: cleanText(value, fallback.nl, max), en: cleanText(value, fallback.en, max) };
   }
   const raw = value && typeof value === "object" ? (value as Partial<CateringLocalizedText>) : {};
   return {
-    nl: cleanText(raw.nl, fallback.nl, 200),
-    en: cleanText(raw.en, fallback.en, 200)
+    nl: cleanText(raw.nl, fallback.nl, max),
+    en: cleanText(raw.en, fallback.en, max)
   };
 }
 
@@ -773,7 +786,7 @@ function sanitizeServingOptions(value: unknown): CateringServingOption[] {
 function sanitizeCateringProduct(value: unknown, index: number): CateringProductConfig | null {
   const raw = value && typeof value === "object" ? (value as Partial<CateringProductConfig> & { name?: unknown; description?: unknown }) : {};
   const fallbackName = `Product ${index + 1}`;
-  const name = sanitizeLocalizedText(raw.name, { nl: fallbackName, en: fallbackName });
+  const name = sanitizeLocalizedText(raw.name, { nl: fallbackName, en: fallbackName }, 200);
   const categoryRaw = cleanText(raw.categoryId, "buffet", 40);
   const categoryId = CATERING_CATEGORY_IDS.includes(categoryRaw as CateringCategoryId)
     ? (categoryRaw as CateringCategoryId)
@@ -788,7 +801,7 @@ function sanitizeCateringProduct(value: unknown, index: number): CateringProduct
     id,
     categoryId,
     name,
-    description: sanitizeLocalizedText(raw.description, { nl: "", en: "" }),
+    description: sanitizeLocalizedText(raw.description, { nl: "", en: "" }, 800),
     image: cleanUrl(raw.image) || "/assets/brand/breakfast-lunch-dinner.png",
     basePriceCents: Math.min(500_000, Math.max(0, Number(raw.basePriceCents) || 0)),
     active: raw.active !== false,

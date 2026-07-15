@@ -24,16 +24,26 @@ async function main() {
       data: { cateringCatalog: next }
     });
 
-    const burrito = next.products.filter((p) => p.categoryId === "burrito");
+    const burrito = next.products.filter((p) => p.categoryId === "burritos");
+    const drinks = next.products.filter((p) => p.categoryId === "drinks");
     console.log(
       JSON.stringify(
-        burrito.map((p) => ({
-          id: p.id,
-          name: p.name.en,
-          image: p.image,
-          desc: p.description.en.slice(0, 90),
-          price: p.basePriceCents
-        })),
+        {
+          categories: next.categories.map((c) => c.id),
+          totals: {
+            products: next.products.length,
+            burritos: burrito.length,
+            drinks: drinks.length,
+            active: next.products.filter((p) => p.active).length
+          },
+          sampleBurritos: burrito.map((p) => ({
+            id: p.id,
+            name: p.name.en,
+            image: p.image,
+            price: p.basePriceCents,
+            active: p.active
+          }))
+        },
         null,
         2
       )

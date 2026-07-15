@@ -1,16 +1,20 @@
-import { useEffect, useState } from "react";
-import { resetMenuSection } from "../hooks/useMenuSectionCollapse";
+import { useEffect, useRef, useState } from "react";
 
 interface Tab {
   id: string;
   title: string;
 }
 
+function navOffset() {
+  const nav = document.querySelector<HTMLElement>(".nav");
+  return nav ? nav.getBoundingClientRect().height : 76;
+}
+
 function clipLine() {
   const sticky = document.querySelector(".menu-tabs-sticky");
-  if (!sticky) return 90;
+  if (!sticky) return navOffset() + 90;
   const tabs = sticky.querySelector(".menu-tabs");
-  return tabs ? tabs.getBoundingClientRect().bottom + 8 : sticky.getBoundingClientRect().bottom;
+  return tabs ? tabs.getBoundingClientRect().bottom + 12 : sticky.getBoundingClientRect().bottom + 12;
 }
 
 function resolveActiveSection(titles: string[]) {
@@ -29,12 +33,12 @@ function resolveActiveSection(titles: string[]) {
 }
 
 function scrollToSection(title: string) {
-  resetMenuSection(title);
   const section = document.getElementById(title);
   if (!section) return;
 
   const sticky = document.querySelector(".menu-tabs-sticky");
-  const offset = sticky ? sticky.getBoundingClientRect().height + 22 + 16 : 100;
+  const stickyHeight = sticky ? sticky.getBoundingClientRect().height : 58;
+  const offset = navOffset() + stickyHeight + 12;
   const top = section.getBoundingClientRect().top + window.scrollY - offset;
   window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
 }
@@ -42,6 +46,7 @@ function scrollToSection(title: string) {
 export function MenuTabs({ tabs }: { tabs: Tab[] }) {
   const titles = tabs.map((tab) => tab.title);
   const [active, setActive] = useState(titles[0] ?? "");
+  const lockedUntil = useRef(0);
 
   useEffect(() => {
     setActive(resolveActiveSection(titles));
@@ -54,7 +59,9 @@ export function MenuTabs({ tabs }: { tabs: Tab[] }) {
       if (frame) return;
       frame = window.requestAnimationFrame(() => {
         frame = 0;
-        setActive(resolveActiveSection(titles));
+        if (Date.now() < lockedUntil.current) return;
+        const next = resolveActiveSection(titles);
+        setActive((current) => (current === next ? current : next));
       });
     }
 
@@ -80,6 +87,7 @@ export function MenuTabs({ tabs }: { tabs: Tab[] }) {
             className={active === tab.title ? "active" : ""}
             onClick={() => {
               setActive(tab.title);
+              lockedUntil.current = Date.now() + 700;
               scrollToSection(tab.title);
             }}
           >

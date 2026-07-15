@@ -22,7 +22,7 @@ export function AdminLogin({ loading, message, onSubmit }: Props) {
       <aside className="ta-login-visual">
         <img src="/assets/site/restaurant-interior.jpg" alt="Tres Amigos restaurant" />
         <div className="ta-login-visual-overlay">
-          <img src="/assets/site/tres-amigos-logo-new.png" alt="Tres Amigos" />
+          <img className="ta-login-logo" src="/assets/site/tres-amigos-logo-new.png" alt="Tres Amigos" />
           <h1>Eat like a Mexican.</h1>
           <p>Beheer vestigingen, menu, video&apos;s en sollicitaties vanuit één rustig dashboard.</p>
         </div>

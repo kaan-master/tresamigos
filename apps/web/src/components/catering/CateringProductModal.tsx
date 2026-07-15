@@ -114,7 +114,7 @@ function ChoiceChip({
           <img src={assetUrl(image)} alt="" loading="lazy" />
         </span>
       ) : null}
-      {selected ? <span className="catering-choice-check" aria-hidden="true">✓</span> : null}
+      <span className="catering-choice-check" aria-hidden="true">✓</span>
       <span>{label}</span>
     </button>
   );

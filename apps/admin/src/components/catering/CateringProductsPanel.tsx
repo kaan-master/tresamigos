@@ -10,8 +10,9 @@ import { localizedLabel, LocalizedTextFields, useCateringSettingsSave, type Cate
 const TIER_OPTIONS: CateringPackageTier[] = ["budget", "single", "double", "triple"];
 const DEFAULT_SERVINGS = [10, 15, 20, 25, 30];
 
-function emptyProduct(categoryId: CateringCategoryId = "buffet"): CateringProductConfig {
+function emptyProduct(categoryId: CateringCategoryId = "tacos"): CateringProductConfig {
   const name = { nl: "Nieuw cateringproduct", en: "New catering product" };
+  const isPackage = categoryId === "buffet" || categoryId === "burrito";
   return {
     id: createSlugId(name.nl, categoryId),
     categoryId,
@@ -21,11 +22,11 @@ function emptyProduct(categoryId: CateringCategoryId = "buffet"): CateringProduc
     basePriceCents: 0,
     active: true,
     sortOrder: 99,
-    minServings: 10,
-    maxServings: 30,
-    configurable: categoryId === "buffet" || categoryId === "burrito",
-    tier: categoryId === "buffet" || categoryId === "burrito" ? "single" : undefined,
-    servingOptions: DEFAULT_SERVINGS.map((servings) => ({ servings, extraCents: 0 }))
+    minServings: isPackage ? 10 : 1,
+    maxServings: isPackage ? 30 : 99,
+    configurable: isPackage,
+    tier: isPackage ? "single" : undefined,
+    servingOptions: isPackage ? DEFAULT_SERVINGS.map((servings) => ({ servings, extraCents: 0 })) : []
   };
 }
 
@@ -88,7 +89,7 @@ export function CateringProductsPanel({ settings, onSettingsChange, saving }: Ca
   }
 
   function addProduct() {
-    const categoryId = categoryFilter === "all" ? "buffet" : (categoryFilter as CateringCategoryId);
+    const categoryId = categoryFilter === "all" ? "tacos" : (categoryFilter as CateringCategoryId);
     const product = emptyProduct(categoryId);
     onSettingsChange({ ...settings, products: [...settings.products, product] });
     setSelectedId(product.id);
