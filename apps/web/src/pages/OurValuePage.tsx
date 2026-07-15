@@ -6,7 +6,7 @@ import type { SiteContent } from "@tresamigos/types";
 export function OurValuePage({ content }: { content: SiteContent }) {
   const seo = pageSeo(content, "ourValue");
   const value = content.site.ourValue;
-  const heroImage = value.heroImage || "assets/brand/real-mexican.png";
+  const heroImage = value.heroImage || "assets/brand/with-love.png";
   const sideImage = value.sideImage || "assets/brand/with-love.png";
 
   return (

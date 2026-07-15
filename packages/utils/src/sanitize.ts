@@ -248,7 +248,7 @@ const DEFAULT_OUR_VALUE: SiteContent["site"]["ourValue"] = {
     "We keep our prices fair because good food should be for everyone. Our goal is simple: leave you satisfied, not just full — and make you want to come back with friends."
   ],
   scheduleSummary: "Four Amsterdam locations · Open 7 days a week",
-  heroImage: "assets/brand/real-mexican.png",
+  heroImage: "assets/brand/with-love.png",
   sideImage: "assets/brand/with-love.png"
 };
 
@@ -320,7 +320,7 @@ const DEFAULT_INSTAGRAM: SiteContent["site"]["instagram"] = {
       id: "ig-1",
       image: "assets/site/restaurant-interior.jpg",
       url: "https://www.instagram.com/tresamigosamsterdam/",
-      caption: "Real Mexican street food",
+      caption: "Mexican street food in Amsterdam",
       active: true
     },
     {
@@ -532,7 +532,7 @@ const DEFAULT_SEO_PAGES: Record<SeoPageKey, PageSeo> = {
   home: {
     title: "Tres Amigos | Mexican Street Food Amsterdam",
     description:
-      "Tres Amigos Amsterdam. Real Mexican street food met tacos, burritos, bowls en bestelopties per vestiging."
+      "Tres Amigos Amsterdam. Mexican street food met tacos, burritos, bowls en bestelopties per vestiging."
   },
   menu: {
     title: "Menu | Tres Amigos",
@@ -552,11 +552,11 @@ const DEFAULT_SEO_PAGES: Record<SeoPageKey, PageSeo> = {
   },
   ourStory: {
     title: "Our Story | Tres Amigos",
-    description: "Het verhaal achter Tres Amigos Amsterdam: real Mexican street food by real Mexicans."
+    description: "Het verhaal achter Tres Amigos Amsterdam: Mexican street food in de stad."
   },
   ourValue: {
     title: "Our Value | Tres Amigos",
-    description: "Ontdek de waarden van Tres Amigos: kwaliteit, gastvrijheid en echte Mexicaanse smaken in Amsterdam."
+    description: "Ontdek de waarden van Tres Amigos: kwaliteit, gastvrijheid en Mexicaanse smaken in Amsterdam."
   },
   vacancy: {
     title: "Work With Us | Tres Amigos",
