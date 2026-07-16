@@ -2,9 +2,12 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { VacancyJob } from "@tresamigos/types";
 import { APPLICATION_ATTACHMENT_EXTENSIONS, APPLICATION_ATTACHMENT_MAX_BYTES, WEEK_DAYS } from "@tresamigos/types";
+import { SiteVideo } from "./SiteVideo";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { DAY_I18N_KEYS, DAY_SHORT_I18N_KEYS } from "../i18n/translations";
 import { assetUrl, submitApplication } from "../lib/api";
+import { videoPosterUrl } from "../lib/videoPoster";
+import { isVideoSrc } from "../lib/isVideoSrc";
 
 const TOTAL_STEPS = 5;
 
@@ -235,8 +238,13 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
       <div className="application-modal-panel">
         <div className="application-modal-grid">
           <aside className="application-modal-visual" aria-hidden="true">
-            {/\.(mp4|webm|mov)(\?|$)/i.test(formImage) ? (
-              <video src={assetUrl(formImage)} muted autoPlay loop playsInline preload="metadata" data-boot-defer="1" />
+            {isVideoSrc(formImage) ? (
+              <SiteVideo
+                src={assetUrl(formImage)}
+                poster={assetUrl(videoPosterUrl(formImage))}
+                preload="metadata"
+                bootDefer
+              />
             ) : (
               <img src={assetUrl(formImage)} alt="" loading="lazy" />
             )}

@@ -2,11 +2,14 @@ import { useMemo } from "react";
 import { Helmet } from "../components/Helmet";
 import { InstagramSection } from "../components/InstagramSection";
 import { ReviewsSection } from "../components/ReviewsSection";
+import { SiteVideo } from "../components/SiteVideo";
 import type { SiteContent } from "@tresamigos/types";
 import { assetUrl, pageUrl } from "../lib/api";
 import { productImageUrl } from "../lib/productImage";
 import { pageSeo } from "../lib/seo";
 import { useLanguage } from "../i18n/LanguageProvider";
+import { googleMapsUrl } from "../lib/maps";
+import { videoPosterUrl } from "../lib/videoPoster";
 
 function buildMarqueeTags(tags: string[]) {
   const repeats = Math.max(4, Math.ceil(24 / Math.max(tags.length, 1)));
@@ -29,6 +32,8 @@ export function HomePage({ content }: { content: SiteContent }) {
   const marqueeTags = useMemo(() => buildMarqueeTags(site.hero.tags), [site.hero.tags]);
   /** Feature-card: nieuwe brand-video i.p.v. eat-like-a-mexican.png */
   const storyFeatureVideo = "/assets/brand/streetfood-secret.mp4";
+  const activeVideos = videos.filter((video) => video.active !== false).slice(0, 3);
+  const sectionPoster = videos[0] ? videoPosterUrl(videos[0].src) : null;
 
   return (
     <>
@@ -49,26 +54,21 @@ export function HomePage({ content }: { content: SiteContent }) {
               </div>
             </div>
             <div className="portrait-video-grid hero-video-grid">
-              {videos
-                .filter((video) => video.active !== false)
-                .slice(0, 3)
-                .map((video) => (
-                  <article className="portrait-video-card" key={video.id}>
-                    <video
-                      src={assetUrl(video.src)}
-                      muted
-                      autoPlay
-                      loop
-                      playsInline
-                      preload="auto"
-                      data-boot-critical="1"
-                    />
-                    <div>
-                      <h3>{video.title}</h3>
-                      <p>{video.caption}</p>
-                    </div>
-                  </article>
-                ))}
+              {activeVideos.map((video, index) => (
+                <article className="portrait-video-card" key={video.id}>
+                  <SiteVideo
+                    src={assetUrl(video.src)}
+                    poster={assetUrl(videoPosterUrl(video.src))}
+                    preload={index === 0 ? "metadata" : "none"}
+                    bootCritical={index === 0}
+                    bootDefer={index > 0}
+                  />
+                  <div>
+                    <h3>{video.title}</h3>
+                    <p>{video.caption}</p>
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
         </header>
@@ -86,17 +86,14 @@ export function HomePage({ content }: { content: SiteContent }) {
         </div>
 
         <section className="section video-section">
-          {videos[0] ? (
-            <video
+          {sectionPoster ? (
+            <img
               className="video-section-bg"
-              src={assetUrl(videos[0].src)}
-              muted
-              autoPlay
-              loop
-              playsInline
-              preload="auto"
-              data-boot-critical="1"
+              src={assetUrl(sectionPoster)}
+              alt=""
               aria-hidden="true"
+              loading="lazy"
+              decoding="async"
             />
           ) : null}
           <div className="shell video-showcase">
@@ -153,13 +150,22 @@ export function HomePage({ content }: { content: SiteContent }) {
               </div>
               <p className="lead">{t("home.locations.intro")}</p>
             </div>
-            <div className="location-preview">
-              {previewLocations.map((location) => (
-                <div key={location.id}>
-                  <strong>{location.area}</strong>
-                  <span>{location.address}</span>
-                </div>
-              ))}
+            <div className="location-preview" x-apple-data-detectors="false">
+              {previewLocations.map((location) => {
+                const mapsHref = googleMapsUrl(location.address);
+                return (
+                  <a
+                    className="location-preview-link"
+                    href={mapsHref}
+                    key={location.id}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <strong>{location.area}</strong>
+                    <span>{location.address}</span>
+                  </a>
+                );
+              })}
             </div>
             <div className="actions">
               <a className="btn primary" href="/order">
@@ -182,17 +188,14 @@ export function HomePage({ content }: { content: SiteContent }) {
               </a>
             </article>
             <article className="feature-card image-card">
-              <video
-                muted
-                autoPlay
-                loop
-                playsInline
-                preload="auto"
-                data-boot-critical="1"
+              <SiteVideo
+                poster={assetUrl(videoPosterUrl(storyFeatureVideo))}
+                preload="none"
+                bootDefer
                 aria-label="Tres Amigos streetfood"
               >
                 <source src={assetUrl(storyFeatureVideo)} media="(min-width: 921px)" />
-              </video>
+              </SiteVideo>
             </article>
           </div>
         </section>

@@ -2,23 +2,22 @@ import { useMemo, useState } from "react";
 import type { SiteContent, VacancyJob } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { ApplicationWizardModal } from "../components/ApplicationWizardModal";
+import { SiteVideo } from "../components/SiteVideo";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { assetUrl } from "../lib/api";
 import { isVideoSrc } from "../lib/isVideoSrc";
 import { pageSeo } from "../lib/seo";
+import { videoPosterUrl } from "../lib/videoPoster";
 
 function VacancyMedia({ src, alt }: { src: string; alt: string }) {
   const url = assetUrl(src);
   if (isVideoSrc(src)) {
     return (
-      <video
+      <SiteVideo
         src={url}
-        muted
-        autoPlay
-        loop
-        playsInline
-        preload="auto"
-        data-boot-critical="1"
+        poster={assetUrl(videoPosterUrl(src))}
+        preload="metadata"
+        bootDefer
         aria-label={alt}
       />
     );

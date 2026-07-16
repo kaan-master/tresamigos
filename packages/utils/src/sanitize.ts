@@ -45,6 +45,19 @@ function migrateRemovedBrandAsset(url: string): string {
   return url;
 }
 
+/** Fix known bad CMS URLs that open the wrong place or error out. */
+function migrateBrokenExternalUrl(url: string): string {
+  const trimmed = url.trim().replace(/%20+$/g, "").replace(/\s+$/g, "");
+  if (/^https?:\/\/(www\.)?tiktok\.com\/?$/i.test(trimmed)) {
+    return "https://www.tiktok.com/@tresamigosamsterdam";
+  }
+  // Wrong restaurant slug + trailing space — was opening an error page
+  if (/thuisbezorgd\.nl\/menu\/bomies-fd/i.test(trimmed)) {
+    return "https://tresamigosjacobgeelstraat-bestellen.nl/bestel";
+  }
+  return trimmed;
+}
+
 export function cleanUrl(value: unknown): string {
   const url = cleanText(value, "", 2000);
   if (!url) return "";
@@ -62,7 +75,7 @@ export function cleanUrl(value: unknown): string {
     "vacancy.html",
     "#"
   ];
-  let next = url;
+  let next = migrateBrokenExternalUrl(url);
   if (allowed.some((prefix) => next.startsWith(prefix)) || next.startsWith("assets/")) {
     return migrateRemovedBrandAsset(next);
   }
@@ -964,18 +977,42 @@ export function sanitizeContent(input: unknown): SiteContent {
   const locations = Array.isArray(payload.locations)
     ? payload.locations.slice(0, 50).map((location, index) => {
         const name = cleanText(location.name, `Vestiging ${index + 1}`, 120);
+        const locationId = cleanSlug(location.id, cleanSlug(name, `vestiging-${index + 1}`));
         const links = Array.isArray(location.links)
           ? location.links
               .slice(0, 12)
-              .map((link) => ({
-                label: cleanText(link.label, "Bestellen", 80),
-                url: cleanUrl(link.url)
-              }))
+              .map((link) => {
+                const label = cleanText(link.label, "Bestellen", 80);
+                let url = cleanUrl(link.url);
+                const rawUrl = typeof link.url === "string" ? link.url : "";
+
+                // Nieuw-West: broken Thuisbezorgd slug → own delivery shop
+                if (/bomies-fd/i.test(rawUrl) || /bomies-fd/i.test(url)) {
+                  return {
+                    label: "Delivery",
+                    url: "https://tresamigosjacobgeelstraat-bestellen.nl/bestel"
+                  };
+                }
+
+                // Zuid wrongly reused Oost Thuisbezorgd menu
+                if (
+                  (locationId === "zuid" || /zuid/i.test(name)) &&
+                  /thuisbezorgd/i.test(label) &&
+                  /tres-amigos-oost/i.test(url)
+                ) {
+                  return {
+                    label: "Delivery",
+                    url: "https://www.tresamigosvanwoustraat-bestellen.nl/bestel"
+                  };
+                }
+
+                return { label, url };
+              })
               .filter((link) => link.label && link.url)
           : [];
 
         return {
-          id: cleanSlug(location.id, cleanSlug(name, `vestiging-${index + 1}`)),
+          id: locationId,
           area: cleanText(location.area, "Amsterdam", 120),
           name,
           address: cleanText(location.address, "", 240),

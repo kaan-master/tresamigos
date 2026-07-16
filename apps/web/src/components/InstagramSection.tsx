@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { InstagramFeedPost, InstagramFeedResponse, InstagramSettings } from "@tresamigos/types";
+import { SiteVideo } from "./SiteVideo";
 import { apiUrl, assetUrl } from "../lib/api";
 import { isVideoSrc } from "../lib/isVideoSrc";
+import { videoPosterUrl } from "../lib/videoPoster";
 
 function isRemoteUrl(value: string) {
   return value.startsWith("http://") || value.startsWith("https://");
@@ -17,19 +19,10 @@ function playAsVideo(post: InstagramFeedPost, media: string) {
 
 export function InstagramSection({ settings }: { settings: InstagramSettings }) {
   const [feed, setFeed] = useState<InstagramFeedResponse | null>(null);
-  const [isDesktop, setIsDesktop] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const media = window.matchMedia("(min-width: 921px)");
-    const sync = () => setIsDesktop(media.matches);
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
-
-  useEffect(() => {
-    if (!settings.enabled || !isDesktop) return;
+    if (!settings.enabled) return;
     let active = true;
 
     async function load() {
@@ -47,7 +40,7 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
     return () => {
       active = false;
     };
-  }, [settings.enabled, settings.handle, isDesktop]);
+  }, [settings.enabled, settings.handle]);
 
   useEffect(() => {
     const root = trackRef.current;
@@ -63,7 +56,7 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
     }
   }, [feed, settings.posts]);
 
-  if (!settings.enabled || !isDesktop) return null;
+  if (!settings.enabled) return null;
 
   const posts: InstagramFeedPost[] =
     feed?.posts.length
@@ -94,8 +87,12 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
               <span className="instagram-avatar" aria-hidden="true">
                 <img src={avatar} alt="" />
               </span>
-              <div>
-                <h2 className="section-title">@{handle}</h2>
+              <div className="instagram-profile-copy">
+                <h2 className="section-title instagram-handle">
+                  <a href={profileUrl} target="_blank" rel="noreferrer">
+                    @{handle}
+                  </a>
+                </h2>
                 {bio ? <p className="instagram-bio">{bio}</p> : null}
               </div>
             </div>
@@ -113,19 +110,15 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
                 return (
                   <a className="instagram-post" href={post.url} key={post.id} target="_blank" rel="noreferrer">
                     {asVideo ? (
-                      <video
+                      <SiteVideo
                         src={media}
-                        muted
-                        autoPlay
-                        loop
-                        playsInline
-                        preload="auto"
-                        controls={false}
-                        disablePictureInPicture
+                        poster={isRemoteUrl(media) ? undefined : assetUrl(videoPosterUrl(post.image))}
+                        preload="none"
+                        bootDefer
                         aria-label={post.caption || "Instagram video"}
                       />
                     ) : (
-                      <img src={media} alt={post.caption || "Instagram post"} loading="eager" />
+                      <img src={media} alt={post.caption || "Instagram post"} loading="lazy" />
                     )}
                     {post.caption ? <span className="instagram-post-caption">{post.caption}</span> : null}
                   </a>

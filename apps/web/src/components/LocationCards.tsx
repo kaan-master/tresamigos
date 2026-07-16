@@ -1,5 +1,6 @@
 import type { SiteContent } from "@tresamigos/types";
 import { assetUrl } from "../lib/api";
+import { googleMapsUrl } from "../lib/maps";
 
 const PLATFORM_LOGOS: Record<string, string> = {
   "take away": "/assets/site/tres-amigos-logo-new.png",
@@ -44,11 +45,20 @@ export function LocationCard({
 }: {
   location: SiteContent["locations"][number];
 }) {
+  const mapsHref = googleMapsUrl(location.address);
   return (
-    <article className="location-card">
-      <h3>{location.area}</h3>
+    <article className="location-card" x-apple-data-detectors="false">
+      <h3>
+        <a className="location-maps-link" href={mapsHref} target="_blank" rel="noreferrer">
+          {location.area}
+        </a>
+      </h3>
       <div className="meta">
-        <p className="location-address">{location.address}</p>
+        <p className="location-address">
+          <a className="location-maps-link" href={mapsHref} target="_blank" rel="noreferrer">
+            {location.address}
+          </a>
+        </p>
         {location.note ? <p className="location-note">{location.note}</p> : null}
       </div>
       <OrderPlatformLinks links={location.links} />
@@ -61,10 +71,19 @@ export function OrderCard({
 }: {
   location: SiteContent["locations"][number];
 }) {
+  const mapsHref = googleMapsUrl(location.address);
   return (
-    <article className="order-card">
-      <h3>{location.area}</h3>
-      <p>{location.address}</p>
+    <article className="order-card" x-apple-data-detectors="false">
+      <h3>
+        <a className="location-maps-link" href={mapsHref} target="_blank" rel="noreferrer">
+          {location.area}
+        </a>
+      </h3>
+      <p>
+        <a className="location-maps-link" href={mapsHref} target="_blank" rel="noreferrer">
+          {location.address}
+        </a>
+      </p>
       {location.note ? <p className="location-note">{location.note}</p> : null}
       <OrderPlatformLinks links={location.links} />
     </article>

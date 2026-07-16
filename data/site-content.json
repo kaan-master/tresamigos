@@ -78,7 +78,7 @@
       "intro": "Mexican street food in Amsterdam. Fast service, fresh food and a clear ordering experience.",
       "email": "info@tresamigos.nl",
       "instagramUrl": "https://www.instagram.com/tresamigosamsterdam/",
-      "tiktokUrl": "https://www.tiktok.com/",
+      "tiktokUrl": "https://www.tiktok.com/@tresamigosamsterdam",
       "copyright": "© 2025 Tres Amigos. All rights reserved."
     },
     "videosSection": {
@@ -598,8 +598,8 @@
           "url": "https://www.tresamigosvanwoustraat-bestellen.nl/?store_id=e5d6adad-45ee-48d0-8166-08de964eb761"
         },
         {
-          "label": "Thuisbezorgd",
-          "url": "https://www.thuisbezorgd.nl/menu/tres-amigos-oost"
+          "label": "Delivery",
+          "url": "https://www.tresamigosvanwoustraat-bestellen.nl/bestel"
         },
         {
           "label": "Uber Eats",
@@ -646,8 +646,8 @@
           "url": "https://tresamigosjacobgeelstraat-bestellen.nl"
         },
         {
-          "label": "Thuisbezorgd",
-          "url": "https://www.thuisbezorgd.nl/menu/bomies-fd%20"
+          "label": "Delivery",
+          "url": "https://tresamigosjacobgeelstraat-bestellen.nl/bestel"
         },
         {
           "label": "Uber Eats",

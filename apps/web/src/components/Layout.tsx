@@ -188,16 +188,28 @@ export function Layout({ content }: LayoutProps) {
     if (!menuOpen) {
       document.body.classList.remove("nav-open");
       document.body.style.removeProperty("top");
+      document.body.style.removeProperty("padding-right");
       return;
     }
 
     const scrollY = window.scrollY;
+    const scrollbarGap = window.innerWidth - document.documentElement.clientWidth;
     document.body.classList.add("nav-open");
     document.body.style.top = `-${scrollY}px`;
+    if (scrollbarGap > 0) {
+      document.body.style.paddingRight = `${scrollbarGap}px`;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
 
     return () => {
+      window.removeEventListener("keydown", onKeyDown);
       document.body.classList.remove("nav-open");
       document.body.style.removeProperty("top");
+      document.body.style.removeProperty("padding-right");
       window.scrollTo(0, scrollY);
     };
   }, [menuOpen]);
@@ -218,13 +230,13 @@ export function Layout({ content }: LayoutProps) {
               </span>
             </Link>
             <div className={`nav-links nav-links-main${menuOpen ? " open" : ""}`} id="site-nav-links">
+              <div className="nav-mobile-only nav-mobile-lang nav-mobile-lang-top">
+                <LanguageSwitcher />
+              </div>
               {mainNavItems.map((item) => (
                 <MainNavLink key={item.id} id={item.id} label={t(NAV_ITEM_I18N_KEYS[item.id])} />
               ))}
               <UtilityNavItems navigation={site.navigation} mobile />
-              <div className="nav-mobile-only nav-mobile-lang">
-                <LanguageSwitcher />
-              </div>
             </div>
           </div>
 

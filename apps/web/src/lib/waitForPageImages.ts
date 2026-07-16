@@ -3,8 +3,8 @@ export function waitForPageImages(
   root: ParentNode,
   options?: { timeoutMs?: number; settleMs?: number }
 ) {
-  const timeoutMs = options?.timeoutMs ?? 14_000;
-  const settleMs = options?.settleMs ?? 280;
+  const timeoutMs = options?.timeoutMs ?? 8_000;
+  const settleMs = options?.settleMs ?? 160;
 
   return new Promise<void>((resolve) => {
     let done = false;
@@ -61,15 +61,15 @@ export function waitForPageImages(
       }
       video.dataset.bootTracked = "1";
 
-      const critical = video.dataset.bootCritical === "1" || video.closest(".hero, .hero-clean, .vacancy-job-photo, .image-card");
+      const critical = video.dataset.bootCritical === "1";
       if (!critical) {
         scheduleSettle();
         return;
       }
 
-      video.preload = "auto";
-      // HAVE_FUTURE_DATA — enough to start playback smoothly
-      if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+      // Only wait for metadata / first frame — do not force full download.
+      if (video.preload === "none") video.preload = "metadata";
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
         scheduleSettle();
         return;
       }
@@ -77,13 +77,13 @@ export function waitForPageImages(
       pending.add(video);
       const onDone = () => {
         pending.delete(video);
+        video.removeEventListener("loadeddata", onDone);
         video.removeEventListener("canplay", onDone);
-        video.removeEventListener("canplaythrough", onDone);
         video.removeEventListener("error", onDone);
         scheduleSettle();
       };
+      video.addEventListener("loadeddata", onDone);
       video.addEventListener("canplay", onDone);
-      video.addEventListener("canplaythrough", onDone);
       video.addEventListener("error", onDone);
       try {
         video.load();

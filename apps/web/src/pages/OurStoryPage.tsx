@@ -1,7 +1,9 @@
 import { Helmet } from "../components/Helmet";
+import { SiteVideo } from "../components/SiteVideo";
 import { assetUrl } from "../lib/api";
 import { isVideoSrc } from "../lib/isVideoSrc";
 import { pageSeo } from "../lib/seo";
+import { videoPosterUrl } from "../lib/videoPoster";
 import type { SiteContent } from "@tresamigos/types";
 
 export function OurStoryPage({ content }: { content: SiteContent }) {
@@ -40,14 +42,11 @@ export function OurStoryPage({ content }: { content: SiteContent }) {
 
           <figure className="story-visual">
             {sideIsVideo ? (
-              <video
+              <SiteVideo
                 src={assetUrl(sideMedia)}
-                muted
-                autoPlay
-                loop
-                playsInline
-                preload="auto"
-                data-boot-critical="1"
+                poster={assetUrl(videoPosterUrl(sideMedia))}
+                preload="metadata"
+                bootDefer
                 aria-label="Tres Amigos"
               />
             ) : (

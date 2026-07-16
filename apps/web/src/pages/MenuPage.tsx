@@ -3,12 +3,14 @@ import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { MenuTabs } from "../components/MenuTabs";
 import { ProductDetailModal } from "../components/ProductDetailModal";
+import { useLanguage } from "../i18n/LanguageProvider";
 import { productImageUrl } from "../lib/productImage";
 import { pageSeo } from "../lib/seo";
 
 type MenuItem = SiteContent["menu"][number]["items"][number];
 
 export function MenuPage({ content }: { content: SiteContent }) {
+  const { t } = useLanguage();
   const { menu } = content;
   const seo = pageSeo(content, "menu");
   const activeMenu = menu.filter((category) => category.active !== false);
@@ -19,8 +21,8 @@ export function MenuPage({ content }: { content: SiteContent }) {
       <Helmet title={seo.title} description={seo.description} />
       <header className="page-head compact">
         <div className="shell">
-          <h1>Pick your feast</h1>
-          <p>Alle producten uit het menu overzichtelijk per categorie. Goed leesbaar, minder over de top en direct te koppelen aan bestellen.</p>
+          <h1>{t("menu.pageTitle")}</h1>
+          <p>{t("menu.pageIntro")}</p>
         </div>
       </header>
       <main className="section menu-page">
@@ -59,11 +61,11 @@ export function MenuPage({ content }: { content: SiteContent }) {
       <section className="section blue">
         <div className="shell split">
           <div>
-            <h2 className="section-title">Order the menu</h2>
-            <p className="lead">Choose your nearest Tres Amigos location and use Take Away, Delivery, Thuisbezorgd or Uber Eats.</p>
+            <h2 className="section-title">{t("menu.orderTitle")}</h2>
+            <p className="lead">{t("menu.orderIntro")}</p>
             <div className="actions">
-              <a className="btn" href="/order">
-                View all shops
+              <a className="btn" href="/locations">
+                {t("menu.viewLocations")}
               </a>
             </div>
           </div>

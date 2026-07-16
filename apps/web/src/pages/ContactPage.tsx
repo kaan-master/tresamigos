@@ -4,6 +4,7 @@ import { Helmet } from "../components/Helmet";
 import { SocialLinks } from "../components/SocialLinks";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { assetUrl, submitContact } from "../lib/api";
+import { googleMapsUrl } from "../lib/maps";
 import { pageSeo } from "../lib/seo";
 
 function formatAddress(address: string) {
@@ -166,19 +167,30 @@ export function ContactPage({ content }: { content: SiteContent }) {
               <h2 className="section-title">{t("contact.locationsTitle")}</h2>
               <p className="lead">{t("contact.locationsIntro")}</p>
             </div>
-            <div className="contact-locations-grid">
+            <div className="contact-locations-grid" x-apple-data-detectors="false">
               {locations.map((location) => {
                 const formatted = formatAddress(location.address);
+                const mapsHref = googleMapsUrl(location.address);
                 return (
                   <article className="contact-location-card" key={location.id}>
-                    <h3>{location.area}</h3>
+                    <h3>
+                      <a className="location-maps-link" href={mapsHref} target="_blank" rel="noreferrer">
+                        {location.area}
+                      </a>
+                    </h3>
                     {typeof formatted === "string" ? (
-                      <p>{formatted}</p>
+                      <p>
+                        <a className="location-maps-link" href={mapsHref} target="_blank" rel="noreferrer">
+                          {formatted}
+                        </a>
+                      </p>
                     ) : (
                       <p>
-                        {formatted.street}
-                        <br />
-                        {formatted.rest}
+                        <a className="location-maps-link" href={mapsHref} target="_blank" rel="noreferrer">
+                          {formatted.street}
+                          <br />
+                          {formatted.rest}
+                        </a>
                       </p>
                     )}
                   </article>
