@@ -268,9 +268,9 @@ const DEFAULT_OUR_VALUE: SiteContent["site"]["ourValue"] = {
   intro:
     "Everything we do at Tres Amigos comes back to a few simple promises: honest ingredients, a welcoming atmosphere and food that tastes like it should.",
   paragraphs: [
-    "We believe great street food starts with respect — for the recipe, for the guest and for the team behind the counter. That means fresh prep, consistent portions and flavours that stay true to Mexican roots.",
+    "We believe great street food starts with respect for the recipe, for the guest and for the team behind the counter. That means fresh prep, consistent portions and flavours that stay true to Mexican roots.",
     "Hospitality is not an extra step for us; it is part of the product. Whether you dine in, take away or order delivery, you should feel the same Tres Amigos energy: upbeat, personal and unpretentious.",
-    "We keep our prices fair because good food should be for everyone. Our goal is simple: leave you satisfied, not just full — and make you want to come back with friends."
+    "We keep our prices fair because good food should be for everyone. Our goal is simple: leave you satisfied, not just full, and make you want to come back with friends."
   ],
   scheduleSummary: "Four Amsterdam locations · Open 7 days a week",
   heroImage: "assets/brand/with-love.png",
@@ -285,7 +285,7 @@ const DEFAULT_REVIEWS: SiteContent["site"]["reviews"] = {
   googlePlaceId: "",
   submitEnabled: true,
   submitTitle: "Share your experience",
-  submitIntro: "Had a great meal at Tres Amigos? Leave a review — we moderate every submission before it appears on the site.",
+  submitIntro: "Had a great meal at Tres Amigos? Leave a review. We moderate every submission before it appears on the site.",
   submitSuccessMessage: "Thanks! Your review has been sent and will appear after approval.",
   curated: [
     {
@@ -327,7 +327,7 @@ const DEFAULT_REVIEWS: SiteContent["site"]["reviews"] = {
       id: "review-hamid",
       author: "Hamid Abdel",
       rating: 5,
-      text: "Had a chicken burrito 🌯 — super tasty! The Spanish girl who helped me was really nice and attentive. Great vibe. Will be back!",
+      text: "Had a chicken burrito 🌯, super tasty! The Spanish girl who helped me was really nice and attentive. Great vibe. Will be back!",
       publishedAt: "2025-06-15"
     }
   ]
@@ -383,7 +383,7 @@ const DEFAULT_PROMO_POPUP: SiteContent["site"]["promoPopup"] = {
   subtitle: "Enter your details to receive your discount code by email.",
   discountCode: "AMIGOS10",
   image: "assets/site/quesadilla-drinks.webp",
-  successMessage: "Check your inbox — your discount code is on the way."
+  successMessage: "Check your inbox. Your discount code is on the way."
 };
 
 const DEFAULT_MAIL_RELAY: SiteContent["site"]["mailRelay"] = {
@@ -399,7 +399,7 @@ const DEFAULT_CONTACT_FORM: SiteContent["site"]["contactForm"] = {
   enabled: true,
   title: "Send us a message",
   intro: "Questions about locations, catering or partnerships? Fill in the form and we will reply by email.",
-  successMessage: "Thanks — your message has been sent. We will get back to you soon.",
+  successMessage: "Thanks, your message has been sent. We will get back to you soon.",
   notifySubject: "New contact message via tresamigos.nl",
   image: "assets/site/restaurant-interior.jpg"
 };

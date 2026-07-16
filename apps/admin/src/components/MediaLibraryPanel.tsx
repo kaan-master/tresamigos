@@ -267,7 +267,7 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
       >
         <IconUpload width={28} height={28} />
         <strong>Sleep bestanden hierheen</strong>
-        <span>of klik op Upload — afbeeldingen en video&apos;s welkom</span>
+        <span>of klik op Upload. Afbeeldingen en video&apos;s welkom</span>
         <AdminButton variant="primary" loading={uploading} loadingText="Uploaden..." icon={<IconUpload width={16} height={16} />} onClick={() => fileInputRef.current?.click()}>
           Upload
         </AdminButton>
@@ -347,7 +347,7 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
           ))}
         </div>
       ) : (
-        <div className="ta-empty">Geen media gevonden — upload je eerste taco-foto 🌮</div>
+        <div className="ta-empty">Geen media gevonden. Upload je eerste taco-foto 🌮</div>
       )}
     </div>
       ) : null}

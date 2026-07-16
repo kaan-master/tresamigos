@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import type { NavItemId, SiteContent } from "@tresamigos/types";
 import { getVisibleNavItems, NAV_ITEM_I18N_KEYS, NAV_ITEM_PATHS, DEFAULT_NAV_SETTINGS } from "@tresamigos/utils/navDefaults";
@@ -6,6 +6,7 @@ import { assetUrl } from "../lib/api";
 import { showCateringNav } from "../lib/featureFlags";
 import { useCateringCart } from "../context/CateringCartContext";
 import { usePageMotion } from "../hooks/usePageMotion";
+import { unlockDocumentScroll, useScrollToTop } from "../hooks/useScrollToTop";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { AnalyticsTracker } from "./AnalyticsTracker";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -177,11 +178,17 @@ export function Layout({ content }: LayoutProps) {
   const location = useLocation();
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
+  const lockedScrollY = useRef(0);
+  const restoreScrollOnClose = useRef(true);
   const mainNavItems = resolveMainNavItems(site.navigation);
+  useScrollToTop();
   usePageMotion();
 
   useEffect(() => {
+    // Navigating away: unlock without restoring the old scroll (useScrollToTop handles top).
+    restoreScrollOnClose.current = false;
     setMenuOpen(false);
+    unlockDocumentScroll();
   }, [location.pathname]);
 
   useEffect(() => {
@@ -192,7 +199,9 @@ export function Layout({ content }: LayoutProps) {
       return;
     }
 
-    const scrollY = window.scrollY;
+    restoreScrollOnClose.current = true;
+    lockedScrollY.current = window.scrollY;
+    const scrollY = lockedScrollY.current;
     const scrollbarGap = window.innerWidth - document.documentElement.clientWidth;
     document.body.classList.add("nav-open");
     document.body.style.top = `-${scrollY}px`;
@@ -210,7 +219,10 @@ export function Layout({ content }: LayoutProps) {
       document.body.classList.remove("nav-open");
       document.body.style.removeProperty("top");
       document.body.style.removeProperty("padding-right");
-      window.scrollTo(0, scrollY);
+      // Only restore when the user closed the menu on the same page.
+      if (restoreScrollOnClose.current) {
+        window.scrollTo(0, lockedScrollY.current);
+      }
     };
   }, [menuOpen]);
 

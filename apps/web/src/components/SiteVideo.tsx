@@ -17,6 +17,7 @@ type Props = {
 
 /**
  * Site video: muted loop, preload metadata by default, pause when off-screen.
+ * Non-interactive so accidental touches never steal page scroll on mobile.
  */
 export function SiteVideo({
   src,
@@ -29,11 +30,12 @@ export function SiteVideo({
   ...aria
 }: Props) {
   const ref = useAutoplayInView<HTMLVideoElement>();
+  const classes = ["site-video", className].filter(Boolean).join(" ");
 
   return (
     <video
       ref={ref}
-      className={className}
+      className={classes}
       src={children ? undefined : src}
       poster={poster}
       muted
@@ -42,6 +44,8 @@ export function SiteVideo({
       preload={preload}
       controls={false}
       disablePictureInPicture
+      disableRemotePlayback
+      tabIndex={-1}
       data-boot-critical={bootCritical ? "1" : undefined}
       data-boot-defer={bootDefer ? "1" : undefined}
       {...aria}

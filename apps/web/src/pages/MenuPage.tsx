@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { MenuTabs } from "../components/MenuTabs";
@@ -15,6 +15,10 @@ export function MenuPage({ content }: { content: SiteContent }) {
   const seo = pageSeo(content, "menu");
   const activeMenu = menu.filter((category) => category.active !== false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+
+  useEffect(() => {
+    document.querySelector(".menu-page")?.classList.add("in-view");
+  }, []);
 
   return (
     <>

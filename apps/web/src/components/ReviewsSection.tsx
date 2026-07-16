@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { GoogleReview, ReviewsSettings } from "@tresamigos/types";
 import { apiUrl } from "../lib/api";
+import { useHorizontalDragScroll } from "../hooks/useHorizontalDragScroll";
 import { ReviewSubmitForm } from "./ReviewSubmitForm";
 
 function Stars({ rating }: { rating: number }) {
@@ -47,6 +48,7 @@ function ReviewCard({ review }: { review: GoogleReview }) {
 
 export function ReviewsSection({ settings }: { settings: ReviewsSettings }) {
   const [reviews, setReviews] = useState<GoogleReview[]>(settings.curated);
+  const trackRef = useHorizontalDragScroll<HTMLDivElement>();
 
   useEffect(() => {
     if (!settings.enabled) return;
@@ -86,7 +88,7 @@ export function ReviewsSection({ settings }: { settings: ReviewsSettings }) {
 
         {reviews.length ? (
           <div className="reviews-carousel">
-            <div className="reviews-track">
+            <div className="reviews-track" ref={trackRef}>
               {reviews.map((review) => (
                 <ReviewCard review={review} key={review.id} />
               ))}

@@ -98,6 +98,8 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
       document.body.style.left = "";
       document.body.style.right = "";
       document.body.style.overflow = "";
+      // Restore only if we are still on the same document scroll context.
+      if (document.body.classList.contains("nav-open")) return;
       window.scrollTo(0, scrollY);
     };
   }, [open]);

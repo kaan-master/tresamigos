@@ -36,26 +36,37 @@ export function usePageMotion() {
   }, []);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-    document.body.classList.remove("is-leaving");
-
     const observed = new Set<Element>();
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
+          // Any visible pixel counts — tall sections (e.g. full menu) never reach 10% on phones.
+          if (entry.isIntersecting || entry.intersectionRatio > 0) {
             entry.target.classList.add("in-view");
             observer.unobserve(entry.target);
             observed.delete(entry.target);
           }
         });
       },
-      { threshold: 0.1, rootMargin: "0px 0px -4% 0px" }
+      { threshold: 0, rootMargin: "0px 0px -8px 0px" }
     );
 
+    const revealNow = (element: Element) => {
+      element.classList.add("in-view");
+      observer.unobserve(element);
+      observed.delete(element);
+    };
+
     const bind = () => {
+      const viewportH = window.innerHeight || 1;
+
       document.querySelectorAll(REVEAL_SELECTOR).forEach((element) => {
         element.classList.remove("in-view");
+        // Tall blocks can't meet percentage thresholds on small screens — show immediately.
+        if (element.getBoundingClientRect().height > viewportH * 0.85) {
+          revealNow(element);
+          return;
+        }
         observer.observe(element);
         observed.add(element);
       });

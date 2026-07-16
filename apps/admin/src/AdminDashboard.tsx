@@ -261,7 +261,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
         <section className="ta-panel ta-fade-in">
           <header className="ta-panel-head">
             <h2>Home</h2>
-            <p>Hero, openingstijden en Our Story — per onderdeel bewerken met live preview waar het kan.</p>
+            <p>Hero, openingstijden en Our Story. Per onderdeel bewerken met live preview waar het kan.</p>
           </header>
           <HomePanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
         </section>
@@ -271,7 +271,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
         <section className="ta-panel ta-fade-in">
           <header className="ta-panel-head">
             <h2>Vestigingen</h2>
-            <p>Kies links een locatie. Rechts pas je gegevens en bestelknoppen aan — zonder geneste lijsten.</p>
+            <p>Kies links een locatie. Rechts pas je gegevens en bestelknoppen aan, zonder geneste lijsten.</p>
           </header>
           <LocationsPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
         </section>
@@ -369,7 +369,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
         <section className="ta-panel ta-fade-in">
           <header className="ta-panel-head">
             <h2>Navigatie</h2>
-            <p>Menu-items tonen of verbergen en de volgorde aanpassen — zoals in Shopify.</p>
+            <p>Menu-items tonen of verbergen en de volgorde aanpassen, zoals in Shopify.</p>
           </header>
           <NavbarPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
         </section>
@@ -379,7 +379,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
         <section className="ta-panel ta-fade-in">
           <header className="ta-panel-head">
             <h2>Footer & extras</h2>
-            <p>Footer, promo-mail en contactformulier — per onderdeel bewerken.</p>
+            <p>Footer, promo-mail en contactformulier. Per onderdeel bewerken.</p>
           </header>
           <FooterPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
         </section>

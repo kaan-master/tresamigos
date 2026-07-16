@@ -23,8 +23,8 @@ export function CateringGuideView() {
       <article className="catering-admin-guide-card">
         <h3>Bestellingen beheren</h3>
         <ol>
-          <li>Open <strong>Bestellingen</strong> — gebruik zoeken en optionele filters</li>
-          <li>Selecteer een order — statusbalk toont waar je bent in het proces</li>
+          <li>Open <strong>Bestellingen</strong> en gebruik zoeken en optionele filters</li>
+          <li>Selecteer een order. De statusbalk toont waar je bent in het proces</li>
           <li>Klik <strong>Bevestigen → Start voorbereiding → Afgerond</strong></li>
           <li>Print bon voor keuken of afhalen</li>
         </ol>

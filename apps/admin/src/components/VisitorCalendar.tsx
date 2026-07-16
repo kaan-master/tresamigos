@@ -51,7 +51,7 @@ export function VisitorCalendar({ dailyLog, viewsToday }: Props) {
       <header className="ta-visitor-calendar-head">
         <div>
           <h3 className="ta-section-title">Bezoekerskalender</h3>
-          <p className="ta-seo-hint">Klik op een dag — alleen dagen met bezoekers zijn gemarkeerd (90 dagen opgeslagen).</p>
+          <p className="ta-seo-hint">Klik op een dag. Alleen dagen met bezoekers zijn gemarkeerd (90 dagen opgeslagen).</p>
         </div>
         <article className="ta-visitor-calendar-pill">
           <strong>{selectedCount}</strong>
@@ -85,7 +85,7 @@ export function VisitorCalendar({ dailyLog, viewsToday }: Props) {
 
       {activeDays.length === 0 ? (
         <p className="ta-seo-hint" style={{ marginTop: 12 }}>
-          Nog geen opgeslagen bezoekersdagen — open de website om data te verzamelen.
+          Nog geen opgeslagen bezoekersdagen. Open de website om data te verzamelen.
         </p>
       ) : null}
     </section>

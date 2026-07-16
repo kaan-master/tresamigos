@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { InstagramFeedPost, InstagramFeedResponse, InstagramSettings } from "@tresamigos/types";
 import { SiteVideo } from "./SiteVideo";
+import { useHorizontalDragScroll } from "../hooks/useHorizontalDragScroll";
 import { apiUrl, assetUrl } from "../lib/api";
 import { isVideoSrc } from "../lib/isVideoSrc";
 import { videoPosterUrl } from "../lib/videoPoster";
@@ -19,7 +20,7 @@ function playAsVideo(post: InstagramFeedPost, media: string) {
 
 export function InstagramSection({ settings }: { settings: InstagramSettings }) {
   const [feed, setFeed] = useState<InstagramFeedResponse | null>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
+  const trackRef = useHorizontalDragScroll<HTMLDivElement>();
 
   useEffect(() => {
     if (!settings.enabled) return;
@@ -54,7 +55,7 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
         /* autoplay mag geblokkeerd worden */
       });
     }
-  }, [feed, settings.posts]);
+  }, [feed, settings.posts, trackRef]);
 
   if (!settings.enabled) return null;
 
@@ -108,7 +109,15 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
                 const asVideo = playAsVideo(post, media);
 
                 return (
-                  <a className="instagram-post" href={post.url} key={post.id} target="_blank" rel="noreferrer">
+                  <a
+                    className="instagram-post"
+                    href={post.url}
+                    key={post.id}
+                    target="_blank"
+                    rel="noreferrer"
+                    draggable={false}
+                    onDragStart={(event) => event.preventDefault()}
+                  >
                     {asVideo ? (
                       <SiteVideo
                         src={media}
@@ -118,7 +127,7 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
                         aria-label={post.caption || "Instagram video"}
                       />
                     ) : (
-                      <img src={media} alt={post.caption || "Instagram post"} loading="lazy" />
+                      <img src={media} alt={post.caption || "Instagram post"} loading="lazy" draggable={false} />
                     )}
                     {post.caption ? <span className="instagram-post-caption">{post.caption}</span> : null}
                   </a>

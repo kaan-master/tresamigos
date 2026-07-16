@@ -84,7 +84,7 @@ export function OverviewPanel() {
           <strong>{liveNow}</strong>
           <span>
             {liveNow === 0
-              ? "niemand live — bezoekers verdwijnen ~12 sec na laatste ping"
+              ? "niemand live (bezoekers verdwijnen ~12 sec na laatste ping)"
               : liveNow === 1
                 ? "bezoeker live op de website"
                 : "bezoekers live op de website"}
@@ -127,7 +127,7 @@ export function OverviewPanel() {
         <article className="ta-chart-card">
           <header className="ta-chart-card-head">
             <h3 className="ta-section-title">Paginaverdeling</h3>
-            <p>Staafdiagram per route — vandaag</p>
+            <p>Staafdiagram per route, vandaag</p>
           </header>
           {barData.length ? (
             <BarChart data={barData} />

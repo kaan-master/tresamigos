@@ -32,16 +32,16 @@ export function AdminLogin({ loading, message, onSubmit }: Props) {
         <form className="ta-login-card" onSubmit={handleSubmit}>
           <AdminBadge compact />
           <h2>Welkom terug</h2>
-          <p>Log in met je e-mail en wachtwoord. Beheerder: <strong>admin@tresamigos.nl</strong></p>
 
           <label className="ta-field">
-            <span>E-mail (medewerkers)</span>
+            <span>E-mail</span>
             <input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               autoComplete="username"
-              placeholder="optioneel voor beheerder"
+              placeholder="E-mailadres"
+              required
             />
           </label>
 

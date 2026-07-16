@@ -310,7 +310,7 @@ function StorySection({ content, onChange }: { content: SiteContent; onChange: (
     <div className="ta-home-stack">
       <article className="ta-home-card">
         <header className="ta-home-card-head">
-          <h3>Our Story — pagina</h3>
+          <h3>Our Story pagina</h3>
           <p>Hero en intro van de verhalenpagina.</p>
         </header>
         <div className="ta-grid">
@@ -406,7 +406,7 @@ function ValueSection({ content, onChange }: { content: SiteContent; onChange: (
     <div className="ta-home-stack">
       <article className="ta-home-card">
         <header className="ta-home-card-head">
-          <h3>Our Value — pagina</h3>
+          <h3>Our Value pagina</h3>
           <p>Hero en intro van de waardenpagina.</p>
         </header>
         <div className="ta-grid">

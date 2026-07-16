@@ -204,7 +204,7 @@ const BUFFET_TRIPLE_DESC = text(
 );
 
 const BURRITO_SINGLE_DESC = text(
-  "Onze rice, beans en cheese zijn altijd inbegrepen als verse basis. Stel jouw eigen combinatie samen met 1 proteïne naar keuze, 1 topping en 1 saus. Simpel, fris en heerlijk Mexicaans — stevig gerold en vol smaak.",
+  "Onze rice, beans en cheese zijn altijd inbegrepen als verse basis. Stel jouw eigen combinatie samen met 1 proteïne naar keuze, 1 topping en 1 saus. Simpel, fris en heerlijk Mexicaans, stevig gerold en vol smaak.",
   "Our rice, beans, and cheese are always included as a fresh base. Create your own combination with 1 protein of your choice, 1 topping, and 1 sauce. Simple, fresh, and deliciously Mexican - tightly rolled and packed with flavor."
 );
 

@@ -98,7 +98,7 @@ export function NavbarPanel({
   return (
     <div className="ta-stack-panel">
       <p className="ta-seo-hint">
-        Bepaal welke menu-items zichtbaar zijn op de website en in welke volgorde — net als bij Shopify. Wijzigingen zijn direct zichtbaar na opslaan.
+        Bepaal welke menu-items zichtbaar zijn op de website en in welke volgorde, net als bij Shopify. Wijzigingen zijn direct zichtbaar na opslaan.
       </p>
 
       <NavItemList

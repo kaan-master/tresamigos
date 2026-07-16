@@ -122,7 +122,7 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
           }}
         >
           <IconUpload width={22} height={22} />
-          <span>Sleep hierheen of upload — daarna direct geselecteerd</span>
+          <span>Sleep hierheen of upload, daarna direct geselecteerd</span>
           <AdminButton
             variant="primary"
             loading={uploading}
