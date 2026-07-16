@@ -1,17 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { InstagramFeedPost, InstagramFeedResponse, InstagramSettings } from "@tresamigos/types";
 import { apiUrl, assetUrl } from "../lib/api";
+import { isVideoSrc } from "../lib/isVideoSrc";
 
 function isRemoteUrl(value: string) {
   return value.startsWith("http://") || value.startsWith("https://");
 }
 
-function postImage(post: InstagramFeedPost) {
+function postMediaUrl(post: InstagramFeedPost) {
   return isRemoteUrl(post.image) ? post.image : assetUrl(post.image);
 }
 
 export function InstagramSection({ settings }: { settings: InstagramSettings }) {
-  const trackRef = useRef<HTMLDivElement>(null);
   const [feed, setFeed] = useState<InstagramFeedResponse | null>(null);
 
   useEffect(() => {
@@ -57,10 +57,6 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
   const bio = feed?.bio || settings.bio;
   const avatar = feed?.profileImage || assetUrl("/assets/site/tres-amigos-logo-new.png");
 
-  function scrollBy(direction: -1 | 1) {
-    trackRef.current?.scrollBy({ left: direction * 280, behavior: "smooth" });
-  }
-
   return (
     <section className="section instagram-section">
       <div className="shell">
@@ -81,16 +77,15 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
           </div>
 
           <div className="instagram-carousel">
-            <button className="instagram-nav prev" type="button" aria-label="Previous posts" onClick={() => scrollBy(-1)}>
-              ‹
-            </button>
-            <div className="instagram-track" ref={trackRef}>
+            <div className="instagram-track">
               {posts.map((post) => {
-                const media = postImage(post);
-                const asVideo = post.isVideo || /\.(mp4|webm|mov)(\?|$)/i.test(media);
+                const media = postMediaUrl(post);
+                const playAsVideo = isVideoSrc(media);
+                const showVideoBadge = post.isVideo === true || playAsVideo;
+
                 return (
                   <a className="instagram-post" href={post.url} key={post.id} target="_blank" rel="noreferrer">
-                    {asVideo ? (
+                    {playAsVideo ? (
                       <video
                         src={media}
                         muted
@@ -104,15 +99,12 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
                     ) : (
                       <img src={media} alt={post.caption || "Instagram post"} loading="lazy" />
                     )}
-                    {asVideo ? <span className="instagram-post-badge">Video</span> : null}
+                    {showVideoBadge ? <span className="instagram-post-badge">Video</span> : null}
                     {post.caption ? <span className="instagram-post-caption">{post.caption}</span> : null}
                   </a>
                 );
               })}
             </div>
-            <button className="instagram-nav next" type="button" aria-label="Next posts" onClick={() => scrollBy(1)}>
-              ›
-            </button>
           </div>
         </div>
       </div>

@@ -109,7 +109,9 @@ export class InstagramService {
         id: post.id,
         image: post.image,
         url: post.url,
-        caption: post.caption
+        caption: post.caption,
+        isVideo:
+          post.isVideo === true || /\.(mp4|webm|mov)(\?|$)/i.test(String(post.image || ""))
       }));
   }
 
@@ -147,14 +149,18 @@ export class InstagramService {
   }
 
   private graphItemToPost(item: GraphMediaItem): InstagramFeedPost | null {
-    const image = item.media_type === "VIDEO" ? item.thumbnail_url || item.media_url : item.media_url || item.thumbnail_url;
+    const isVideo = item.media_type === "VIDEO";
+    // Prefer real video URL when available; thumbnail alone must render as <img>.
+    const image = isVideo
+      ? item.media_url || item.thumbnail_url
+      : item.media_url || item.thumbnail_url;
     if (!image || !item.permalink) return null;
     return {
       id: item.id,
       image,
       url: item.permalink,
       caption: item.caption || "",
-      isVideo: item.media_type === "VIDEO"
+      isVideo
     };
   }
 

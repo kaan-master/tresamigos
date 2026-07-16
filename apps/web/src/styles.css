@@ -359,15 +359,13 @@ main{background:var(--paper)}.hero{padding:54px 0 46px;background:linear-gradien
 .instagram-avatar img{width:100%;height:100%;object-fit:cover}
 .instagram-bio{margin:6px 0 0;color:var(--muted);font-weight:650}
 .instagram-follow{white-space:nowrap}
-.instagram-track{display:flex;gap:14px;width:100%;max-width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;padding:4px 48px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+.instagram-track{display:flex;gap:14px;width:100%;max-width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;padding:4px 0 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x}
 .instagram-track::-webkit-scrollbar{display:none}
 .instagram-post{position:relative;flex:0 0 min(240px,78%);aspect-ratio:1;border-radius:20px;overflow:hidden;scroll-snap-align:start;border:1px solid var(--line);background:var(--soft)}
 .instagram-post img,.instagram-post video{width:100%;height:100%;object-fit:cover;transition:transform .25s ease;display:block}
-.instagram-post:hover img{transform:scale(1.04)}
+.instagram-post:hover img,.instagram-post:hover video{transform:scale(1.04)}
 .instagram-post-caption{position:absolute;inset:auto 0 0;padding:14px;background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff;font-size:13px;font-weight:700;line-height:1.4}
 .instagram-post-badge{position:absolute;top:12px;right:12px;padding:6px 10px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
-.instagram-nav{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border:1px solid var(--line);border-radius:50%;background:#fff;box-shadow:0 10px 24px rgba(31,22,11,.08);font-size:24px;line-height:1;cursor:pointer;z-index:2}
-.instagram-nav.prev{left:0}.instagram-nav.next{right:0}
 @media (max-width:860px){.review-submit-card{grid-template-columns:1fr}}
 .promo-overlay{position:fixed;inset:0;background:rgba(20,14,8,.58);display:grid;place-items:center;padding:20px;z-index:1200}
 .promo-modal{position:relative;width:min(980px,100%);display:grid;grid-template-columns:1fr 1fr;background:#fff;border-radius:28px;overflow:hidden;box-shadow:0 30px 90px rgba(31,22,11,.24)}
@@ -390,8 +388,8 @@ main{background:var(--paper)}.hero{padding:54px 0 46px;background:linear-gradien
 @media(max-width:920px){
   .promo-modal,.footer-grid{grid-template-columns:1fr}
   .promo-visual{min-height:220px}
-  .reviews-nav,.instagram-nav{display:none}
-  .reviews-track,.instagram-track{padding-inline:0}
+  .reviews-nav{display:none}
+  .reviews-track{padding-inline:0}
   .review-card{flex-basis:min(320px,86%)}
   .instagram-post{flex-basis:min(220px,72%)}
   .opening-hours-card{max-width:none}
