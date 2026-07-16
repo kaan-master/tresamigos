@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { GoogleReview, ReviewsSettings } from "@tresamigos/types";
 import { apiUrl } from "../lib/api";
 import { ReviewSubmitForm } from "./ReviewSubmitForm";
@@ -47,7 +47,6 @@ function ReviewCard({ review }: { review: GoogleReview }) {
 
 export function ReviewsSection({ settings }: { settings: ReviewsSettings }) {
   const [reviews, setReviews] = useState<GoogleReview[]>(settings.curated);
-  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!settings.enabled) return;
@@ -74,10 +73,6 @@ export function ReviewsSection({ settings }: { settings: ReviewsSettings }) {
 
   if (!settings.enabled) return null;
 
-  function scrollBy(direction: -1 | 1) {
-    trackRef.current?.scrollBy({ left: direction * 340, behavior: "smooth" });
-  }
-
   return (
     <section className="section section-soft reviews-section">
       <div className="shell">
@@ -91,17 +86,11 @@ export function ReviewsSection({ settings }: { settings: ReviewsSettings }) {
 
         {reviews.length ? (
           <div className="reviews-carousel">
-            <button className="reviews-nav prev" type="button" aria-label="Previous reviews" onClick={() => scrollBy(-1)}>
-              ‹
-            </button>
-            <div className="reviews-track" ref={trackRef}>
+            <div className="reviews-track">
               {reviews.map((review) => (
                 <ReviewCard review={review} key={review.id} />
               ))}
             </div>
-            <button className="reviews-nav next" type="button" aria-label="Next reviews" onClick={() => scrollBy(1)}>
-              ›
-            </button>
           </div>
         ) : (
           <div className="reviews-empty">No reviews yet. Be the first to share your experience.</div>

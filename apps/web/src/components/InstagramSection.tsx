@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { InstagramFeedPost, InstagramFeedResponse, InstagramSettings } from "@tresamigos/types";
 import { apiUrl, assetUrl } from "../lib/api";
 import { isVideoSrc } from "../lib/isVideoSrc";
@@ -11,11 +11,25 @@ function postMediaUrl(post: InstagramFeedPost) {
   return isRemoteUrl(post.image) ? post.image : assetUrl(post.image);
 }
 
+function playAsVideo(post: InstagramFeedPost, media: string) {
+  return post.isVideo === true || isVideoSrc(media);
+}
+
 export function InstagramSection({ settings }: { settings: InstagramSettings }) {
   const [feed, setFeed] = useState<InstagramFeedResponse | null>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!settings.enabled) return;
+    const media = window.matchMedia("(min-width: 921px)");
+    const sync = () => setIsDesktop(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!settings.enabled || !isDesktop) return;
     let active = true;
 
     async function load() {
@@ -33,9 +47,23 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
     return () => {
       active = false;
     };
-  }, [settings.enabled, settings.handle]);
+  }, [settings.enabled, settings.handle, isDesktop]);
 
-  if (!settings.enabled) return null;
+  useEffect(() => {
+    const root = trackRef.current;
+    if (!root) return;
+
+    const videos = Array.from(root.querySelectorAll("video"));
+    for (const video of videos) {
+      video.muted = true;
+      video.playsInline = true;
+      void video.play().catch(() => {
+        /* autoplay mag geblokkeerd worden */
+      });
+    }
+  }, [feed, settings.posts]);
+
+  if (!settings.enabled || !isDesktop) return null;
 
   const posts: InstagramFeedPost[] =
     feed?.posts.length
@@ -77,29 +105,28 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
           </div>
 
           <div className="instagram-carousel">
-            <div className="instagram-track">
+            <div className="instagram-track" ref={trackRef}>
               {posts.map((post) => {
                 const media = postMediaUrl(post);
-                const playAsVideo = isVideoSrc(media);
-                const showVideoBadge = post.isVideo === true || playAsVideo;
+                const asVideo = playAsVideo(post, media);
 
                 return (
                   <a className="instagram-post" href={post.url} key={post.id} target="_blank" rel="noreferrer">
-                    {playAsVideo ? (
+                    {asVideo ? (
                       <video
                         src={media}
                         muted
                         autoPlay
                         loop
                         playsInline
-                        preload="metadata"
-                        data-boot-defer="1"
+                        preload="auto"
+                        controls={false}
+                        disablePictureInPicture
                         aria-label={post.caption || "Instagram video"}
                       />
                     ) : (
-                      <img src={media} alt={post.caption || "Instagram post"} loading="lazy" />
+                      <img src={media} alt={post.caption || "Instagram post"} loading="eager" />
                     )}
-                    {showVideoBadge ? <span className="instagram-post-badge">Video</span> : null}
                     {post.caption ? <span className="instagram-post-caption">{post.caption}</span> : null}
                   </a>
                 );

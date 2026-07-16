@@ -183,7 +183,6 @@ export function HomePage({ content }: { content: SiteContent }) {
             </article>
             <article className="feature-card image-card">
               <video
-                src={assetUrl(storyFeatureVideo)}
                 muted
                 autoPlay
                 loop
@@ -191,7 +190,9 @@ export function HomePage({ content }: { content: SiteContent }) {
                 preload="auto"
                 data-boot-critical="1"
                 aria-label="Tres Amigos streetfood"
-              />
+              >
+                <source src={assetUrl(storyFeatureVideo)} media="(min-width: 921px)" />
+              </video>
             </article>
           </div>
         </section>

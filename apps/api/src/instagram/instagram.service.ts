@@ -41,7 +41,7 @@ export class InstagramService {
       return this.emptyFeed(settings, "fallback");
     }
 
-    const cacheKey = `instagram:feed:${settings.handle}`;
+    const cacheKey = `instagram:feed:v2:${settings.handle}`;
     const cached = await this.readCache(cacheKey);
     if (cached) return cached;
 
