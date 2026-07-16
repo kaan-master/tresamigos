@@ -112,7 +112,7 @@ const DEFAULT_VACANCY_JOBS: SiteContent["site"]["vacancy"]["jobs"] = [
     fullDescription:
       "As a member of the kitchen crew, you will be responsible for various tasks that contribute to the smooth operation of the takeaway service and ensure a great experience for our customers. From assembly to packaging, you help keep orders moving fast and fresh.",
     applyLabel: "Apply here",
-    image: "assets/brand/home-card.png"
+    image: "assets/menu/burritos/burrito-pulled-chicken.png"
   },
   {
     id: "shift-leader",
@@ -145,7 +145,7 @@ const DEFAULT_VACANCY_JOBS: SiteContent["site"]["vacancy"]["jobs"] = [
     fullDescription:
       "As the Manager of Tres Amigos, you will be responsible for effectively leading the team and overseeing all operational aspects of the takeaway service. You set the tone, protect quality and build a crew people want to work with.",
     applyLabel: "Apply here",
-    image: "assets/brand/eat-like-a-mexican.png"
+    image: "assets/menu/tacos/tacos-pulled-chicken.png"
   }
 ];
 
@@ -153,7 +153,7 @@ const DEFAULT_VACANCY: SiteContent["site"]["vacancy"] = {
   heroTitle: "Join the crew",
   heroIntro: "Build your career at Tres Amigos. Choose a role, read the full description and apply in a few simple steps.",
   heroImage: "assets/site/restaurant-interior.jpg",
-  formImage: "assets/brand/home-card.png",
+  formImage: "assets/menu/quesadillas/quesadilla-kip.png",
   jobs: DEFAULT_VACANCY_JOBS
 };
 
@@ -234,7 +234,7 @@ const DEFAULT_OUR_STORY: SiteContent["site"]["ourStory"] = {
   ],
   scheduleSummary: "Open 7 Days a week · Sun–Thu: 11 am–10:30 pm · Fri–Sat: 11 am–1 am",
   heroImage: "assets/site/restaurant-interior.jpg",
-  sideImage: "assets/brand/home-card.png"
+  sideImage: "assets/brand/best-in-amsterdam.mp4"
 };
 
 const DEFAULT_OUR_VALUE: SiteContent["site"]["ourValue"] = {
@@ -332,14 +332,14 @@ const DEFAULT_INSTAGRAM: SiteContent["site"]["instagram"] = {
     },
     {
       id: "ig-3",
-      image: "assets/brand/eat-like-a-mexican.png",
+      image: "assets/menu/tacos/tacos-pulled-chicken.png",
       url: "https://www.instagram.com/tresamigosamsterdam/",
       caption: "Eat like a Mexican",
       active: true
     },
     {
       id: "ig-4",
-      image: "assets/brand/home-card.png",
+      image: "assets/menu/burritos/burrito-pulled-chicken.png",
       url: "https://www.instagram.com/tresamigosamsterdam/",
       caption: "Tres Amigos vibes",
       active: true

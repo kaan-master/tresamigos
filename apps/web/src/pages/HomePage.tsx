@@ -27,6 +27,8 @@ export function HomePage({ content }: { content: SiteContent }) {
       : menu.flatMap((category) => category.items.filter((item) => item.active !== false)).slice(0, 4);
   const previewLocations = locations.filter((location) => location.active !== false).slice(0, 4);
   const marqueeTags = useMemo(() => buildMarqueeTags(site.hero.tags), [site.hero.tags]);
+  /** Vervangt de oude brand-PNG (eat-like-a-mexican / home-card). */
+  const storyFeatureVideo = "/assets/brand/streetfood-secret.mp4";
 
   return (
     <>
@@ -171,7 +173,15 @@ export function HomePage({ content }: { content: SiteContent }) {
               </a>
             </article>
             <article className="feature-card image-card">
-              <img src={assetUrl("/assets/brand/eat-like-a-mexican.png")} alt="Tres Amigos Eat like a Mexican brand artwork" />
+              <video
+                src={assetUrl(storyFeatureVideo)}
+                muted
+                autoPlay
+                loop
+                playsInline
+                preload="metadata"
+                aria-label="Tres Amigos streetfood"
+              />
             </article>
           </div>
         </section>

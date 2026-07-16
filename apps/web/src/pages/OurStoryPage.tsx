@@ -3,11 +3,19 @@ import { assetUrl } from "../lib/api";
 import { pageSeo } from "../lib/seo";
 import type { SiteContent } from "@tresamigos/types";
 
+function isVideoSrc(src: string) {
+  return /\.(mp4|webm|mov)(\?|$)/i.test(src);
+}
+
 export function OurStoryPage({ content }: { content: SiteContent }) {
   const seo = pageSeo(content, "ourStory");
   const story = content.site.ourStory;
   const heroImage = story.heroImage || "assets/site/restaurant-interior.jpg";
-  const sideImage = story.sideImage || "assets/brand/home-card.png";
+  const sideMedia =
+    story.sideImage ||
+    content.videos.find((video) => video.active !== false)?.src ||
+    "assets/brand/best-in-amsterdam.mp4";
+  const sideIsVideo = isVideoSrc(sideMedia);
 
   return (
     <>
@@ -34,7 +42,11 @@ export function OurStoryPage({ content }: { content: SiteContent }) {
           </article>
 
           <figure className="story-visual">
-            <img src={assetUrl(sideImage)} alt="Tres Amigos brand" loading="lazy" />
+            {sideIsVideo ? (
+              <video src={assetUrl(sideMedia)} muted autoPlay loop playsInline preload="metadata" aria-label="Tres Amigos" />
+            ) : (
+              <img src={assetUrl(sideMedia)} alt="Tres Amigos" loading="lazy" />
+            )}
           </figure>
         </div>
       </main>
