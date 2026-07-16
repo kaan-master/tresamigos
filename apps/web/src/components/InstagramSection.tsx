@@ -91,7 +91,16 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
                 return (
                   <a className="instagram-post" href={post.url} key={post.id} target="_blank" rel="noreferrer">
                     {asVideo ? (
-                      <video src={media} muted autoPlay loop playsInline preload="metadata" aria-label={post.caption || "Instagram video"} />
+                      <video
+                        src={media}
+                        muted
+                        autoPlay
+                        loop
+                        playsInline
+                        preload="metadata"
+                        data-boot-defer="1"
+                        aria-label={post.caption || "Instagram video"}
+                      />
                     ) : (
                       <img src={media} alt={post.caption || "Instagram post"} loading="lazy" />
                     )}

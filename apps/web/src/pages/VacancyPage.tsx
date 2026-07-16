@@ -4,7 +4,27 @@ import { Helmet } from "../components/Helmet";
 import { ApplicationWizardModal } from "../components/ApplicationWizardModal";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { assetUrl } from "../lib/api";
+import { isVideoSrc } from "../lib/isVideoSrc";
 import { pageSeo } from "../lib/seo";
+
+function VacancyMedia({ src, alt }: { src: string; alt: string }) {
+  const url = assetUrl(src);
+  if (isVideoSrc(src)) {
+    return (
+      <video
+        src={url}
+        muted
+        autoPlay
+        loop
+        playsInline
+        preload="auto"
+        data-boot-critical="1"
+        aria-label={alt}
+      />
+    );
+  }
+  return <img src={url} alt={alt} loading="lazy" />;
+}
 
 export function VacancyPage({ content }: { content: SiteContent }) {
   const { t, lang } = useLanguage();
@@ -28,7 +48,7 @@ export function VacancyPage({ content }: { content: SiteContent }) {
             <p>{vacancy.heroIntro}</p>
           </div>
           <div className="vacancy-hero-photo">
-            <img src={assetUrl(vacancy.heroImage)} alt={t("vacancy.teamAlt")} loading="lazy" />
+            <VacancyMedia src={vacancy.heroImage} alt={t("vacancy.teamAlt")} />
           </div>
         </div>
       </header>
@@ -40,7 +60,7 @@ export function VacancyPage({ content }: { content: SiteContent }) {
               enabledJobs.map((job) => (
                 <article className="vacancy-job-card" key={job.id}>
                   <div className="vacancy-job-photo">
-                    <img src={assetUrl(job.image)} alt={job.title} loading="lazy" />
+                    <VacancyMedia src={job.image} alt={job.title} />
                   </div>
                   <div className="vacancy-job-copy">
                     <h2>{job.title}</h2>

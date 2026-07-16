@@ -35,6 +35,16 @@ export function cleanText(value: unknown, fallback = "", max = 1000): string {
   return value.trim().slice(0, max);
 }
 
+/** Removed brand stills → working video fallbacks (production CMS may still store old paths). */
+function migrateRemovedBrandAsset(url: string): string {
+  const path = url.split("?")[0].toLowerCase();
+  if (path.includes("eat-like-a-mexican")) return "assets/brand/streetfood-secret.mp4";
+  if (path.includes("/home-card.") || path.endsWith("home-card.png") || path.includes("brand/home-card")) {
+    return "assets/brand/mega-burrito.mp4";
+  }
+  return url;
+}
+
 export function cleanUrl(value: unknown): string {
   const url = cleanText(value, "", 2000);
   if (!url) return "";
@@ -52,8 +62,10 @@ export function cleanUrl(value: unknown): string {
     "vacancy.html",
     "#"
   ];
-  if (allowed.some((prefix) => url.startsWith(prefix))) return url;
-  if (url.startsWith("assets/")) return url;
+  let next = url;
+  if (allowed.some((prefix) => next.startsWith(prefix)) || next.startsWith("assets/")) {
+    return migrateRemovedBrandAsset(next);
+  }
   return "";
 }
 
@@ -112,7 +124,7 @@ const DEFAULT_VACANCY_JOBS: SiteContent["site"]["vacancy"]["jobs"] = [
     fullDescription:
       "As a member of the kitchen crew, you will be responsible for various tasks that contribute to the smooth operation of the takeaway service and ensure a great experience for our customers. From assembly to packaging, you help keep orders moving fast and fresh.",
     applyLabel: "Apply here",
-    image: "assets/menu/burritos/burrito-pulled-chicken.png"
+    image: "assets/brand/mega-burrito.mp4"
   },
   {
     id: "shift-leader",

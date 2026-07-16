@@ -26,17 +26,20 @@ async function main() {
         const row = post as Record<string, unknown>;
         const image = String(row.image || "");
         if (image.includes("eat-like-a-mexican")) {
-          return { ...row, image: "assets/menu/tacos/tacos-pulled-chicken.png" };
+          return { ...row, image: "assets/brand/streetfood-secret.mp4", isVideo: true };
         }
         if (image.includes("home-card")) {
-          return { ...row, image: "assets/menu/burritos/burrito-pulled-chicken.png" };
+          return { ...row, image: "assets/brand/mega-burrito.mp4", isVideo: true };
         }
         return row;
       });
     }
 
     if (typeof vacancy.formImage === "string" && vacancy.formImage.includes("home-card")) {
-      vacancy.formImage = "assets/menu/quesadillas/quesadilla-kip.png";
+      vacancy.formImage = "assets/brand/mega-burrito.mp4";
+    }
+    if (typeof vacancy.formImage === "string" && vacancy.formImage.includes("eat-like-a-mexican")) {
+      vacancy.formImage = "assets/brand/streetfood-secret.mp4";
     }
 
     if (Array.isArray(vacancy.jobs)) {
@@ -44,10 +47,10 @@ async function main() {
         const row = job as Record<string, unknown>;
         const image = String(row.image || "");
         if (image.includes("home-card")) {
-          return { ...row, image: "assets/menu/burritos/burrito-pulled-chicken.png" };
+          return { ...row, image: "assets/brand/mega-burrito.mp4" };
         }
         if (image.includes("eat-like-a-mexican")) {
-          return { ...row, image: "assets/menu/tacos/tacos-pulled-chicken.png" };
+          return { ...row, image: "assets/brand/streetfood-secret.mp4" };
         }
         return row;
       });

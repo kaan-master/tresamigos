@@ -1,11 +1,8 @@
 import { Helmet } from "../components/Helmet";
 import { assetUrl } from "../lib/api";
+import { isVideoSrc } from "../lib/isVideoSrc";
 import { pageSeo } from "../lib/seo";
 import type { SiteContent } from "@tresamigos/types";
-
-function isVideoSrc(src: string) {
-  return /\.(mp4|webm|mov)(\?|$)/i.test(src);
-}
 
 export function OurStoryPage({ content }: { content: SiteContent }) {
   const seo = pageSeo(content, "ourStory");
@@ -43,7 +40,16 @@ export function OurStoryPage({ content }: { content: SiteContent }) {
 
           <figure className="story-visual">
             {sideIsVideo ? (
-              <video src={assetUrl(sideMedia)} muted autoPlay loop playsInline preload="metadata" aria-label="Tres Amigos" />
+              <video
+                src={assetUrl(sideMedia)}
+                muted
+                autoPlay
+                loop
+                playsInline
+                preload="auto"
+                data-boot-critical="1"
+                aria-label="Tres Amigos"
+              />
             ) : (
               <img src={assetUrl(sideMedia)} alt="Tres Amigos" loading="lazy" />
             )}

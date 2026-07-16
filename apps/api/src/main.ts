@@ -13,8 +13,9 @@ async function bootstrap() {
   app.use(json({ limit: BODY_LIMIT }));
   app.use(urlencoded({ extended: true, limit: BODY_LIMIT }));
   app.set("trust proxy", true);
-  app.useStaticAssets(ASSETS_ROOT, { prefix: "/assets/" });
-  app.useStaticAssets(PUBLIC_ASSETS_ROOT, { prefix: "/assets/" });
+  const assetStatic = { prefix: "/assets/", maxAge: "1y", immutable: true as const };
+  app.useStaticAssets(ASSETS_ROOT, assetStatic);
+  app.useStaticAssets(PUBLIC_ASSETS_ROOT, assetStatic);
   const corsOrigins = (process.env.CORS_ORIGINS || "http://localhost:5180,http://localhost:5181")
     .split(",")
     .map((origin) => origin.trim())

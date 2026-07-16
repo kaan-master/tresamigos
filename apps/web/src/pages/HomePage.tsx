@@ -27,11 +27,8 @@ export function HomePage({ content }: { content: SiteContent }) {
       : menu.flatMap((category) => category.items.filter((item) => item.active !== false)).slice(0, 4);
   const previewLocations = locations.filter((location) => location.active !== false).slice(0, 4);
   const marqueeTags = useMemo(() => buildMarqueeTags(site.hero.tags), [site.hero.tags]);
-  /** Vervangt de oude brand-PNG (eat-like-a-mexican / home-card). */
-  const storyFeatureVideo =
-    videos.find((video) => video.id === "streetfood-secret" && video.active !== false)?.src ||
-    videos.find((video) => video.active !== false)?.src ||
-    "/assets/brand/streetfood-secret.mp4";
+  /** Feature-card: nieuwe brand-video i.p.v. eat-like-a-mexican.png */
+  const storyFeatureVideo = "/assets/brand/streetfood-secret.mp4";
 
   return (
     <>
@@ -57,7 +54,15 @@ export function HomePage({ content }: { content: SiteContent }) {
                 .slice(0, 3)
                 .map((video) => (
                   <article className="portrait-video-card" key={video.id}>
-                    <video src={assetUrl(video.src)} muted autoPlay loop playsInline preload="metadata" />
+                    <video
+                      src={assetUrl(video.src)}
+                      muted
+                      autoPlay
+                      loop
+                      playsInline
+                      preload="auto"
+                      data-boot-critical="1"
+                    />
                     <div>
                       <h3>{video.title}</h3>
                       <p>{video.caption}</p>
@@ -89,7 +94,8 @@ export function HomePage({ content }: { content: SiteContent }) {
               autoPlay
               loop
               playsInline
-              preload="metadata"
+              preload="auto"
+              data-boot-critical="1"
               aria-hidden="true"
             />
           ) : null}
@@ -182,7 +188,8 @@ export function HomePage({ content }: { content: SiteContent }) {
                 autoPlay
                 loop
                 playsInline
-                preload="metadata"
+                preload="auto"
+                data-boot-critical="1"
                 aria-label="Tres Amigos streetfood"
               />
             </article>

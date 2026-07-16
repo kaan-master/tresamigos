@@ -235,7 +235,11 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
       <div className="application-modal-panel">
         <div className="application-modal-grid">
           <aside className="application-modal-visual" aria-hidden="true">
-            <img src={assetUrl(formImage)} alt="" loading="lazy" />
+            {/\.(mp4|webm|mov)(\?|$)/i.test(formImage) ? (
+              <video src={assetUrl(formImage)} muted autoPlay loop playsInline preload="metadata" data-boot-defer="1" />
+            ) : (
+              <img src={assetUrl(formImage)} alt="" loading="lazy" />
+            )}
           </aside>
 
           <div className="application-shell application-shell-modal">
