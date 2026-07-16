@@ -318,31 +318,35 @@ const DEFAULT_INSTAGRAM: SiteContent["site"]["instagram"] = {
   posts: [
     {
       id: "ig-1",
-      image: "assets/site/restaurant-interior.jpg",
+      image: "assets/brand/streetfood-secret.mp4",
       url: "https://www.instagram.com/tresamigosamsterdam/",
-      caption: "Mexican street food in Amsterdam",
-      active: true
+      caption: "Amsterdam’s best kept streetfood secret",
+      active: true,
+      isVideo: true
     },
     {
       id: "ig-2",
-      image: "assets/site/quesadilla-drinks.webp",
+      image: "assets/brand/best-in-amsterdam.mp4",
       url: "https://www.instagram.com/tresamigosamsterdam/",
-      caption: "Quesadillas & drinks",
-      active: true
+      caption: "The best in Amsterdam",
+      active: true,
+      isVideo: true
     },
     {
       id: "ig-3",
-      image: "assets/menu/tacos/tacos-pulled-chicken.png",
+      image: "assets/brand/mega-burrito.mp4",
       url: "https://www.instagram.com/tresamigosamsterdam/",
-      caption: "Eat like a Mexican",
-      active: true
+      caption: "MEGA burrito in Amsterdam",
+      active: true,
+      isVideo: true
     },
     {
       id: "ig-4",
-      image: "assets/menu/burritos/burrito-pulled-chicken.png",
+      image: "assets/brand/catering-event.mp4",
       url: "https://www.instagram.com/tresamigosamsterdam/",
-      caption: "Tres Amigos vibes",
-      active: true
+      caption: "Catering for your next event",
+      active: true,
+      isVideo: true
     }
   ]
 };
@@ -474,7 +478,10 @@ function sanitizeInstagram(value: SiteContent["site"]["instagram"] | undefined) 
           image: cleanUrl(post?.image) || DEFAULT_INSTAGRAM.posts[0]?.image || "",
           url: cleanUrl(post?.url) || DEFAULT_INSTAGRAM.profileUrl,
           caption: cleanText(post?.caption, "", 240),
-          active: post?.active !== false
+          active: post?.active !== false,
+          isVideo:
+            post?.isVideo === true ||
+            /\.(mp4|webm|mov)(\?|$)/i.test(String(post?.image || cleanUrl(post?.image) || ""))
         }))
         .filter((post) => post.image)
     : DEFAULT_INSTAGRAM.posts;

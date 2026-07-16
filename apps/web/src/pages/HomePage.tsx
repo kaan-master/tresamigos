@@ -28,7 +28,10 @@ export function HomePage({ content }: { content: SiteContent }) {
   const previewLocations = locations.filter((location) => location.active !== false).slice(0, 4);
   const marqueeTags = useMemo(() => buildMarqueeTags(site.hero.tags), [site.hero.tags]);
   /** Vervangt de oude brand-PNG (eat-like-a-mexican / home-card). */
-  const storyFeatureVideo = "/assets/brand/streetfood-secret.mp4";
+  const storyFeatureVideo =
+    videos.find((video) => video.id === "streetfood-secret" && video.active !== false)?.src ||
+    videos.find((video) => video.active !== false)?.src ||
+    "/assets/brand/streetfood-secret.mp4";
 
   return (
     <>

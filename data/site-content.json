@@ -191,31 +191,35 @@
       "posts": [
         {
           "id": "ig-1",
-          "image": "assets/site/restaurant-interior.jpg",
+          "image": "assets/brand/streetfood-secret.mp4",
           "url": "https://www.instagram.com/tresamigosamsterdam/",
-          "caption": "Mexican street food in Amsterdam",
-          "active": true
+          "caption": "Amsterdam’s best kept streetfood secret",
+          "active": true,
+          "isVideo": true
         },
         {
           "id": "ig-2",
-          "image": "assets/site/quesadilla-drinks.webp",
+          "image": "assets/brand/best-in-amsterdam.mp4",
           "url": "https://www.instagram.com/tresamigosamsterdam/",
-          "caption": "Quesadillas & drinks",
-          "active": true
+          "caption": "The best in Amsterdam",
+          "active": true,
+          "isVideo": true
         },
         {
           "id": "ig-3",
-          "image": "assets/menu/tacos/tacos-pulled-chicken.png",
+          "image": "assets/brand/mega-burrito.mp4",
           "url": "https://www.instagram.com/tresamigosamsterdam/",
-          "caption": "Eat like a Mexican",
-          "active": true
+          "caption": "MEGA burrito in Amsterdam",
+          "active": true,
+          "isVideo": true
         },
         {
           "id": "ig-4",
-          "image": "assets/menu/burritos/burrito-pulled-chicken.png",
+          "image": "assets/brand/catering-event.mp4",
           "url": "https://www.instagram.com/tresamigosamsterdam/",
-          "caption": "Tres Amigos vibes",
-          "active": true
+          "caption": "Catering for your next event",
+          "active": true,
+          "isVideo": true
         }
       ]
     },
@@ -311,24 +315,31 @@
   },
   "videos": [
     {
-      "id": "beef-tacos",
-      "title": "Beef tacos",
-      "caption": "Zachte tortillas, pulled beef en frisse toppings.",
-      "src": "assets/brand/Beef tacos TA.mp4",
+      "id": "streetfood-secret",
+      "title": "Streetfood secret",
+      "caption": "Amsterdam’s best kept streetfood secret.",
+      "src": "assets/brand/streetfood-secret.mp4",
       "active": true
     },
     {
-      "id": "sfeervideo",
-      "title": "Tres Amigos sfeer",
-      "caption": "Een korte blik op de energie achter de toonbank.",
-      "src": "assets/brand/Tres Amigos sfeervideo (1).mp4",
+      "id": "best-in-amsterdam",
+      "title": "Best in Amsterdam",
+      "caption": "The best Mexican street food in Amsterdam.",
+      "src": "assets/brand/best-in-amsterdam.mp4",
       "active": true
     },
     {
-      "id": "fresh-kitchen",
-      "title": "Fresh from the kitchen",
-      "caption": "Casual, vers en snel klaar voor je bestelling.",
-      "src": "assets/brand/Tres amigos vid 5.mp4",
+      "id": "mega-burrito",
+      "title": "MEGA burrito",
+      "caption": "De allerlekkerste MEGA burrito in Amsterdam.",
+      "src": "assets/brand/mega-burrito.mp4",
+      "active": true
+    },
+    {
+      "id": "catering-event",
+      "title": "Catering",
+      "caption": "Perfect voor babyshower, verjaardag of event.",
+      "src": "assets/brand/catering-event.mp4",
       "active": true
     }
   ],

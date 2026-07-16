@@ -85,13 +85,21 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
               ‹
             </button>
             <div className="instagram-track" ref={trackRef}>
-              {posts.map((post) => (
-                <a className="instagram-post" href={post.url} key={post.id} target="_blank" rel="noreferrer">
-                  <img src={postImage(post)} alt={post.caption || "Instagram post"} loading="lazy" />
-                  {post.isVideo ? <span className="instagram-post-badge">Video</span> : null}
-                  {post.caption ? <span className="instagram-post-caption">{post.caption}</span> : null}
-                </a>
-              ))}
+              {posts.map((post) => {
+                const media = postImage(post);
+                const asVideo = post.isVideo || /\.(mp4|webm|mov)(\?|$)/i.test(media);
+                return (
+                  <a className="instagram-post" href={post.url} key={post.id} target="_blank" rel="noreferrer">
+                    {asVideo ? (
+                      <video src={media} muted autoPlay loop playsInline preload="metadata" aria-label={post.caption || "Instagram video"} />
+                    ) : (
+                      <img src={media} alt={post.caption || "Instagram post"} loading="lazy" />
+                    )}
+                    {asVideo ? <span className="instagram-post-badge">Video</span> : null}
+                    {post.caption ? <span className="instagram-post-caption">{post.caption}</span> : null}
+                  </a>
+                );
+              })}
             </div>
             <button className="instagram-nav next" type="button" aria-label="Next posts" onClick={() => scrollBy(1)}>
               ›
