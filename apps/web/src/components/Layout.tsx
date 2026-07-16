@@ -194,6 +194,7 @@ export function Layout({ content }: LayoutProps) {
   useEffect(() => {
     if (!menuOpen) {
       document.body.classList.remove("nav-open");
+      document.documentElement.classList.remove("nav-open");
       document.body.style.removeProperty("top");
       document.body.style.removeProperty("padding-right");
       return;
@@ -204,6 +205,7 @@ export function Layout({ content }: LayoutProps) {
     const scrollY = lockedScrollY.current;
     const scrollbarGap = window.innerWidth - document.documentElement.clientWidth;
     document.body.classList.add("nav-open");
+    document.documentElement.classList.add("nav-open");
     document.body.style.top = `-${scrollY}px`;
     if (scrollbarGap > 0) {
       document.body.style.paddingRight = `${scrollbarGap}px`;
@@ -217,9 +219,9 @@ export function Layout({ content }: LayoutProps) {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       document.body.classList.remove("nav-open");
+      document.documentElement.classList.remove("nav-open");
       document.body.style.removeProperty("top");
       document.body.style.removeProperty("padding-right");
-      // Only restore when the user closed the menu on the same page.
       if (restoreScrollOnClose.current) {
         window.scrollTo(0, lockedScrollY.current);
       }

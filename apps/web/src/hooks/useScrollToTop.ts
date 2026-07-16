@@ -9,6 +9,7 @@ export function unlockDocumentScroll() {
     "catering-modal-open",
     "is-leaving"
   );
+  document.documentElement.classList.remove("nav-open");
   document.body.style.removeProperty("position");
   document.body.style.removeProperty("top");
   document.body.style.removeProperty("left");
