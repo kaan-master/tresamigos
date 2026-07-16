@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { InstagramFeedPost, InstagramFeedResponse, InstagramSettings } from "@tresamigos/types";
 import { SiteVideo } from "./SiteVideo";
-import { useHorizontalDragScroll } from "../hooks/useHorizontalDragScroll";
 import { apiUrl, assetUrl } from "../lib/api";
 import { isVideoSrc } from "../lib/isVideoSrc";
 import { videoPosterUrl } from "../lib/videoPoster";
@@ -20,7 +19,7 @@ function playAsVideo(post: InstagramFeedPost, media: string) {
 
 export function InstagramSection({ settings }: { settings: InstagramSettings }) {
   const [feed, setFeed] = useState<InstagramFeedResponse | null>(null);
-  const trackRef = useHorizontalDragScroll<HTMLDivElement>();
+  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!settings.enabled) return;
@@ -55,7 +54,7 @@ export function InstagramSection({ settings }: { settings: InstagramSettings }) 
         /* autoplay mag geblokkeerd worden */
       });
     }
-  }, [feed, settings.posts, trackRef]);
+  }, [feed, settings.posts]);
 
   if (!settings.enabled) return null;
 
