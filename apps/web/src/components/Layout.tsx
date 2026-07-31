@@ -153,22 +153,18 @@ function UtilityNavItems({
   mobile?: boolean;
 }) {
   const { t } = useLanguage();
-  const utilityNavItems = getVisibleNavItems(navigation, "utility");
-  const loginIndex = utilityNavItems.findIndex((item) => item.id === "login");
+  const utilityNavItems = getVisibleNavItems(navigation, "utility").filter((item) => item.id !== "login");
 
   return (
     <>
-      {utilityNavItems.map((item, index) => (
-        <span key={item.id} style={{ display: "contents" }}>
-          {index === loginIndex ? <CartNavLink mobile={mobile} /> : null}
-          {mobile ? (
-            <MobileUtilityNavLink id={item.id} label={t(NAV_ITEM_I18N_KEYS[item.id])} />
-          ) : (
-            <UtilityNavLink id={item.id} label={t(NAV_ITEM_I18N_KEYS[item.id])} />
-          )}
-        </span>
-      ))}
-      {loginIndex === -1 ? <CartNavLink mobile={mobile} /> : null}
+      {utilityNavItems.map((item) =>
+        mobile ? (
+          <MobileUtilityNavLink key={item.id} id={item.id} label={t(NAV_ITEM_I18N_KEYS[item.id])} />
+        ) : (
+          <UtilityNavLink key={item.id} id={item.id} label={t(NAV_ITEM_I18N_KEYS[item.id])} />
+        )
+      )}
+      <CartNavLink mobile={mobile} />
     </>
   );
 }

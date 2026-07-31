@@ -35,7 +35,7 @@ export const DEFAULT_NAV_SETTINGS: NavSettings = {
     })),
     ...NAV_UTILITY_ITEM_IDS.map((id, index) => ({
       id,
-      visible: true,
+      visible: id !== "login",
       sortOrder: index,
       group: "utility" as const
     }))
