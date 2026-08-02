@@ -48,6 +48,28 @@ export async function submitApplication(body: unknown) {
   return data;
 }
 
+export async function submitFranchiseInquiry(body: unknown) {
+  const response = await fetch(apiUrl("/api/franchise"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || "Verzenden mislukt.");
+  return data;
+}
+
+export async function submitNewsletterSubscribe(body: unknown) {
+  const response = await fetch(apiUrl("/api/newsletter/subscribe"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || "Verzenden mislukt.");
+  return data;
+}
+
 export async function submitCatering(body: unknown) {
   const response = await fetch(apiUrl("/api/catering"), {
     method: "POST",

@@ -7,9 +7,11 @@ import { useSiteContent } from "./hooks/useSiteContent";
 import { dismissSiteBoot } from "./lib/waitForPageImages";
 import { CateringPage } from "./pages/CateringPage";
 import { ContactPage } from "./pages/ContactPage";
+import { FranchisePage } from "./pages/FranchisePage";
 import { HomePage } from "./pages/HomePage";
 import { LocationsPage, OrderPage } from "./pages/LocationsPage";
 import { LoginPage } from "./pages/LoginPage";
+import { LoyaltyPage } from "./pages/LoyaltyPage";
 import { MenuPage } from "./pages/MenuPage";
 import { OurStoryPage } from "./pages/OurStoryPage";
 import { OurValuePage } from "./pages/OurValuePage";
@@ -36,6 +38,8 @@ function ShellRoutes() {
         <Route path="catering" element={<CateringPage content={data} />} />
         <Route path="order" element={<OrderPage content={data} />} />
         <Route path="locations" element={<LocationsPage content={data} />} />
+        <Route path="franchise" element={<FranchisePage content={data} />} />
+        <Route path="loyalty" element={<LoyaltyPage content={data} />} />
         <Route path="contact" element={<ContactPage content={data} />} />
         <Route path="our-story" element={<OurStoryPage content={data} />} />
         <Route path="our-value" element={<OurValuePage content={data} />} />

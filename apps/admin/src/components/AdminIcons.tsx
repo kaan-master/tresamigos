@@ -66,6 +66,32 @@ export function IconApplications(props: IconProps) {
   );
 }
 
+export function IconFranchise(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6" />
+    </Icon>
+  );
+}
+
+export function IconNewsletter(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3 7 9 6 9-6" />
+    </Icon>
+  );
+}
+
+export function IconIntegrations(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" />
+      <circle cx="12" cy="12" r="3" />
+    </Icon>
+  );
+}
+
 export function IconCatering(props: IconProps) {
   return (
     <Icon {...props}>
@@ -226,10 +252,13 @@ export const tabIcons = {
   products: IconProducts,
   media: IconMedia,
   applications: IconApplications,
+  franchise: IconFranchise,
+  newsletter: IconNewsletter,
   catering: IconCatering,
   reviews: IconReviews,
   seo: IconSeo,
   navigation: IconNavigation,
   footer: IconFooter,
+  integrations: IconIntegrations,
   users: IconUsers
 } as const;

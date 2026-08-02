@@ -1,5 +1,5 @@
 import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
-import type { Application, CateringOrder, SiteContent } from "@tresamigos/types";
+import type { Application, CateringOrder, FranchiseInquiry, SiteContent } from "@tresamigos/types";
 import { api } from "./lib/api";
 import { randomSaveError, randomSaveLoading, randomSaveSuccess } from "./lib/saveMessages";
 import { AdminBadge } from "./components/AdminBadge";
@@ -11,6 +11,9 @@ import { LocationsPanel } from "./components/LocationsPanel";
 import { MediaLibraryPanel } from "./components/MediaLibraryPanel";
 import { ProductsPanel } from "./components/ProductsPanel";
 import { ApplicationsPanel } from "./components/ApplicationsPanel";
+import { FranchisePanel } from "./components/FranchisePanel";
+import { NewsletterPanel } from "./components/NewsletterPanel";
+import { IntegrationsPanel } from "./components/IntegrationsPanel";
 import { CateringPanel } from "./components/CateringPanel";
 import type { CateringView } from "./components/catering/cateringNav";
 import { INCOMING_STATUSES } from "./lib/cateringAdmin";
@@ -35,11 +38,14 @@ const tabs = [
   ["products", "Producten"],
   ["media", "Media"],
   ["applications", "Sollicitaties"],
+  ["franchise", "Franchise"],
+  ["newsletter", "Nieuwsbrief"],
   ["catering", "Catering"],
   ["reviews", "Reviews"],
   ["seo", "SEO"],
   ["navigation", "Navigatie"],
   ["footer", "Footer"],
+  ["integrations", "Integraties"],
   ["users", "Gebruikers"]
 ] as const;
 
@@ -57,6 +63,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
   const [cateringOpenOrderId, setCateringOpenOrderId] = useState<string | null>(null);
   const [content, setContent] = useState<SiteContent | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [franchiseInquiries, setFranchiseInquiries] = useState<FranchiseInquiry[]>([]);
   const [cateringOrders, setCateringOrders] = useState<CateringOrder[]>([]);
   const [popup, setPopup] = useState<{ title: string; message?: string; tone: "loading" | "success" | "error" } | null>(
     null
@@ -77,12 +84,14 @@ export function AdminDashboard({ user, onLogout }: Props) {
     setLoading(true);
     setPopup({ title: "Dashboard laden", message: "Content en inkomende berichten ophalen...", tone: "loading" });
     try {
-      const [contentData, applicationsData] = await Promise.all([
+      const [contentData, applicationsData, franchiseData] = await Promise.all([
         api<SiteContent>("/api/admin/content"),
-        api<{ applications: Application[] }>("/api/admin/applications").catch(() => ({ applications: [] }))
+        api<{ applications: Application[] }>("/api/admin/applications").catch(() => ({ applications: [] })),
+        api<{ inquiries: FranchiseInquiry[] }>("/api/admin/franchise").catch(() => ({ inquiries: [] }))
       ]);
       setContent(contentData);
       setApplications(applicationsData.applications);
+      setFranchiseInquiries(franchiseData.inquiries);
       await loadCateringOrders();
       setPopup(null);
     } catch (error) {
@@ -141,10 +150,11 @@ export function AdminDashboard({ user, onLogout }: Props) {
       ["Producten", content.menu.reduce((total, category) => total + category.items.length, 0)],
       ["Video's", content.videos.filter((video) => video.active !== false).length],
       ["Sollicitaties", applications.length],
+      ["Franchise", franchiseInquiries.length],
       ["Catering inkomend", incomingCateringCount],
       ["Hero tags", content.site.hero.tags.length]
     ] as const;
-  }, [content, applications.length, incomingCateringCount]);
+  }, [content, applications.length, franchiseInquiries.length, incomingCateringCount]);
 
   async function saveContent() {
     if (!content || saving) return;
@@ -307,6 +317,26 @@ export function AdminDashboard({ user, onLogout }: Props) {
         </section>
       ) : null}
 
+      {activeTab === "franchise" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Franchise</h2>
+            <p>Inkomende franchise-aanvragen van de website bekijken.</p>
+          </header>
+          <FranchisePanel inquiries={franchiseInquiries} />
+        </section>
+      ) : null}
+
+      {activeTab === "newsletter" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Nieuwsbrief</h2>
+            <p>Abonnees bekijken, zoeken en exporteren als CSV (Mailchimp-stijl).</p>
+          </header>
+          <NewsletterPanel />
+        </section>
+      ) : null}
+
       {activeTab === "catering" ? (
         <section className="ta-panel ta-fade-in">
           <header className="ta-panel-head">
@@ -382,6 +412,16 @@ export function AdminDashboard({ user, onLogout }: Props) {
             <p>Footer, promo-mail en contactformulier. Per onderdeel bewerken.</p>
           </header>
           <FooterPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+        </section>
+      ) : null}
+
+      {activeTab === "integrations" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Integraties</h2>
+            <p>Koppel de mailserver. Overige integraties staan klaar en zijn locked tot aankoop.</p>
+          </header>
+          <IntegrationsPanel />
         </section>
       ) : null}
     </>

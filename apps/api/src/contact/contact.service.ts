@@ -31,7 +31,7 @@ export class ContactService {
 
     const inbox = content.site.footer.email || mail.replyTo;
     const emailed =
-      this.mailService.isConfigured() &&
+      (await this.mailService.isReady()) &&
       (await this.mailService.sendContactEmail({
         to: inbox,
         fromName: mail.fromName,

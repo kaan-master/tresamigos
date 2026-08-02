@@ -18,6 +18,8 @@ import type {
   CateringServingOption,
   CreateApplicationInput,
   CreateCateringOrderInput,
+  CreateFranchiseInquiryInput,
+  FranchiseInquiry,
   PageSeo,
   SeoPageKey,
   SiteContent,
@@ -593,6 +595,14 @@ const DEFAULT_SEO_PAGES: Record<SeoPageKey, PageSeo> = {
   vacancy: {
     title: "Work With Us | Tres Amigos",
     description: "Solliciteer bij Tres Amigos Amsterdam voor rollen in keuken, service en delivery."
+  },
+  franchise: {
+    title: "Franchise | Tres Amigos",
+    description: "Word franchisepartner van Tres Amigos. Dien je interesse in en we nemen contact met je op."
+  },
+  loyalty: {
+    title: "Loyalty | Tres Amigos",
+    description: "Join El Club: verdien punten bij Tres Amigos en wissel in voor tacos, quesadillas en meer."
   }
 };
 
@@ -666,6 +676,26 @@ export function sanitizeApplication(input: CreateApplicationInput | Application)
             data: pdfData
           }
         : null
+  };
+}
+
+export function sanitizeFranchiseInquiry(
+  input: CreateFranchiseInquiryInput | FranchiseInquiry
+): FranchiseInquiry {
+  return {
+    id: cleanText(input?.id, crypto.randomUUID(), 80),
+    createdAt: cleanText(input?.createdAt, new Date().toISOString(), 80),
+    status: cleanText(input?.status, "nieuw", 40),
+    name: cleanText(input?.name, "", 160),
+    email: cleanText(input?.email, "", 180),
+    phone: cleanText(input?.phone, "", 80),
+    address: cleanText(input?.address, "", 300),
+    desiredLocation: cleanText(input?.desiredLocation, "", 200),
+    currentRole: cleanText(input?.currentRole, "", 200),
+    company: cleanText(input?.company, "", 200),
+    investment: cleanText(input?.investment, "", 200),
+    visitedLocation: cleanText(input?.visitedLocation, "", 300),
+    termsAccepted: Boolean(input?.termsAccepted)
   };
 }
 

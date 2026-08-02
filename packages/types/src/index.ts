@@ -59,7 +59,9 @@ export const SEO_PAGE_KEYS = [
   "contact",
   "ourStory",
   "ourValue",
-  "vacancy"
+  "vacancy",
+  "franchise",
+  "loyalty"
 ] as const;
 
 export type SeoPageKey = (typeof SEO_PAGE_KEYS)[number];
@@ -78,22 +80,32 @@ export const SEO_PAGE_LABELS: Record<SeoPageKey, string> = {
   contact: "Contact",
   ourStory: "Our Story",
   ourValue: "Our Value",
-  vacancy: "Vacatures"
+  vacancy: "Vacatures",
+  franchise: "Franchise",
+  loyalty: "Loyalty"
 };
 
 export const NAV_MAIN_ITEM_IDS = [
   "menu",
   "catering",
-  "locations",
+  "franchise",
+  "loyalty",
   "ourStory",
   "ourValue",
   "vacancy",
   "contact"
 ] as const;
 
+/** Kept for CMS backwards-compat; not in main defaults (locations page still exists). */
+export const NAV_LEGACY_MAIN_ITEM_IDS = ["locations"] as const;
+
 export const NAV_UTILITY_ITEM_IDS = ["findTresAmigos", "login"] as const;
 
-export const NAV_ITEM_IDS = [...NAV_MAIN_ITEM_IDS, ...NAV_UTILITY_ITEM_IDS] as const;
+export const NAV_ITEM_IDS = [
+  ...NAV_MAIN_ITEM_IDS,
+  ...NAV_LEGACY_MAIN_ITEM_IDS,
+  ...NAV_UTILITY_ITEM_IDS
+] as const;
 
 export type NavMainItemId = (typeof NAV_MAIN_ITEM_IDS)[number];
 export type NavUtilityItemId = (typeof NAV_UTILITY_ITEM_IDS)[number];
@@ -102,13 +114,15 @@ export type NavItemId = (typeof NAV_ITEM_IDS)[number];
 export const NAV_ITEM_ADMIN_LABELS: Record<NavItemId, string> = {
   menu: "Menu",
   catering: "Catering",
-  locations: "Vestigingen",
+  franchise: "Franchise",
+  loyalty: "Loyalty",
+  locations: "Vestigingen (verborgen)",
   ourStory: "Our Story",
   ourValue: "Our Value",
   vacancy: "Vacatures",
   contact: "Contact",
   findTresAmigos: "Vind je Tres Amigos",
-  login: "Inloggen"
+  login: "Inloggen (verborgen)"
 };
 
 export interface NavItemConfig {
@@ -129,11 +143,14 @@ export const ADMIN_TAB_IDS = [
   "products",
   "media",
   "applications",
+  "franchise",
+  "newsletter",
   "catering",
   "reviews",
   "seo",
   "navigation",
   "footer",
+  "integrations",
   "users"
 ] as const;
 
@@ -146,11 +163,14 @@ export const ADMIN_TAB_LABELS: Record<AdminTabId, string> = {
   products: "Producten",
   media: "Media",
   applications: "Sollicitaties",
+  franchise: "Franchise",
+  newsletter: "Nieuwsbrief",
   catering: "Catering",
   reviews: "Reviews",
   seo: "SEO",
   navigation: "Navigatie",
   footer: "Footer",
+  integrations: "Integraties",
   users: "Gebruikers"
 };
 
@@ -534,6 +554,106 @@ export interface CreateApplicationResponse extends ApiMessage {
     id: string;
     createdAt: string;
   };
+}
+
+export interface FranchiseInquiry {
+  id: string;
+  createdAt: string;
+  status: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  desiredLocation: string;
+  currentRole: string;
+  company: string;
+  investment: string;
+  visitedLocation: string;
+  termsAccepted: boolean;
+}
+
+export interface CreateFranchiseInquiryInput {
+  id?: string;
+  createdAt?: string;
+  status?: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  desiredLocation?: string;
+  currentRole?: string;
+  company?: string;
+  investment?: string;
+  visitedLocation?: string;
+  termsAccepted: boolean;
+}
+
+export interface FranchiseInquiriesResponse {
+  inquiries: FranchiseInquiry[];
+}
+
+export interface CreateFranchiseInquiryResponse extends ApiMessage {
+  inquiry: {
+    id: string;
+    createdAt: string;
+  };
+}
+
+export interface NewsletterSubscribeInput {
+  email: string;
+  name?: string;
+}
+
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  name: string;
+  subscribedAt: string;
+}
+
+export interface NewsletterSubscribersResponse {
+  subscribers: NewsletterSubscriber[];
+}
+
+export interface CreateNewsletterSubscribeResponse extends ApiMessage {
+  alreadySubscribed?: boolean;
+}
+
+export interface IntegrationMailRelaySettings {
+  enabled: boolean;
+  provider: "smtp" | "outlook";
+  host: string;
+  port: number;
+  secure: boolean;
+  username: string;
+  passwordSet: boolean;
+  fromEmail: string;
+  fromName: string;
+  lastTestAt: string | null;
+  lastStatus: string;
+  lastMessage: string;
+  envFallbackConfigured: boolean;
+}
+
+export interface IntegrationSettingsPublic {
+  mailRelay: IntegrationMailRelaySettings;
+}
+
+export interface UpdateIntegrationMailRelayInput {
+  enabled?: boolean;
+  provider?: "smtp" | "outlook";
+  host?: string;
+  port?: number;
+  secure?: boolean;
+  username?: string;
+  password?: string;
+  fromEmail?: string;
+  fromName?: string;
+  clearPassword?: boolean;
+}
+
+export interface IntegrationTestMailInput {
+  to: string;
 }
 
 export const APPLICATION_ROLES: ApplicationRole[] = [];

@@ -3441,6 +3441,170 @@ body.admin-tablet-mode .ta-action-dock {
   }
 }
 
+.ta-btn-secondary {
+  background: #fff;
+  color: var(--ta-text);
+  border: 1px solid var(--ta-line);
+}
+
+.ta-btn-sm {
+  padding: 8px 12px;
+  font-size: 12px;
+  border-radius: 12px;
+}
+
+.ta-error {
+  margin: 0;
+  color: #b43228;
+  font-weight: 700;
+}
+
+.ta-success {
+  margin: 0;
+  color: #2f6b3a;
+  font-weight: 700;
+}
+
+.ta-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.ta-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--ta-line);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.ta-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ta-table th,
+.ta-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(90, 70, 58, 0.08);
+  vertical-align: middle;
+}
+
+.ta-table th {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ta-muted);
+  background: #faf6ed;
+}
+
+.ta-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.ta-integration-card {
+  border: 1px solid var(--ta-line);
+  border-radius: 20px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.ta-integration-head {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 0;
+  background: linear-gradient(180deg, #fffaf0, #fff);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ta-integration-head strong {
+  display: block;
+  font-size: 18px;
+}
+
+.ta-integration-head p {
+  margin: 6px 0 0;
+  color: var(--ta-muted);
+  font-weight: 600;
+}
+
+.ta-integration-body {
+  display: grid;
+  gap: 16px;
+  padding: 0 20px 20px;
+  position: relative;
+}
+
+.ta-integration-monitor {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #faf6ed;
+  color: var(--ta-muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.ta-integration-monitor strong {
+  color: var(--ta-text);
+}
+
+.ta-integration-locked .ta-integration-head {
+  cursor: default;
+}
+
+.ta-lock-badge {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(243, 66, 56, 0.1);
+  color: #b43228;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ta-integration-locked-body {
+  opacity: 0.55;
+  pointer-events: none;
+  min-height: 140px;
+}
+
+.ta-lock-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  padding: 20px;
+  text-align: center;
+  background: rgba(255, 253, 248, 0.72);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+.ta-lock-overlay strong {
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ta-lock-overlay p {
+  margin: 0;
+  max-width: 320px;
+  color: var(--ta-muted);
+  font-weight: 650;
+}
+
 @media print{
   .ta-sidebar,.ta-action-dock,.ta-main-head,.ta-list-pane,.catering-admin-quick-actions,.ta-stack-panel .ta-filter-chips{display:none!important}
   .ta-main,.ta-shell{display:block!important}

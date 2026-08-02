@@ -1,9 +1,16 @@
 import type { NavItemConfig, NavItemId, NavSettings } from "@tresamigos/types";
-import { NAV_ITEM_IDS, NAV_MAIN_ITEM_IDS, NAV_UTILITY_ITEM_IDS } from "@tresamigos/types";
+import {
+  NAV_ITEM_IDS,
+  NAV_LEGACY_MAIN_ITEM_IDS,
+  NAV_MAIN_ITEM_IDS,
+  NAV_UTILITY_ITEM_IDS
+} from "@tresamigos/types";
 
 export const NAV_ITEM_PATHS: Record<NavItemId, string> = {
   menu: "/menu",
   catering: "/catering",
+  franchise: "/franchise",
+  loyalty: "/loyalty",
   locations: "/locations",
   ourStory: "/our-story",
   ourValue: "/our-value",
@@ -16,6 +23,8 @@ export const NAV_ITEM_PATHS: Record<NavItemId, string> = {
 export const NAV_ITEM_I18N_KEYS: Record<NavItemId, string> = {
   menu: "nav.menu",
   catering: "nav.catering",
+  franchise: "nav.franchise",
+  loyalty: "nav.loyalty",
   locations: "nav.locations",
   ourStory: "nav.ourStory",
   ourValue: "nav.ourValue",
@@ -25,12 +34,20 @@ export const NAV_ITEM_I18N_KEYS: Record<NavItemId, string> = {
   login: "nav.login"
 };
 
+const HIDDEN_BY_DEFAULT: NavItemId[] = ["locations", "login"];
+
 export const DEFAULT_NAV_SETTINGS: NavSettings = {
   items: [
     ...NAV_MAIN_ITEM_IDS.map((id, index) => ({
       id,
-      visible: true,
+      visible: !HIDDEN_BY_DEFAULT.includes(id),
       sortOrder: index,
+      group: "main" as const
+    })),
+    ...NAV_LEGACY_MAIN_ITEM_IDS.map((id, index) => ({
+      id,
+      visible: false,
+      sortOrder: NAV_MAIN_ITEM_IDS.length + index,
       group: "main" as const
     })),
     ...NAV_UTILITY_ITEM_IDS.map((id, index) => ({
@@ -46,6 +63,11 @@ function isNavItemId(value: unknown): value is NavItemId {
   return typeof value === "string" && NAV_ITEM_IDS.includes(value as NavItemId);
 }
 
+function groupForId(id: NavItemId): "main" | "utility" {
+  if (NAV_UTILITY_ITEM_IDS.includes(id as (typeof NAV_UTILITY_ITEM_IDS)[number])) return "utility";
+  return "main";
+}
+
 export function sanitizeNavSettings(input: unknown): NavSettings {
   const raw = input && typeof input === "object" ? (input as Partial<NavSettings>) : {};
   const items = Array.isArray(raw.items)
@@ -54,10 +76,12 @@ export function sanitizeNavSettings(input: unknown): NavSettings {
           if (!item || typeof item !== "object") return null;
           const id = isNavItemId(item.id) ? item.id : null;
           if (!id) return null;
-          const group = NAV_MAIN_ITEM_IDS.includes(id as (typeof NAV_MAIN_ITEM_IDS)[number]) ? "main" : "utility";
+          const group = groupForId(id);
+          // Force-hide login + locations for public nav (Vilmon request).
+          const forceHidden = id === "login" || id === "locations";
           return {
             id,
-            visible: item.visible !== false,
+            visible: forceHidden ? false : item.visible !== false,
             sortOrder: Number.isFinite(item.sortOrder) ? Number(item.sortOrder) : index,
             group
           } satisfies NavItemConfig;
@@ -72,7 +96,16 @@ export function sanitizeNavSettings(input: unknown): NavSettings {
 
   const merged: NavItemConfig[] = [];
   for (const defaults of DEFAULT_NAV_SETTINGS.items) {
-    merged.push(byId.get(defaults.id) || defaults);
+    const existing = byId.get(defaults.id);
+    if (existing) {
+      merged.push({
+        ...existing,
+        visible: defaults.id === "login" || defaults.id === "locations" ? false : existing.visible,
+        group: defaults.group
+      });
+    } else {
+      merged.push(defaults);
+    }
   }
 
   const main = merged.filter((item) => item.group === "main").sort((a, b) => a.sortOrder - b.sortOrder);

@@ -37,8 +37,9 @@ export class PromoService {
       });
     }
 
-    if (mail.enabled && this.mailService.isConfigured()) {
-      await this.mailService.sendPromoEmail({
+    let emailed = false;
+    if (mail.enabled && (await this.mailService.isReady())) {
+      emailed = await this.mailService.sendPromoEmail({
         to: email,
         firstName,
         lastName,
@@ -52,7 +53,7 @@ export class PromoService {
 
     return {
       message: promo.successMessage,
-      emailed: mail.enabled && this.mailService.isConfigured()
+      emailed
     };
   }
 }

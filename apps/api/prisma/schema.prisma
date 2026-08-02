@@ -70,6 +70,33 @@ model PromoLead {
   createdAt DateTime @default(now())
 }
 
+model NewsletterSubscriber {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String   @default("")
+  subscribedAt DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([subscribedAt])
+}
+
+model IntegrationSettings {
+  id                     String    @id @default("primary")
+  mailRelayEnabled       Boolean   @default(false)
+  mailRelayProvider      String    @default("smtp")
+  mailRelayHost          String    @default("")
+  mailRelayPort          Int       @default(587)
+  mailRelaySecure        Boolean   @default(false)
+  mailRelayUsername      String    @default("")
+  mailRelayPassword      String    @default("")
+  mailRelayFromEmail     String    @default("")
+  mailRelayFromName      String    @default("Tres Amigos")
+  mailRelayLastTestAt    DateTime?
+  mailRelayLastStatus    String    @default("")
+  mailRelayLastMessage   String    @default("")
+  updatedAt              DateTime  @updatedAt
+}
+
 model Location {
   id        String      @id
   area      String
@@ -154,6 +181,22 @@ model Application {
   pdfName          String?
   pdfSize          Int?
   pdfData          String?  @db.Text
+}
+
+model FranchiseInquiry {
+  id              String   @id @default(uuid())
+  createdAt       DateTime @default(now())
+  status          String   @default("nieuw")
+  name            String
+  email           String
+  phone           String   @default("")
+  address         String   @default("")
+  desiredLocation String   @default("")
+  currentRole     String   @default("")
+  company         String   @default("")
+  investment      String   @default("")
+  visitedLocation String   @default("")
+  termsAccepted   Boolean  @default(false)
 }
 
 model CateringOrder {

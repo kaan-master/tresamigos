@@ -11,6 +11,8 @@ import { useLanguage } from "../i18n/LanguageProvider";
 import { AnalyticsTracker } from "./AnalyticsTracker";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { IconCart, IconLocation, IconLogin } from "./NavIcons";
+import { NewsletterSection } from "./NewsletterSection";
+import { PromoPopup } from "./PromoPopup";
 import { SocialLinks } from "./SocialLinks";
 import { SiteHead } from "./Helmet";
 
@@ -72,32 +74,26 @@ function CartNavLink({ mobile }: { mobile?: boolean }) {
   const { t } = useLanguage();
   const location = useLocation();
   const { itemCount, openDrawer, cartPulse } = useCateringCart();
+  if (itemCount <= 0) return null;
+
   const className = mobile ? "nav-icon-link nav-cart-link nav-mobile-only" : "nav-icon-link nav-cart-link";
   const isCatering = location.pathname === "/catering";
   const pulseClass = isCatering && cartPulse ? " is-pulse" : "";
+  const label = `${t("nav.cart")} (${itemCount})`;
 
   if (isCatering) {
     return (
-      <button
-        className={`${className}${pulseClass}`}
-        type="button"
-        aria-label={itemCount > 0 ? `${t("nav.cart")} (${itemCount})` : t("nav.cart")}
-        onClick={openDrawer}
-      >
+      <button className={`${className}${pulseClass}`} type="button" aria-label={label} onClick={openDrawer}>
         <IconCart />
-        {itemCount > 0 ? <span className="nav-cart-badge">{itemCount}</span> : null}
+        <span className="nav-cart-badge">{itemCount}</span>
       </button>
     );
   }
 
   return (
-    <Link
-      className={className}
-      to={itemCount > 0 ? "/catering?view=cart" : "/catering"}
-      aria-label={itemCount > 0 ? `${t("nav.cart")} (${itemCount})` : t("nav.cart")}
-    >
+    <Link className={className} to="/catering?view=cart" aria-label={label}>
       <IconCart />
-      {itemCount > 0 ? <span className="nav-cart-badge">{itemCount}</span> : null}
+      <span className="nav-cart-badge">{itemCount}</span>
     </Link>
   );
 }
@@ -273,6 +269,7 @@ export function Layout({ content }: LayoutProps) {
       <div className="page-enter" key={location.pathname}>
         <Outlet />
       </div>
+      <NewsletterSection />
       <footer className="footer">
         <div className="shell footer-grid">
           <div>
@@ -323,6 +320,7 @@ export function Layout({ content }: LayoutProps) {
         </div>
         <div className="shell copyright">{formatCopyright(site.footer.copyright)}</div>
       </footer>
+      {site.promoPopup?.enabled ? <PromoPopup settings={site.promoPopup} /> : null}
     </>
   );
 }

@@ -38,7 +38,7 @@ async function upsertSite(content: SiteContent) {
     seoMenuTitle: site.seo.pages.menu.title,
     seoMenuDescription: site.seo.pages.menu.description,
     seoImage: site.seo.image,
-    seoPages: site.seo.pages,
+    seoPages: site.seo.pages as object,
     navCtaLabel: site.navCta.label,
     navCtaUrl: site.navCta.url,
     navigation: site.navigation as object,

@@ -4,12 +4,15 @@ import { join } from "node:path";
 import { AnalyticsModule } from "./analytics/analytics.module";
 import { ApplicationsModule } from "./applications/applications.module";
 import { CateringModule } from "./catering/catering.module";
+import { FranchiseModule } from "./franchise/franchise.module";
 import { AuthModule } from "./auth/auth.module";
 import { ContactModule } from "./contact/contact.module";
 import { ContentModule } from "./content/content.module";
 import { HealthController } from "./health/health.controller";
 import { InstagramModule } from "./instagram/instagram.module";
+import { IntegrationsModule } from "./integrations/integrations.module";
 import { MediaModule } from "./media/media.module";
+import { NewsletterModule } from "./newsletter/newsletter.module";
 import { PromoModule } from "./promo/promo.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { RedisModule } from "./redis/redis.module";
@@ -28,6 +31,9 @@ import { UsersModule } from "./users/users.module";
     AuthModule,
     ContentModule,
     ApplicationsModule,
+    FranchiseModule,
+    NewsletterModule,
+    IntegrationsModule,
     CateringModule,
     MediaModule,
     AnalyticsModule,
