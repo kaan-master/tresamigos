@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
+import { NewsletterInline } from "../components/NewsletterInline";
 import { SocialLinks } from "../components/SocialLinks";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { assetUrl, submitContact } from "../lib/api";
@@ -200,6 +201,7 @@ export function ContactPage({ content }: { content: SiteContent }) {
           </section>
         </div>
       </main>
+      <NewsletterInline placement="page" id="nieuwsbrief-contact" />
     </>
   );
 }

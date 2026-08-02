@@ -1,4 +1,5 @@
 import { Helmet } from "../components/Helmet";
+import { NewsletterInline } from "../components/NewsletterInline";
 import { SiteVideo } from "../components/SiteVideo";
 import { assetUrl } from "../lib/api";
 import { isVideoSrc } from "../lib/isVideoSrc";
@@ -55,6 +56,7 @@ export function OurStoryPage({ content }: { content: SiteContent }) {
           </figure>
         </div>
       </main>
+      <NewsletterInline placement="page" id="nieuwsbrief-story" />
     </>
   );
 }

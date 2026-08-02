@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Helmet } from "../components/Helmet";
 import { InstagramSection } from "../components/InstagramSection";
+import { NewsletterInline } from "../components/NewsletterInline";
 import { ReviewsSection } from "../components/ReviewsSection";
 import { SiteVideo } from "../components/SiteVideo";
 import type { SiteContent } from "@tresamigos/types";
@@ -139,6 +140,8 @@ export function HomePage({ content }: { content: SiteContent }) {
         </section>
 
         <ReviewsSection settings={site.reviews} />
+
+        <NewsletterInline placement="home" id="nieuwsbrief-home" />
 
         <InstagramSection settings={site.instagram} />
 

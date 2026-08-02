@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
-import type { IntegrationSettingsPublic, UpdateIntegrationMailRelayInput } from "@tresamigos/types";
+import type {
+  IntegrationSettingsPublic,
+  UpdateIntegrationGoogleAdsInput,
+  UpdateIntegrationMailRelayInput,
+  UpdateIntegrationNewsletterInput
+} from "@tresamigos/types";
 import { api } from "../lib/api";
 
 type MailForm = {
@@ -12,6 +17,18 @@ type MailForm = {
   password: string;
   fromEmail: string;
   fromName: string;
+};
+
+type GoogleAdsForm = {
+  enabled: boolean;
+  conversionId: string;
+};
+
+type NewsletterForm = {
+  enabled: boolean;
+  showFooter: boolean;
+  showHome: boolean;
+  showPages: boolean;
 };
 
 const LOCKED_INTEGRATIONS = [
@@ -47,7 +64,7 @@ const LOCKED_INTEGRATIONS = [
   }
 ] as const;
 
-function toForm(settings: IntegrationSettingsPublic["mailRelay"]): MailForm {
+function toMailForm(settings: IntegrationSettingsPublic["mailRelay"]): MailForm {
   return {
     enabled: settings.enabled,
     provider: settings.provider,
@@ -61,17 +78,25 @@ function toForm(settings: IntegrationSettingsPublic["mailRelay"]): MailForm {
   };
 }
 
+function StatusBadge({ active }: { active: boolean }) {
+  return <span className={`ta-integration-status${active ? " is-active" : ""}`}>{active ? "Actief" : "Uit"}</span>;
+}
+
 export function IntegrationsPanel() {
   const [settings, setSettings] = useState<IntegrationSettingsPublic | null>(null);
-  const [form, setForm] = useState<MailForm | null>(null);
+  const [mailForm, setMailForm] = useState<MailForm | null>(null);
+  const [googleForm, setGoogleForm] = useState<GoogleAdsForm | null>(null);
+  const [newsletterForm, setNewsletterForm] = useState<NewsletterForm | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingKey, setSavingKey] = useState<"mail" | "google" | "newsletter" | null>(null);
   const [testing, setTesting] = useState(false);
   const [testRecipient, setTestRecipient] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [openMail, setOpenMail] = useState(true);
+  const [openMail, setOpenMail] = useState(false);
+  const [openGoogle, setOpenGoogle] = useState(true);
+  const [openNewsletter, setOpenNewsletter] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,7 +104,12 @@ export function IntegrationsPanel() {
       .then((result) => {
         if (cancelled) return;
         setSettings(result.integrations);
-        setForm(toForm(result.integrations.mailRelay));
+        setMailForm(toMailForm(result.integrations.mailRelay));
+        setGoogleForm({
+          enabled: result.integrations.googleAds.enabled,
+          conversionId: result.integrations.googleAds.conversionId
+        });
+        setNewsletterForm({ ...result.integrations.newsletter });
         setTestRecipient(result.integrations.mailRelay.fromEmail || result.integrations.mailRelay.username || "");
       })
       .catch((loadError) => {
@@ -98,7 +128,13 @@ export function IntegrationsPanel() {
   const query = search.trim().toLowerCase();
   const showMail =
     !query ||
-    "mail mailrelay smtp outlook e-mail email nieuwsbrief".split(" ").some((part) => query.includes(part) || part.includes(query));
+    "mail mailrelay smtp outlook e-mail email".split(" ").some((part) => query.includes(part) || part.includes(query));
+  const showGoogle =
+    !query ||
+    "google ads gtag aw conversie advertising tracking".split(" ").some((part) => query.includes(part) || part.includes(query));
+  const showNewsletter =
+    !query ||
+    "nieuwsbrief newsletter mail subscribe abonnees".split(" ").some((part) => query.includes(part) || part.includes(query));
 
   const lockedVisible = useMemo(
     () =>
@@ -109,35 +145,61 @@ export function IntegrationsPanel() {
     [query]
   );
 
-  function handleTextChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    const { name, value } = event.target;
-    setForm((current) => (current ? { ...current, [name]: value } : current));
+  const statusItems = useMemo(() => {
+    if (!settings) return [];
+    return [
+      { id: "google", label: "Google Ads", active: settings.googleAds.enabled, detail: settings.googleAds.conversionId },
+      {
+        id: "newsletter",
+        label: "Nieuwsbrief",
+        active: settings.newsletter.enabled,
+        detail: settings.newsletter.enabled ? "Aanmeldformulieren op de site" : "Uitgeschakeld"
+      },
+      {
+        id: "mail",
+        label: "Mailrelay",
+        active: settings.mailRelay.enabled,
+        detail: settings.mailRelay.enabled ? settings.mailRelay.host || "SMTP actief" : "Uitgeschakeld"
+      }
+    ];
+  }, [settings]);
+
+  function applySettings(next: IntegrationSettingsPublic) {
+    setSettings(next);
+    setMailForm(toMailForm(next.mailRelay));
+    setGoogleForm({ enabled: next.googleAds.enabled, conversionId: next.googleAds.conversionId });
+    setNewsletterForm({ ...next.newsletter });
   }
 
-  function handleToggleChange(event: ChangeEvent<HTMLInputElement>) {
+  function handleMailTextChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    const { name, value } = event.target;
+    setMailForm((current) => (current ? { ...current, [name]: value } : current));
+  }
+
+  function handleMailToggleChange(event: ChangeEvent<HTMLInputElement>) {
     const { name, checked } = event.target;
-    setForm((current) => (current ? { ...current, [name]: checked } : current));
+    setMailForm((current) => (current ? { ...current, [name]: checked } : current));
   }
 
   async function saveMailRelay(event?: FormEvent) {
     event?.preventDefault();
-    if (!form || saving) return;
-    setSaving(true);
+    if (!mailForm || savingKey) return;
+    setSavingKey("mail");
     setError("");
     setMessage("");
 
     const payload: UpdateIntegrationMailRelayInput = {
-      enabled: form.enabled,
-      provider: form.provider,
-      host: form.host.trim(),
-      port: Number.parseInt(form.port, 10) || 587,
-      secure: form.secure,
-      username: form.username.trim(),
-      fromEmail: form.fromEmail.trim(),
-      fromName: form.fromName.trim()
+      enabled: mailForm.enabled,
+      provider: mailForm.provider,
+      host: mailForm.host.trim(),
+      port: Number.parseInt(mailForm.port, 10) || 587,
+      secure: mailForm.secure,
+      username: mailForm.username.trim(),
+      fromEmail: mailForm.fromEmail.trim(),
+      fromName: mailForm.fromName.trim()
     };
-    if (form.password.trim()) {
-      payload.password = form.password.trim();
+    if (mailForm.password.trim()) {
+      payload.password = mailForm.password.trim();
     }
 
     try {
@@ -145,13 +207,61 @@ export function IntegrationsPanel() {
         method: "PUT",
         body: JSON.stringify(payload)
       });
-      setSettings(result.integrations);
-      setForm(toForm(result.integrations.mailRelay));
+      applySettings(result.integrations);
       setMessage("Mailrelay opgeslagen.");
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Opslaan mislukt.");
     } finally {
-      setSaving(false);
+      setSavingKey(null);
+    }
+  }
+
+  async function saveGoogleAds(event?: FormEvent) {
+    event?.preventDefault();
+    if (!googleForm || savingKey) return;
+    setSavingKey("google");
+    setError("");
+    setMessage("");
+
+    const payload: UpdateIntegrationGoogleAdsInput = {
+      enabled: googleForm.enabled,
+      conversionId: googleForm.conversionId.trim()
+    };
+
+    try {
+      const result = await api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations/google-ads", {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+      applySettings(result.integrations);
+      setMessage("Google Ads opgeslagen.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Opslaan mislukt.");
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function saveNewsletter(event?: FormEvent) {
+    event?.preventDefault();
+    if (!newsletterForm || savingKey) return;
+    setSavingKey("newsletter");
+    setError("");
+    setMessage("");
+
+    const payload: UpdateIntegrationNewsletterInput = { ...newsletterForm };
+
+    try {
+      const result = await api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations/newsletter", {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+      applySettings(result.integrations);
+      setMessage("Nieuwsbrief-integratie opgeslagen.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Opslaan mislukt.");
+    } finally {
+      setSavingKey(null);
     }
   }
 
@@ -168,7 +278,7 @@ export function IntegrationsPanel() {
           body: JSON.stringify({ to: testRecipient.trim() })
         }
       );
-      setSettings(result.integrations);
+      applySettings(result.integrations);
       setMessage(result.message);
     } catch (testError) {
       setError(testError instanceof Error ? testError.message : "Testmail mislukt.");
@@ -185,26 +295,186 @@ export function IntegrationsPanel() {
     <div className="ta-stack" style={{ gap: 20 }}>
       <label className="ta-field" style={{ maxWidth: 420 }}>
         <span>Zoeken</span>
-        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="mail, mollie, google..." />
+        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="google, nieuwsbrief, mail..." />
       </label>
 
       {error ? <p className="ta-error">{error}</p> : null}
       {message ? <p className="ta-success">{message}</p> : null}
 
-      {showMail && form ? (
+      {!query ? (
+        <div className="ta-integration-overview">
+          <div className="ta-integration-overview-head">
+            <strong>Actieve integraties</strong>
+            <p>Overzicht van wat nu live staat op de site en in de mailflow.</p>
+          </div>
+          <div className="ta-integration-overview-grid">
+            {statusItems.map((item) => (
+              <article key={item.id} className={`ta-integration-chip${item.active ? " is-active" : ""}`}>
+                <div className="ta-integration-chip-top">
+                  <strong>{item.label}</strong>
+                  <StatusBadge active={item.active} />
+                </div>
+                <span>{item.detail}</span>
+              </article>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {showGoogle && googleForm ? (
+        <div className="ta-integration-card">
+          <button type="button" className="ta-integration-head" onClick={() => setOpenGoogle((value) => !value)}>
+            <div>
+              <strong>Google Ads</strong>
+              <p>gtag.js conversietag voor Google Ads-campagnes op de website.</p>
+            </div>
+            <div className="ta-integration-head-meta">
+              <StatusBadge active={settings?.googleAds.enabled ?? false} />
+              <span>{openGoogle ? "−" : "+"}</span>
+            </div>
+          </button>
+
+          {openGoogle ? (
+            <form className="ta-integration-body" onSubmit={(event) => void saveGoogleAds(event)}>
+              <label className="ta-check">
+                <input
+                  type="checkbox"
+                  checked={googleForm.enabled}
+                  onChange={(event) => setGoogleForm((current) => (current ? { ...current, enabled: event.target.checked } : current))}
+                />
+                <span>Google Ads-tag actief op de website</span>
+              </label>
+
+              <label className="ta-field">
+                <span>Conversie-ID</span>
+                <input
+                  value={googleForm.conversionId}
+                  onChange={(event) =>
+                    setGoogleForm((current) => (current ? { ...current, conversionId: event.target.value } : current))
+                  }
+                  placeholder="AW-16851426878"
+                />
+              </label>
+
+              <div className="ta-integration-monitor">
+                <strong>Status</strong>
+                <span>
+                  Tag:{" "}
+                  {settings?.googleAds.enabled
+                    ? `Live via gtag.js (${settings.googleAds.conversionId})`
+                    : "Uitgeschakeld — niet geladen op de site"}
+                </span>
+                <span>Script: https://www.googletagmanager.com/gtag/js?id={settings?.googleAds.conversionId}</span>
+              </div>
+
+              <div className="ta-toolbar" style={{ gap: 10, flexWrap: "wrap" }}>
+                <button type="submit" className="ta-btn" disabled={savingKey === "google"}>
+                  {savingKey === "google" ? "Opslaan..." : "Google Ads opslaan"}
+                </button>
+              </div>
+            </form>
+          ) : null}
+        </div>
+      ) : null}
+
+      {showNewsletter && newsletterForm ? (
+        <div className="ta-integration-card">
+          <button type="button" className="ta-integration-head" onClick={() => setOpenNewsletter((value) => !value)}>
+            <div>
+              <strong>Nieuwsbrief</strong>
+              <p>Aanmeldformulieren op homepage, pagina&apos;s en boven de footer. Abonnees beheer je onder Nieuwsbrief.</p>
+            </div>
+            <div className="ta-integration-head-meta">
+              <StatusBadge active={settings?.newsletter.enabled ?? false} />
+              <span>{openNewsletter ? "−" : "+"}</span>
+            </div>
+          </button>
+
+          {openNewsletter ? (
+            <form className="ta-integration-body" onSubmit={(event) => void saveNewsletter(event)}>
+              <label className="ta-check">
+                <input
+                  type="checkbox"
+                  checked={newsletterForm.enabled}
+                  onChange={(event) =>
+                    setNewsletterForm((current) => (current ? { ...current, enabled: event.target.checked } : current))
+                  }
+                />
+                <span>Nieuwsbrief-verzamelaar actief</span>
+              </label>
+
+              <div className="ta-grid">
+                <label className="ta-check">
+                  <input
+                    type="checkbox"
+                    checked={newsletterForm.showHome}
+                    disabled={!newsletterForm.enabled}
+                    onChange={(event) =>
+                      setNewsletterForm((current) => (current ? { ...current, showHome: event.target.checked } : current))
+                    }
+                  />
+                  <span>Toon op homepage</span>
+                </label>
+                <label className="ta-check">
+                  <input
+                    type="checkbox"
+                    checked={newsletterForm.showPages}
+                    disabled={!newsletterForm.enabled}
+                    onChange={(event) =>
+                      setNewsletterForm((current) => (current ? { ...current, showPages: event.target.checked } : current))
+                    }
+                  />
+                  <span>Toon op andere pagina&apos;s (menu, contact, …)</span>
+                </label>
+                <label className="ta-check">
+                  <input
+                    type="checkbox"
+                    checked={newsletterForm.showFooter}
+                    disabled={!newsletterForm.enabled}
+                    onChange={(event) =>
+                      setNewsletterForm((current) => (current ? { ...current, showFooter: event.target.checked } : current))
+                    }
+                  />
+                  <span>Toon boven de footer (alle pagina&apos;s)</span>
+                </label>
+              </div>
+
+              <div className="ta-integration-monitor">
+                <strong>Status</strong>
+                <span>
+                  {settings?.newsletter.enabled
+                    ? "Aanmeldingen landen in de Nieuwsbrief-tab"
+                    : "Uitgeschakeld — formulieren zijn verborgen"}
+                </span>
+              </div>
+
+              <div className="ta-toolbar" style={{ gap: 10, flexWrap: "wrap" }}>
+                <button type="submit" className="ta-btn" disabled={savingKey === "newsletter"}>
+                  {savingKey === "newsletter" ? "Opslaan..." : "Nieuwsbrief opslaan"}
+                </button>
+              </div>
+            </form>
+          ) : null}
+        </div>
+      ) : null}
+
+      {showMail && mailForm ? (
         <div className="ta-integration-card">
           <button type="button" className="ta-integration-head" onClick={() => setOpenMail((value) => !value)}>
             <div>
               <strong>Mailrelay</strong>
               <p>SMTP of Outlook koppelen voor contact, promo en cateringmails.</p>
             </div>
-            <span>{openMail ? "−" : "+"}</span>
+            <div className="ta-integration-head-meta">
+              <StatusBadge active={settings?.mailRelay.enabled ?? false} />
+              <span>{openMail ? "−" : "+"}</span>
+            </div>
           </button>
 
           {openMail ? (
             <form className="ta-integration-body" onSubmit={(event) => void saveMailRelay(event)}>
               <label className="ta-check">
-                <input type="checkbox" name="enabled" checked={form.enabled} onChange={handleToggleChange} />
+                <input type="checkbox" name="enabled" checked={mailForm.enabled} onChange={handleMailToggleChange} />
                 <span>Mailrelay actief</span>
               </label>
 
@@ -213,10 +483,10 @@ export function IntegrationsPanel() {
                   <span>Provider</span>
                   <select
                     name="provider"
-                    value={form.provider}
+                    value={mailForm.provider}
                     onChange={(event) => {
                       const provider = event.target.value as "smtp" | "outlook";
-                      setForm((current) =>
+                      setMailForm((current) =>
                         current
                           ? {
                               ...current,
@@ -235,41 +505,41 @@ export function IntegrationsPanel() {
                   <span>SMTP host</span>
                   <input
                     name="host"
-                    value={form.host}
-                    onChange={handleTextChange}
-                    placeholder={form.provider === "outlook" ? "smtp.office365.com" : "smtp.provider.nl"}
+                    value={mailForm.host}
+                    onChange={handleMailTextChange}
+                    placeholder={mailForm.provider === "outlook" ? "smtp.office365.com" : "smtp.provider.nl"}
                   />
                 </label>
                 <label className="ta-field">
                   <span>Poort</span>
-                  <input name="port" value={form.port} onChange={handleTextChange} inputMode="numeric" placeholder="587" />
+                  <input name="port" value={mailForm.port} onChange={handleMailTextChange} inputMode="numeric" placeholder="587" />
                 </label>
                 <label className="ta-check" style={{ alignSelf: "end" }}>
-                  <input type="checkbox" name="secure" checked={form.secure} onChange={handleToggleChange} />
+                  <input type="checkbox" name="secure" checked={mailForm.secure} onChange={handleMailToggleChange} />
                   <span>SSL direct gebruiken</span>
                 </label>
                 <label className="ta-field">
                   <span>Gebruiker / e-mailadres</span>
-                  <input name="username" value={form.username} onChange={handleTextChange} autoComplete="off" />
+                  <input name="username" value={mailForm.username} onChange={handleMailTextChange} autoComplete="off" />
                 </label>
                 <label className="ta-field">
                   <span>Wachtwoord / app password</span>
                   <input
                     type="password"
                     name="password"
-                    value={form.password}
-                    onChange={handleTextChange}
+                    value={mailForm.password}
+                    onChange={handleMailTextChange}
                     autoComplete="new-password"
                     placeholder={settings?.mailRelay.passwordSet ? "•••••••• (blijft behouden)" : ""}
                   />
                 </label>
                 <label className="ta-field">
                   <span>Afzender e-mail</span>
-                  <input name="fromEmail" value={form.fromEmail} onChange={handleTextChange} placeholder="info@tresamigos.nl" />
+                  <input name="fromEmail" value={mailForm.fromEmail} onChange={handleMailTextChange} placeholder="info@tresamigos.nl" />
                 </label>
                 <label className="ta-field">
                   <span>Afzender naam</span>
-                  <input name="fromName" value={form.fromName} onChange={handleTextChange} placeholder="Tres Amigos" />
+                  <input name="fromName" value={mailForm.fromName} onChange={handleMailTextChange} placeholder="Tres Amigos" />
                 </label>
               </div>
 
@@ -280,8 +550,8 @@ export function IntegrationsPanel() {
               ) : null}
 
               <div className="ta-toolbar" style={{ gap: 10, flexWrap: "wrap" }}>
-                <button type="submit" className="ta-btn" disabled={saving}>
-                  {saving ? "Opslaan..." : "Mailrelay opslaan"}
+                <button type="submit" className="ta-btn" disabled={savingKey === "mail"}>
+                  {savingKey === "mail" ? "Opslaan..." : "Mailrelay opslaan"}
                 </button>
               </div>
 
@@ -310,7 +580,7 @@ export function IntegrationsPanel() {
                   <input
                     value={testRecipient}
                     onChange={(event) => setTestRecipient(event.target.value)}
-                    placeholder={form.fromEmail || form.username || "test@email.nl"}
+                    placeholder={mailForm.fromEmail || mailForm.username || "test@email.nl"}
                   />
                 </label>
                 <div style={{ alignSelf: "end" }}>

@@ -1,3 +1,4 @@
+import type { PublicIntegrationsSettings } from "@tresamigos/types";
 import { buildApiUrl, resolveApiBase } from "@tresamigos/utils/api-url";
 
 const base = import.meta.env.DEV ? "" : resolveApiBase(import.meta.env.VITE_API_URL);
@@ -10,6 +11,13 @@ export async function fetchContent() {
   const response = await fetch(apiUrl("/api/content"));
   if (!response.ok) throw new Error("Content kon niet geladen worden.");
   return response.json();
+}
+
+export async function fetchPublicIntegrations(): Promise<PublicIntegrationsSettings> {
+  const response = await fetch(apiUrl("/api/integrations"));
+  if (!response.ok) throw new Error("Integraties konden niet geladen worden.");
+  const data = (await response.json()) as { integrations: PublicIntegrationsSettings };
+  return data.integrations;
 }
 
 export async function submitContact(body: unknown) {

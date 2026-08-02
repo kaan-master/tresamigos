@@ -1,10 +1,17 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import type { IntegrationTestMailInput, UpdateIntegrationMailRelayInput } from "@tresamigos/types";
+import type {
+  IntegrationTestMailInput,
+  PublicIntegrationsSettings,
+  UpdateIntegrationGoogleAdsInput,
+  UpdateIntegrationMailRelayInput,
+  UpdateIntegrationNewsletterInput
+} from "@tresamigos/types";
 import { cleanText } from "@tresamigos/utils";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.module";
 
 const PRIMARY_ID = "primary";
+const DEFAULT_GOOGLE_ADS_ID = "AW-16851426878";
 
 @Injectable()
 export class IntegrationsService {
@@ -17,6 +24,15 @@ export class IntegrationsService {
     const existing = await this.prisma.integrationSettings.findUnique({ where: { id: PRIMARY_ID } });
     if (existing) return existing;
     return this.prisma.integrationSettings.create({ data: { id: PRIMARY_ID } });
+  }
+
+  private normalizeGoogleAdsId(value: string) {
+    const cleaned = cleanText(value, "", 40).toUpperCase().replace(/\s+/g, "");
+    if (!cleaned) return DEFAULT_GOOGLE_ADS_ID;
+    if (!/^AW-\d{6,20}$/.test(cleaned)) {
+      throw new BadRequestException({ message: "Vul een geldig Google Ads conversie-ID in (bijv. AW-16851426878)." });
+    }
+    return cleaned;
   }
 
   async getSettings() {
@@ -36,7 +52,25 @@ export class IntegrationsService {
         lastStatus: row.mailRelayLastStatus,
         lastMessage: row.mailRelayLastMessage,
         envFallbackConfigured: this.mailService.isEnvConfigured()
+      },
+      googleAds: {
+        enabled: row.googleAdsEnabled,
+        conversionId: row.googleAdsConversionId || DEFAULT_GOOGLE_ADS_ID
+      },
+      newsletter: {
+        enabled: row.newsletterEnabled,
+        showFooter: row.newsletterShowFooter,
+        showHome: row.newsletterShowHome,
+        showPages: row.newsletterShowPages
       }
+    };
+  }
+
+  async getPublicSettings(): Promise<PublicIntegrationsSettings> {
+    const settings = await this.getSettings();
+    return {
+      googleAds: settings.googleAds,
+      newsletter: settings.newsletter
     };
   }
 
@@ -79,6 +113,40 @@ export class IntegrationsService {
     });
 
     this.mailService.invalidateCache();
+    return this.getSettings();
+  }
+
+  async updateGoogleAds(input: UpdateIntegrationGoogleAdsInput) {
+    const current = await this.getOrCreate();
+    const conversionId =
+      input.conversionId !== undefined
+        ? this.normalizeGoogleAdsId(input.conversionId)
+        : current.googleAdsConversionId || DEFAULT_GOOGLE_ADS_ID;
+
+    await this.prisma.integrationSettings.update({
+      where: { id: PRIMARY_ID },
+      data: {
+        googleAdsEnabled: input.enabled ?? current.googleAdsEnabled,
+        googleAdsConversionId: conversionId
+      }
+    });
+
+    return this.getSettings();
+  }
+
+  async updateNewsletter(input: UpdateIntegrationNewsletterInput) {
+    const current = await this.getOrCreate();
+
+    await this.prisma.integrationSettings.update({
+      where: { id: PRIMARY_ID },
+      data: {
+        newsletterEnabled: input.enabled ?? current.newsletterEnabled,
+        newsletterShowFooter: input.showFooter ?? current.newsletterShowFooter,
+        newsletterShowHome: input.showHome ?? current.newsletterShowHome,
+        newsletterShowPages: input.showPages ?? current.newsletterShowPages
+      }
+    });
+
     return this.getSettings();
   }
 

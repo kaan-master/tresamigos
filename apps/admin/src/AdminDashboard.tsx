@@ -419,7 +419,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
         <section className="ta-panel ta-fade-in">
           <header className="ta-panel-head">
             <h2>Integraties</h2>
-            <p>Koppel de mailserver. Overige integraties staan klaar en zijn locked tot aankoop.</p>
+            <p>Bekijk en beheer actieve koppelingen: Google Ads, nieuwsbrief, mailrelay. Overige staan klaar tot aankoop.</p>
           </header>
           <IntegrationsPanel />
         </section>

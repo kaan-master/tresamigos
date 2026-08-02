@@ -1,6 +1,7 @@
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { LocationCard, OrderCard } from "../components/LocationCards";
+import { NewsletterInline } from "../components/NewsletterInline";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { pageSeo } from "../lib/seo";
 
@@ -25,6 +26,7 @@ export function OrderPage({ content }: { content: SiteContent }) {
           ))}
         </div>
       </main>
+      <NewsletterInline placement="page" id="nieuwsbrief-order" />
     </>
   );
 }
@@ -50,6 +52,7 @@ export function LocationsPage({ content }: { content: SiteContent }) {
           ))}
         </div>
       </main>
+      <NewsletterInline placement="page" id="nieuwsbrief-locations" />
     </>
   );
 }

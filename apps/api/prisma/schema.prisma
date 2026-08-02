@@ -94,6 +94,12 @@ model IntegrationSettings {
   mailRelayLastTestAt    DateTime?
   mailRelayLastStatus    String    @default("")
   mailRelayLastMessage   String    @default("")
+  googleAdsEnabled       Boolean   @default(true)
+  googleAdsConversionId  String    @default("AW-16851426878")
+  newsletterEnabled      Boolean   @default(true)
+  newsletterShowFooter   Boolean   @default(true)
+  newsletterShowHome     Boolean   @default(true)
+  newsletterShowPages    Boolean   @default(true)
   updatedAt              DateTime  @updatedAt
 }
 

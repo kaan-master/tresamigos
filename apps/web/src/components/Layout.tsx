@@ -11,10 +11,12 @@ import { useLanguage } from "../i18n/LanguageProvider";
 import { AnalyticsTracker } from "./AnalyticsTracker";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { IconCart, IconLocation, IconLogin } from "./NavIcons";
+import { usePublicIntegrations } from "../hooks/usePublicIntegrations";
 import { NewsletterSection } from "./NewsletterSection";
 import { PromoPopup } from "./PromoPopup";
 import { SocialLinks } from "./SocialLinks";
 import { SiteHead } from "./Helmet";
+import { TrackingScripts } from "./TrackingScripts";
 
 interface LayoutProps {
   content: SiteContent;
@@ -172,10 +174,12 @@ export function Layout({ content }: LayoutProps) {
   const { site, locations } = content;
   const location = useLocation();
   const { t } = useLanguage();
+  const { data: integrations } = usePublicIntegrations();
   const [menuOpen, setMenuOpen] = useState(false);
   const lockedScrollY = useRef(0);
   const restoreScrollOnClose = useRef(true);
   const mainNavItems = resolveMainNavItems(site.navigation);
+  const showFooterNewsletter = Boolean(integrations?.newsletter.enabled && integrations.newsletter.showFooter);
   useScrollToTop();
   usePageMotion();
 
@@ -229,6 +233,7 @@ export function Layout({ content }: LayoutProps) {
         googleSiteVerification={site.seo.googleSiteVerification}
         bingSiteVerification={site.seo.bingSiteVerification}
       />
+      <TrackingScripts />
       <AnalyticsTracker />
       <nav className={`nav nav-split${menuOpen ? " is-open" : ""}`}>
         <div className="shell shell-wide nav-inner">
@@ -272,7 +277,9 @@ export function Layout({ content }: LayoutProps) {
       <div className="page-enter" key={location.pathname}>
         <Outlet />
       </div>
-      <NewsletterSection />
+      {showFooterNewsletter && location.pathname !== "/loyalty" ? (
+        <NewsletterSection id="nieuwsbrief-footer" />
+      ) : null}
       <footer className="footer">
         <div className="shell footer-grid">
           <div>

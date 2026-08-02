@@ -2,12 +2,21 @@ import { FormEvent, useState } from "react";
 import { submitNewsletterSubscribe } from "../lib/api";
 import { useLanguage } from "../i18n/LanguageProvider";
 
-export function NewsletterSection() {
+type NewsletterVariant = "full" | "compact";
+
+export function NewsletterSection({
+  variant = "full",
+  id
+}: {
+  variant?: NewsletterVariant;
+  id?: string;
+}) {
   const { t } = useLanguage();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const titleId = id ? `${id}-title` : "newsletter-title";
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -30,15 +39,19 @@ export function NewsletterSection() {
   }
 
   return (
-    <section id="nieuwsbrief" className="section newsletter-section" aria-labelledby="newsletter-title">
+    <section
+      id={id || (variant === "full" ? "nieuwsbrief" : undefined)}
+      className={`section newsletter-section${variant === "compact" ? " newsletter-section--compact" : ""}`}
+      aria-labelledby={titleId}
+    >
       <div className="shell">
         <div className="newsletter-inner">
           <div className="newsletter-copy">
             <p className="newsletter-eyebrow">{t("newsletter.eyebrow")}</p>
-            <h2 id="newsletter-title" className="newsletter-title">
+            <h2 id={titleId} className="newsletter-title">
               {t("newsletter.title")}
             </h2>
-            <p className="newsletter-body">{t("newsletter.body")}</p>
+            {variant === "full" ? <p className="newsletter-body">{t("newsletter.body")}</p> : null}
           </div>
 
           <form className="newsletter-form" onSubmit={(event) => void handleSubmit(event)}>
@@ -49,15 +62,17 @@ export function NewsletterSection() {
             ) : (
               <>
                 <div className="newsletter-fields">
-                  <input
-                    type="text"
-                    name="name"
-                    autoComplete="name"
-                    placeholder={t("newsletter.name")}
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    className="newsletter-input"
-                  />
+                  {variant === "full" ? (
+                    <input
+                      type="text"
+                      name="name"
+                      autoComplete="name"
+                      placeholder={t("newsletter.name")}
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      className="newsletter-input"
+                    />
+                  ) : null}
                   <input
                     type="email"
                     name="email"

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { MenuTabs } from "../components/MenuTabs";
+import { NewsletterInline } from "../components/NewsletterInline";
 import { ProductDetailModal } from "../components/ProductDetailModal";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { productImageUrl } from "../lib/productImage";
@@ -62,6 +63,7 @@ export function MenuPage({ content }: { content: SiteContent }) {
           ))}
         </div>
       </main>
+      <NewsletterInline placement="page" id="nieuwsbrief-menu" />
       <section className="section blue">
         <div className="shell split">
           <div>

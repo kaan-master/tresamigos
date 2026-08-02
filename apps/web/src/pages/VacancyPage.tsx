@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { SiteContent, VacancyJob } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { ApplicationWizardModal } from "../components/ApplicationWizardModal";
+import { NewsletterInline } from "../components/NewsletterInline";
 import { SiteVideo } from "../components/SiteVideo";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { assetUrl } from "../lib/api";
@@ -101,6 +102,8 @@ export function VacancyPage({ content }: { content: SiteContent }) {
           </section>
         </div>
       </main>
+
+      <NewsletterInline placement="page" id="nieuwsbrief-vacancy" />
 
       <ApplicationWizardModal
         open={Boolean(applyJob)}

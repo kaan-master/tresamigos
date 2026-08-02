@@ -635,8 +635,28 @@ export interface IntegrationMailRelaySettings {
   envFallbackConfigured: boolean;
 }
 
+export interface IntegrationGoogleAdsSettings {
+  enabled: boolean;
+  conversionId: string;
+}
+
+export interface IntegrationNewsletterSettings {
+  enabled: boolean;
+  showFooter: boolean;
+  showHome: boolean;
+  showPages: boolean;
+}
+
 export interface IntegrationSettingsPublic {
   mailRelay: IntegrationMailRelaySettings;
+  googleAds: IntegrationGoogleAdsSettings;
+  newsletter: IntegrationNewsletterSettings;
+}
+
+/** Publieke subset voor de website (geen SMTP-secrets). */
+export interface PublicIntegrationsSettings {
+  googleAds: IntegrationGoogleAdsSettings;
+  newsletter: IntegrationNewsletterSettings;
 }
 
 export interface UpdateIntegrationMailRelayInput {
@@ -650,6 +670,18 @@ export interface UpdateIntegrationMailRelayInput {
   fromEmail?: string;
   fromName?: string;
   clearPassword?: boolean;
+}
+
+export interface UpdateIntegrationGoogleAdsInput {
+  enabled?: boolean;
+  conversionId?: string;
+}
+
+export interface UpdateIntegrationNewsletterInput {
+  enabled?: boolean;
+  showFooter?: boolean;
+  showHome?: boolean;
+  showPages?: boolean;
 }
 
 export interface IntegrationTestMailInput {
