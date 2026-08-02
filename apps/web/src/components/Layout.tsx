@@ -74,9 +74,12 @@ function CartNavLink({ mobile }: { mobile?: boolean }) {
   const { t } = useLanguage();
   const location = useLocation();
   const { itemCount, openDrawer, cartPulse } = useCateringCart();
-  if (itemCount <= 0) return null;
+  // Alleen tonen als er echt items in de catering-cart zitten.
+  if (!Number.isFinite(itemCount) || itemCount < 1) return null;
 
-  const className = mobile ? "nav-icon-link nav-cart-link nav-mobile-only" : "nav-icon-link nav-cart-link";
+  const className = mobile
+    ? "nav-icon-link nav-cart-link nav-cart-link--dark nav-mobile-only"
+    : "nav-icon-link nav-cart-link nav-cart-link--dark";
   const isCatering = location.pathname === "/catering";
   const pulseClass = isCatering && cartPulse ? " is-pulse" : "";
   const label = `${t("nav.cart")} (${itemCount})`;

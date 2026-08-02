@@ -100,10 +100,11 @@ export function sanitizeNavSettings(input: unknown): NavSettings {
     if (existing) {
       merged.push({
         ...existing,
-        visible: defaults.id === "login" || defaults.id === "locations" ? false : existing.visible,
+        visible: defaults.id === "login" || defaults.id === "locations" ? false : existing.visible !== false,
         group: defaults.group
       });
     } else {
+      // franchise/loyalty e.d. die nog niet in CMS JSON staan → defaults (zichtbaar).
       merged.push(defaults);
     }
   }
