@@ -3753,7 +3753,10 @@ body.admin-tablet-mode .ta-action-dock {
 }
 
 .ta-integration-available-body {
-  gap: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0;
+  padding-top: 4px;
 }
 
 .ta-integration-highlights {

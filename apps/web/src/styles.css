@@ -471,6 +471,11 @@ main{background:var(--paper)}.hero{padding:54px 0 46px;background:linear-gradien
 @media(max-width:920px){.contact-layout{grid-template-columns:1fr}.product-card.has-image{grid-template-columns:72px 1fr}.product-card.has-image strong{grid-column:2;justify-self:start;margin-top:8px}}
 .vacancy-hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center}
 .vacancy-hero-photo img{width:100%;min-height:320px;object-fit:cover;border-radius:28px;box-shadow:0 24px 70px rgba(31,22,11,.12)}
+.vacancy-logo-frame{display:grid;place-items:center;width:100%;height:100%;min-height:inherit;background:#fff;border-radius:inherit;padding:clamp(24px,4vw,48px);box-sizing:border-box}
+.vacancy-hero-photo .vacancy-logo-frame{min-height:320px;border-radius:28px;box-shadow:0 24px 70px rgba(31,22,11,.12)}
+.vacancy-hero-photo .vacancy-logo-frame img{width:100%;max-width:280px;min-height:0;height:auto;object-fit:contain;border-radius:0;box-shadow:none}
+.vacancy-job-photo .vacancy-logo-frame{min-height:220px;border-radius:22px}
+.vacancy-job-photo .vacancy-logo-frame img{width:100%;max-width:200px;min-height:0;height:auto;object-fit:contain;border-radius:0}
 .vacancy-jobs{display:grid;gap:24px;margin-bottom:48px}
 .vacancy-job-card{display:grid;grid-template-columns:280px 1fr;gap:24px;padding:24px;border:1px solid var(--line);border-radius:28px;background:#fff;box-shadow:0 18px 50px rgba(31,22,11,.06)}
 .vacancy-job-photo img,.vacancy-job-photo video{width:100%;height:100%;min-height:220px;object-fit:cover;border-radius:22px;display:block}
@@ -499,8 +504,8 @@ main{background:var(--paper)}.hero{padding:54px 0 46px;background:linear-gradien
 .application-modal-close{position:static;flex-shrink:0;width:40px;height:40px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--text);font-size:24px;line-height:1;cursor:pointer;box-shadow:0 8px 20px rgba(31,22,11,.06)}
 .application-modal-close:disabled{opacity:.5;cursor:not-allowed}
 .application-modal-grid{display:grid;grid-template-columns:.42fr 1fr;gap:0;align-items:stretch;max-height:calc(100vh - clamp(24px,5vw,56px))}
-.application-modal-visual{overflow:hidden;background:#000;min-height:420px}
-.application-modal-visual img,.application-modal-visual video{width:100%;height:100%;min-height:100%;object-fit:cover;display:block}
+.application-modal-visual{overflow:hidden;background:#fff;min-height:420px;display:grid;place-items:center;padding:clamp(28px,4vw,48px)}
+.application-modal-visual img,.application-modal-visual video{width:100%;max-width:260px;height:auto;max-height:100%;min-height:0;object-fit:contain;display:block}
 .application-shell-modal{border:0;border-radius:0;box-shadow:none;width:100%;display:grid;grid-template-rows:auto auto 1fr;max-height:calc(100vh - clamp(24px,5vw,56px));overflow:hidden}
 .application-form-modal{padding:0;display:grid;grid-template-rows:1fr auto auto;overflow-y:auto;max-height:calc(100vh - clamp(24px,5vw,56px) - 40px)}
 .application-form-modal .application-step{min-height:280px;padding:clamp(22px,4vw,36px)}
@@ -826,15 +831,46 @@ body.catering-modal-open{overflow:hidden}
 .franchise-step{display:grid;gap:14px}
 .franchise-step h3{margin:0 0 4px;font-size:clamp(26px,4vw,36px)}
 .franchise-step-help{margin:0;color:var(--muted);font-weight:650}
-.franchise-choice{border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:grid;gap:10px}
-.franchise-choice legend{padding:0 6px;font-weight:850}
+.franchise-choice{border:0;border-radius:0;padding:0;display:grid;gap:10px}
+.franchise-choice legend{padding:0;font-weight:850}
 .franchise-choice-hint{margin:0;color:var(--muted);font-size:14px;font-weight:650}
 .franchise-choice label{display:flex;align-items:center;gap:10px;font-weight:700}
 .franchise-terms{display:flex;align-items:flex-start;gap:10px;font-weight:700;margin-top:6px}
 .franchise-actions{display:flex;justify-content:space-between;gap:12px;margin-top:22px;flex-wrap:wrap}
 .franchise-success{display:grid;gap:16px;text-align:center;place-items:center;min-height:280px}
 .franchise-success h2{margin:0;font-size:clamp(28px,4vw,42px)}
+.franchise-success-modal{position:fixed;inset:0;z-index:1400;display:flex;align-items:center;justify-content:center;padding:20px}
+.franchise-success-backdrop{position:fixed;inset:0;border:0;background:rgba(19,12,5,.58);backdrop-filter:blur(8px);cursor:pointer}
+.franchise-success-panel{position:relative;z-index:1;width:min(440px,100%);display:grid;gap:16px;justify-items:center;text-align:center;padding:clamp(28px,5vw,40px);border-radius:28px;background:#fff;box-shadow:0 34px 90px rgba(31,22,11,.24)}
+.franchise-success-panel h2{margin:0;font-size:clamp(28px,4vw,40px)}
+.franchise-success-panel p{margin:0;color:var(--muted);font-weight:650;line-height:1.55}
 @media(max-width:900px){.franchise-hero-inner{padding:96px 0 56px;text-align:left;justify-items:start}.franchise-story-grid,.franchise-benefit-list{grid-template-columns:1fr;gap:22px}.franchise-story-visual,.franchise-story-visual img{min-height:240px}}
+
+.loyalty-stats{list-style:none;margin:22px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:10px}
+.loyalty-stats li{display:inline-flex;align-items:center;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 13px;font-size:13px;font-weight:850;color:var(--mole)}
+.loyalty-visual{padding-top:0}
+.loyalty-visual-frame{margin:0;border-radius:var(--radius);overflow:hidden;min-height:280px}
+.loyalty-visual-frame img{width:100%;height:100%;object-fit:cover;display:block;min-height:280px;max-height:420px}
+.loyalty-section-head{max-width:640px;margin-bottom:28px}
+.loyalty-tier-list,.loyalty-how-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
+.loyalty-tier-list li,.loyalty-how-list li{display:grid;gap:8px}
+.loyalty-tier-list strong,.loyalty-how-list strong{font-size:clamp(22px,2.4vw,28px);letter-spacing:-.03em}
+.loyalty-tier-list span,.loyalty-how-list span{color:var(--muted);font-weight:650;line-height:1.45}
+.loyalty-reward-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.loyalty-reward-list li{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px 18px;font-weight:800;letter-spacing:-.02em;box-shadow:0 14px 34px rgba(31,22,11,.05)}
+.loyalty-faq{max-width:760px}
+.loyalty-faq-list{display:grid;gap:12px}
+.loyalty-faq-item{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 14px 34px rgba(31,22,11,.05)}
+.loyalty-faq-item button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;border:0;background:#fff;padding:18px 20px;text-align:left;color:var(--text);font:inherit;font-weight:850;cursor:pointer}
+.loyalty-faq-item button em{font-style:normal;font-size:22px;color:var(--mole);line-height:1}
+.loyalty-faq-item p{margin:0;padding:0 20px 18px;color:var(--muted);font-weight:650;line-height:1.55}
+.loyalty-join-inner{max-width:640px;margin:0 auto;text-align:center;display:grid;justify-items:center;gap:8px}
+.loyalty-join-inner .lead{margin:0 auto}
+.loyalty-join-inner .actions{justify-content:center;margin-top:12px}
+@media(max-width:900px){
+  .loyalty-tier-list,.loyalty-how-list,.loyalty-reward-list{grid-template-columns:1fr;gap:18px}
+  .loyalty-visual-frame,.loyalty-visual-frame img{min-height:220px;max-height:280px}
+}
 
 .menu-section{margin-bottom:36px;scroll-margin-top:calc(var(--nav-h, 88px) + 66px)}
 .menu-section-inner{/* stable section body — no clipPath/opacity jitter */}

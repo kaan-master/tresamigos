@@ -3,27 +3,18 @@ import type { SiteContent, VacancyJob } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { ApplicationWizardModal } from "../components/ApplicationWizardModal";
 import { NewsletterInline } from "../components/NewsletterInline";
-import { SiteVideo } from "../components/SiteVideo";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { assetUrl } from "../lib/api";
-import { isVideoSrc } from "../lib/isVideoSrc";
 import { pageSeo } from "../lib/seo";
-import { videoPosterUrl } from "../lib/videoPoster";
 
-function VacancyMedia({ src, alt }: { src: string; alt: string }) {
-  const url = assetUrl(src);
-  if (isVideoSrc(src)) {
-    return (
-      <SiteVideo
-        src={url}
-        poster={assetUrl(videoPosterUrl(src))}
-        preload="metadata"
-        bootDefer
-        aria-label={alt}
-      />
-    );
-  }
-  return <img src={url} alt={alt} loading="lazy" />;
+const VACANCY_LOGO = "/assets/site/tres-amigos-logo-new.png";
+
+function VacancyLogo({ alt }: { alt: string }) {
+  return (
+    <div className="vacancy-logo-frame">
+      <img src={assetUrl(VACANCY_LOGO)} alt={alt} loading="lazy" />
+    </div>
+  );
 }
 
 export function VacancyPage({ content }: { content: SiteContent }) {
@@ -48,7 +39,7 @@ export function VacancyPage({ content }: { content: SiteContent }) {
             <p>{vacancy.heroIntro}</p>
           </div>
           <div className="vacancy-hero-photo">
-            <VacancyMedia src={vacancy.heroImage} alt={t("vacancy.teamAlt")} />
+            <VacancyLogo alt={t("vacancy.teamAlt")} />
           </div>
         </div>
       </header>
@@ -60,7 +51,7 @@ export function VacancyPage({ content }: { content: SiteContent }) {
               enabledJobs.map((job) => (
                 <article className="vacancy-job-card" key={job.id}>
                   <div className="vacancy-job-photo">
-                    <VacancyMedia src={job.image} alt={job.title} />
+                    <VacancyLogo alt={job.title} />
                   </div>
                   <div className="vacancy-job-copy">
                     <h2>{job.title}</h2>
@@ -108,7 +99,7 @@ export function VacancyPage({ content }: { content: SiteContent }) {
       <ApplicationWizardModal
         open={Boolean(applyJob)}
         job={applyJob}
-        formImage={vacancy.formImage}
+        formImage={VACANCY_LOGO}
         onClose={() => setApplyJob(null)}
       />
     </>

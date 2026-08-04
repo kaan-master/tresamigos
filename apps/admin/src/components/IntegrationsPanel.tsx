@@ -38,32 +38,17 @@ const AVAILABLE_INTEGRATIONS = [
   {
     id: "google-login",
     title: "Google Login",
-    description: "Laat klanten of medewerkers inloggen met Google OAuth.",
-    highlights: ["Sneller inloggen", "Minder wachtwoorden", "Google-accounts"]
+    description: "Inloggen met Google OAuth."
   },
   {
     id: "mollie",
     title: "Mollie",
-    description: "Online betalingen voor catering of giftcards via Mollie.",
-    highlights: ["iDEAL & cards", "Automatische webhooks", "Test- en livemodus"]
+    description: "Online betalingen via Mollie."
   },
   {
     id: "postnl",
     title: "PostNL tracking",
-    description: "Track & trace voor verzendingen en bestellingen.",
-    highlights: ["Track & trace", "Statusupdates", "Klantcommunicatie"]
-  },
-  {
-    id: "delivery",
-    title: "Thuisbezorgd / Uber Eats",
-    description: "Koppel bestelplatforms voor statusupdates en menu sync.",
-    highlights: ["Menu sync", "Orderstatus", "Platformkoppeling"]
-  },
-  {
-    id: "meta",
-    title: "Meta Pixel",
-    description: "Conversiemeting via Meta Ads / Facebook Pixel.",
-    highlights: ["Conversies meten", "Retargeting", "Ads-optimalisatie"]
+    description: "Track & trace voor verzendingen."
   }
 ] as const;
 
@@ -657,8 +642,8 @@ export function IntegrationsPanel() {
         <div className="ta-integration-available-block">
           {!query ? (
             <div className="ta-integration-available-intro">
-              <strong>Beschikbaar op aanvraag</strong>
-              <p>Extra koppelingen die we voor je kunnen activeren. Vraag aan en we nemen contact op.</p>
+              <strong>Op aanvraag</strong>
+              <p>Extra koppelingen. Vraag aan en we nemen contact op.</p>
             </div>
           ) : null}
 
@@ -678,29 +663,13 @@ export function IntegrationsPanel() {
                   </div>
 
                   <div className="ta-integration-body ta-integration-available-body">
-                    <ul className="ta-integration-highlights">
-                      {item.highlights.map((highlight) => (
-                        <li key={highlight}>{highlight}</li>
-                      ))}
-                    </ul>
-
-                    <div className="ta-integration-request">
-                      <div>
-                        <strong>{requested ? "Aanvraag verstuurd" : "Klaar om te activeren"}</strong>
-                        <p>
-                          {requested
-                            ? "We hebben je aanvraag genoteerd. Stuur de e-mail af of mail ons opnieuw als je iets wilt wijzigen."
-                            : "Vraag deze integratie aan. We activeren hem na bevestiging en sturen de setup-instructies."}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className={`ta-btn ${requested ? "ta-btn-accent" : "ta-btn-primary"}`}
-                        onClick={() => handleRequestIntegration(item)}
-                      >
-                        {requested ? "Opnieuw aanvragen" : "Integratie aanvragen"}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className={`ta-btn ${requested ? "ta-btn-accent" : "ta-btn-primary"}`}
+                      onClick={() => handleRequestIntegration(item)}
+                    >
+                      {requested ? "Opnieuw aanvragen" : "Aanvragen"}
+                    </button>
                   </div>
                 </article>
               );

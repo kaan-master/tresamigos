@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { useLanguage } from "../i18n/LanguageProvider";
@@ -54,10 +54,20 @@ export function FranchisePage({ content }: { content: SiteContent }) {
   const [customDesiredLocation, setCustomDesiredLocation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"" | "success" | "error">("");
 
   const progress = useMemo(() => Math.round((step / TOTAL_STEPS) * 100), [step]);
+
+  useEffect(() => {
+    if (!showSuccessPopup) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [showSuccessPopup]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -143,10 +153,12 @@ export function FranchisePage({ content }: { content: SiteContent }) {
         termsAccepted: form.termsAccepted
       });
       setDone(true);
+      setShowSuccessPopup(true);
       setMessage(result.message || t("franchise.success"));
       setMessageType("success");
       setForm(emptyForm());
       setCustomDesiredLocation(false);
+      setStep(1);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : t("franchise.errorSend"));
       setMessageType("error");
@@ -229,32 +241,15 @@ export function FranchisePage({ content }: { content: SiteContent }) {
         </div>
       </section>
 
-      <main id="franchise-aanvraag" className="section franchise-apply">
-        <div className="shell">
-          <div className="franchise-apply-head">
-            <h2 className="section-title">{t("franchise.applyTitle")}</h2>
-            <p className="lead">{t("franchise.applyIntro")}</p>
-          </div>
+      {!done ? (
+        <main id="franchise-aanvraag" className="section franchise-apply">
+          <div className="shell">
+            <div className="franchise-apply-head">
+              <h2 className="section-title">{t("franchise.applyTitle")}</h2>
+              <p className="lead">{t("franchise.applyIntro")}</p>
+            </div>
 
-          <div className="franchise-app">
-            {done ? (
-              <div className="franchise-success">
-                <h2>{t("franchise.successTitle")}</h2>
-                <p>{message || t("franchise.success")}</p>
-                <button
-                  type="button"
-                  className="btn primary"
-                  onClick={() => {
-                    setDone(false);
-                    setStep(1);
-                    setMessage("");
-                    setMessageType("");
-                  }}
-                >
-                  {t("franchise.again")}
-                </button>
-              </div>
-            ) : (
+            <div className="franchise-app">
               <form className="franchise-form" onSubmit={(event) => void handleSubmit(event)}>
                 <div className="franchise-progress" aria-hidden="true">
                   <div style={{ width: `${progress}%` }} />
@@ -465,10 +460,33 @@ export function FranchisePage({ content }: { content: SiteContent }) {
                   )}
                 </div>
               </form>
-            )}
+            </div>
+          </div>
+        </main>
+      ) : null}
+
+      {showSuccessPopup ? (
+        <div
+          className="franchise-success-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="franchise-success-title"
+        >
+          <button
+            type="button"
+            className="franchise-success-backdrop"
+            aria-label={t("franchise.successClose")}
+            onClick={() => setShowSuccessPopup(false)}
+          />
+          <div className="franchise-success-panel">
+            <h2 id="franchise-success-title">{t("franchise.successTitle")}</h2>
+            <p>{message || t("franchise.success")}</p>
+            <button type="button" className="btn primary" onClick={() => setShowSuccessPopup(false)}>
+              {t("franchise.successClose")}
+            </button>
           </div>
         </div>
-      </main>
+      ) : null}
     </>
   );
 }
