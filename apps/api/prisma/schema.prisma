@@ -201,6 +201,7 @@ model FranchiseInquiry {
   currentRole     String   @default("")
   company         String   @default("")
   investment      String   @default("")
+  financing       String   @default("")
   visitedLocation String   @default("")
   termsAccepted   Boolean  @default(false)
 }

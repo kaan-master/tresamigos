@@ -122,23 +122,51 @@ git_sync_production() {
   fi
 
   git reset --hard "${upstream}"
+  git stash clear 2>/dev/null || true
   chmod +x start.sh start-containers.sh scripts/*.sh 2>/dev/null || true
+  assert_clean_worktree_sources
   ok "Repository = ${upstream} ($(git rev-parse --short HEAD))"
 }
 
+# Detecteer achtergebleven merge/stash conflict-markers (bijt vite.config e.d.).
+has_merge_conflict_markers() {
+  git grep -n -E '^(<<<<<<<|=======|>>>>>>>)' -- \
+    ':!*.md' ':!docs/**' ':!node_modules/**' >/dev/null 2>&1
+}
+
+assert_clean_worktree_sources() {
+  if has_merge_conflict_markers; then
+    warn "Conflict-markers gevonden na git sync — hard reset naar upstream"
+    local upstream
+    upstream="$(resolve_upstream_ref "$(git rev-parse --abbrev-ref HEAD)")"
+    git reset --hard "${upstream}"
+    git stash clear 2>/dev/null || true
+  fi
+  if has_merge_conflict_markers; then
+    fail "Er staan nog steeds conflict-markers in de code (bijv. <<<<<<<). Los op met: git reset --hard origin/main"
+  fi
+}
+
 # Development: zachte pull, autostash als nodig.
+# Autostash kan <<<<<<< Updated upstream achterlaten als lokale edits botsen met remote.
 git_sync_development() {
   git rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
 
   clean_tsbuildinfo_drift
 
   if git pull --ff-only --autostash; then
+    assert_clean_worktree_sources
     ok "Repository bijgewerkt"
     return
   fi
 
   warn "Pull met autostash mislukt — reset tracked files en opnieuw"
-  git reset --hard "@{u}" 2>/dev/null || git pull --ff-only --autostash || warn "Git pull overgeslagen"
+  local upstream
+  upstream="$(resolve_upstream_ref "$(git rev-parse --abbrev-ref HEAD)")"
+  git reset --hard "${upstream}" 2>/dev/null || git reset --hard "@{u}" 2>/dev/null || true
+  git stash clear 2>/dev/null || true
+  git pull --ff-only || warn "Git pull overgeslagen"
+  assert_clean_worktree_sources
   ok "Repository bijgewerkt"
 }
 

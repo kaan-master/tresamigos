@@ -28,6 +28,7 @@ export function FranchisePanel({ inquiries }: Props) {
         inquiry.currentRole,
         inquiry.company,
         inquiry.investment,
+        inquiry.financing,
         inquiry.visitedLocation,
         inquiry.status
       ]
@@ -108,8 +109,12 @@ export function FranchisePanel({ inquiries }: Props) {
               <input readOnly value={selected.company || "-"} />
             </label>
             <label className="ta-field">
-              <span>Gewenste investering</span>
+              <span>Investeringsbereik</span>
               <input readOnly value={selected.investment || "-"} />
+            </label>
+            <label className="ta-field ta-grid-wide">
+              <span>Financiering</span>
+              <input readOnly value={selected.financing || "-"} />
             </label>
             <label className="ta-field ta-grid-wide">
               <span>Vestiging bezocht</span>

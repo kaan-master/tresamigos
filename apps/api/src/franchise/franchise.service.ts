@@ -19,6 +19,7 @@ export class FranchiseService {
     currentRole: string;
     company: string;
     investment: string;
+    financing: string;
     visitedLocation: string;
     termsAccepted: boolean;
   }): FranchiseInquiry {
@@ -34,6 +35,7 @@ export class FranchiseService {
       currentRole: record.currentRole,
       company: record.company,
       investment: record.investment,
+      financing: record.financing,
       visitedLocation: record.visitedLocation,
       termsAccepted: record.termsAccepted
     });
@@ -63,6 +65,7 @@ export class FranchiseService {
         currentRole: inquiry.currentRole,
         company: inquiry.company,
         investment: inquiry.investment,
+        financing: inquiry.financing,
         visitedLocation: inquiry.visitedLocation,
         termsAccepted: inquiry.termsAccepted
       }

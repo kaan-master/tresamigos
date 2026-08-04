@@ -31,38 +31,43 @@ type NewsletterForm = {
   showPages: boolean;
 };
 
-const LOCKED_INTEGRATIONS = [
+const REQUEST_EMAIL = "info@tresamigos.nl";
+const REQUESTED_STORAGE_KEY = "ta-integration-requests";
+
+const AVAILABLE_INTEGRATIONS = [
   {
     id: "google-login",
     title: "Google Login",
     description: "Laat klanten of medewerkers inloggen met Google OAuth.",
-    fields: ["Client ID", "Client secret", "Redirect URI"]
+    highlights: ["Sneller inloggen", "Minder wachtwoorden", "Google-accounts"]
   },
   {
     id: "mollie",
     title: "Mollie",
     description: "Online betalingen voor catering of giftcards via Mollie.",
-    fields: ["API-modus", "Test API-sleutel", "Live API-sleutel", "Webhook"]
+    highlights: ["iDEAL & cards", "Automatische webhooks", "Test- en livemodus"]
   },
   {
     id: "postnl",
     title: "PostNL tracking",
     description: "Track & trace voor verzendingen en bestellingen.",
-    fields: ["API key", "Klantnummer", "Klantcode"]
+    highlights: ["Track & trace", "Statusupdates", "Klantcommunicatie"]
   },
   {
     id: "delivery",
     title: "Thuisbezorgd / Uber Eats",
     description: "Koppel bestelplatforms voor statusupdates en menu sync.",
-    fields: ["Partner ID", "API-sleutel", "Webhook secret"]
+    highlights: ["Menu sync", "Orderstatus", "Platformkoppeling"]
   },
   {
     id: "meta",
     title: "Meta Pixel",
     description: "Conversiemeting via Meta Ads / Facebook Pixel.",
-    fields: ["Pixel ID", "Access token"]
+    highlights: ["Conversies meten", "Retargeting", "Ads-optimalisatie"]
   }
 ] as const;
+
+type AvailableIntegration = (typeof AVAILABLE_INTEGRATIONS)[number];
 
 function toMailForm(settings: IntegrationSettingsPublic["mailRelay"]): MailForm {
   return {
@@ -78,8 +83,43 @@ function toMailForm(settings: IntegrationSettingsPublic["mailRelay"]): MailForm 
   };
 }
 
+function readRequestedIds(): string[] {
+  try {
+    const raw = window.localStorage.getItem(REQUESTED_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 function StatusBadge({ active }: { active: boolean }) {
-  return <span className={`ta-integration-status${active ? " is-active" : ""}`}>{active ? "Actief" : "Uit"}</span>;
+  return (
+    <span className={`ta-integration-status${active ? " is-active" : " is-off"}`}>
+      <span className="ta-integration-status-dot" aria-hidden="true" />
+      {active ? "Actief" : "Uit"}
+    </span>
+  );
+}
+
+function requestIntegrationMailto(item: AvailableIntegration) {
+  const subject = encodeURIComponent(`Integratie aanvragen: ${item.title}`);
+  const body = encodeURIComponent(
+    [
+      `Hoi Tres Amigos-team,`,
+      ``,
+      `Ik wil graag de integratie "${item.title}" activeren voor mijn account.`,
+      ``,
+      `Integratie: ${item.title}`,
+      `Omschrijving: ${item.description}`,
+      ``,
+      `Kunnen jullie contact met mij opnemen over activatie en eventuele kosten?`,
+      ``,
+      `Bedankt!`
+    ].join("\n")
+  );
+  window.location.href = `mailto:${REQUEST_EMAIL}?subject=${subject}&body=${body}`;
 }
 
 export function IntegrationsPanel() {
@@ -97,6 +137,9 @@ export function IntegrationsPanel() {
   const [openMail, setOpenMail] = useState(false);
   const [openGoogle, setOpenGoogle] = useState(true);
   const [openNewsletter, setOpenNewsletter] = useState(true);
+  const [requestedIds, setRequestedIds] = useState<string[]>(() =>
+    typeof window === "undefined" ? [] : readRequestedIds()
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -136,14 +179,30 @@ export function IntegrationsPanel() {
     !query ||
     "nieuwsbrief newsletter mail subscribe abonnees".split(" ").some((part) => query.includes(part) || part.includes(query));
 
-  const lockedVisible = useMemo(
+  const availableVisible = useMemo(
     () =>
-      LOCKED_INTEGRATIONS.filter((item) => {
+      AVAILABLE_INTEGRATIONS.filter((item) => {
         if (!query) return true;
         return `${item.title} ${item.description}`.toLowerCase().includes(query);
       }),
     [query]
   );
+
+  function markRequested(id: string) {
+    setRequestedIds((current) => {
+      if (current.includes(id)) return current;
+      const next = [...current, id];
+      window.localStorage.setItem(REQUESTED_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function handleRequestIntegration(item: AvailableIntegration) {
+    requestIntegrationMailto(item);
+    markRequested(item.id);
+    setError("");
+    setMessage(`Aanvraag voor ${item.title} is klaargezet in je e-mailprogramma.`);
+  }
 
   const statusItems = useMemo(() => {
     if (!settings) return [];
@@ -368,7 +427,7 @@ export function IntegrationsPanel() {
               </div>
 
               <div className="ta-toolbar" style={{ gap: 10, flexWrap: "wrap" }}>
-                <button type="submit" className="ta-btn" disabled={savingKey === "google"}>
+                <button type="submit" className="ta-btn ta-btn-primary" disabled={savingKey === "google"}>
                   {savingKey === "google" ? "Opslaan..." : "Google Ads opslaan"}
                 </button>
               </div>
@@ -449,7 +508,7 @@ export function IntegrationsPanel() {
               </div>
 
               <div className="ta-toolbar" style={{ gap: 10, flexWrap: "wrap" }}>
-                <button type="submit" className="ta-btn" disabled={savingKey === "newsletter"}>
+                <button type="submit" className="ta-btn ta-btn-primary" disabled={savingKey === "newsletter"}>
                   {savingKey === "newsletter" ? "Opslaan..." : "Nieuwsbrief opslaan"}
                 </button>
               </div>
@@ -550,7 +609,7 @@ export function IntegrationsPanel() {
               ) : null}
 
               <div className="ta-toolbar" style={{ gap: 10, flexWrap: "wrap" }}>
-                <button type="submit" className="ta-btn" disabled={savingKey === "mail"}>
+                <button type="submit" className="ta-btn ta-btn-primary" disabled={savingKey === "mail"}>
                   {savingKey === "mail" ? "Opslaan..." : "Mailrelay opslaan"}
                 </button>
               </div>
@@ -584,7 +643,7 @@ export function IntegrationsPanel() {
                   />
                 </label>
                 <div style={{ alignSelf: "end" }}>
-                  <button type="button" className="ta-btn ta-btn-secondary" disabled={testing} onClick={() => void sendTestMail()}>
+                  <button type="button" className="ta-btn ta-btn-accent" disabled={testing} onClick={() => void sendTestMail()}>
                     {testing ? "Testen..." : "Testmail verzenden"}
                   </button>
                 </div>
@@ -594,31 +653,61 @@ export function IntegrationsPanel() {
         </div>
       ) : null}
 
-      {lockedVisible.map((item) => (
-        <div key={item.id} className="ta-integration-card ta-integration-locked">
-          <div className="ta-integration-head">
-            <div>
-              <strong>{item.title}</strong>
-              <p>{item.description}</p>
+      {availableVisible.length ? (
+        <div className="ta-integration-available-block">
+          {!query ? (
+            <div className="ta-integration-available-intro">
+              <strong>Beschikbaar op aanvraag</strong>
+              <p>Extra koppelingen die we voor je kunnen activeren. Vraag aan en we nemen contact op.</p>
             </div>
-            <span className="ta-lock-badge">Nog niet gekocht</span>
-          </div>
-          <div className="ta-integration-body ta-integration-locked-body" aria-disabled="true">
-            <div className="ta-grid">
-              {item.fields.map((field) => (
-                <label key={field} className="ta-field">
-                  <span>{field}</span>
-                  <input disabled placeholder="Beschikbaar na aankoop" />
-                </label>
-              ))}
-            </div>
-            <div className="ta-lock-overlay">
-              <strong>Locked</strong>
-              <p>Deze integratie staat klaar, maar is nog niet geactiveerd voor dit account.</p>
-            </div>
+          ) : null}
+
+          <div className="ta-integration-available-grid">
+            {availableVisible.map((item) => {
+              const requested = requestedIds.includes(item.id);
+              return (
+                <article key={item.id} className={`ta-integration-card ta-integration-available${requested ? " is-requested" : ""}`}>
+                  <div className="ta-integration-head">
+                    <div>
+                      <strong>{item.title}</strong>
+                      <p>{item.description}</p>
+                    </div>
+                    <span className={`ta-request-badge${requested ? " is-requested" : ""}`}>
+                      {requested ? "Aangevraagd" : "Op aanvraag"}
+                    </span>
+                  </div>
+
+                  <div className="ta-integration-body ta-integration-available-body">
+                    <ul className="ta-integration-highlights">
+                      {item.highlights.map((highlight) => (
+                        <li key={highlight}>{highlight}</li>
+                      ))}
+                    </ul>
+
+                    <div className="ta-integration-request">
+                      <div>
+                        <strong>{requested ? "Aanvraag verstuurd" : "Klaar om te activeren"}</strong>
+                        <p>
+                          {requested
+                            ? "We hebben je aanvraag genoteerd. Stuur de e-mail af of mail ons opnieuw als je iets wilt wijzigen."
+                            : "Vraag deze integratie aan. We activeren hem na bevestiging en sturen de setup-instructies."}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className={`ta-btn ${requested ? "ta-btn-accent" : "ta-btn-primary"}`}
+                        onClick={() => handleRequestIntegration(item)}
+                      >
+                        {requested ? "Opnieuw aanvragen" : "Integratie aanvragen"}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
-      ))}
+      ) : null}
     </div>
   );
 }

@@ -277,7 +277,7 @@ export function Layout({ content }: LayoutProps) {
       <div className="page-enter" key={location.pathname}>
         <Outlet />
       </div>
-      {showFooterNewsletter && location.pathname !== "/loyalty" ? (
+      {showFooterNewsletter && location.pathname !== "/loyalty" && location.pathname !== "/franchise" ? (
         <NewsletterSection id="nieuwsbrief-footer" />
       ) : null}
       <footer className="footer">

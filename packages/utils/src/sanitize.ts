@@ -694,6 +694,7 @@ export function sanitizeFranchiseInquiry(
     currentRole: cleanText(input?.currentRole, "", 200),
     company: cleanText(input?.company, "", 200),
     investment: cleanText(input?.investment, "", 200),
+    financing: cleanText(input?.financing, "", 400),
     visitedLocation: cleanText(input?.visitedLocation, "", 300),
     termsAccepted: Boolean(input?.termsAccepted)
   };

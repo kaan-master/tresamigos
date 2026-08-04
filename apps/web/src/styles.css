@@ -797,20 +797,44 @@ body.catering-modal-open{overflow:hidden}
   .nav-text-link[id],.nav-text-link:has(span){gap:4px}
 }
 
+.franchise-hero{position:relative;min-height:min(92vh,820px);display:grid;align-items:center;background-size:cover;background-position:center;color:#fffdf8}
+.franchise-hero-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(19,12,5,.42) 0%,rgba(19,12,5,.58) 45%,rgba(19,12,5,.78) 100%)}
+.franchise-hero-inner{position:relative;z-index:1;max-width:760px;padding:110px 0 72px;text-align:center;margin:0 auto;display:grid;justify-items:center;gap:18px}
+.franchise-hero-brand{margin:0;font-size:clamp(42px,7vw,78px);font-weight:900;letter-spacing:-.05em;line-height:.95;color:#fffdf8}
+.franchise-hero-inner h1{margin:0;max-width:16ch;font-size:clamp(28px,4.4vw,48px);letter-spacing:-.04em;line-height:1.05;color:#fffdf8}
+.franchise-hero-lead{margin:0;max-width:42ch;color:rgba(255,253,248,.82);font-size:clamp(16px,1.7vw,19px);font-weight:620}
+.franchise-hero-cta{margin-top:8px}
+.franchise-eyebrow{margin:0 0 10px;font-size:12px;font-weight:850;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.franchise-story-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:42px;align-items:center}
+.franchise-story-note{margin:18px 0 0;max-width:48ch;color:var(--muted);font-weight:650}
+.franchise-story-visual{margin:0;border-radius:var(--radius);overflow:hidden;min-height:320px}
+.franchise-story-visual img{width:100%;height:100%;object-fit:cover;display:block;min-height:320px}
+.franchise-benefits-head{max-width:640px;margin-bottom:28px}
+.franchise-benefit-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
+.franchise-benefit-list li{display:grid;gap:8px}
+.franchise-benefit-list strong{font-size:clamp(22px,2.4vw,28px);letter-spacing:-.03em}
+.franchise-benefit-list span{color:var(--muted);font-weight:650;line-height:1.45}
+.franchise-money-inner{max-width:720px}
+.franchise-money-points{display:grid;gap:14px;margin-top:22px}
+.franchise-money-points p{margin:0;font-weight:650;line-height:1.5}
+.franchise-apply-head{max-width:640px;margin:0 auto 28px;text-align:center}
 .franchise-app{max-width:720px;margin:0 auto}
 .franchise-form,.franchise-success{background:#fff;border:1px solid var(--line);border-radius:28px;padding:clamp(22px,4vw,36px);box-shadow:0 18px 50px rgba(31,22,11,.06)}
 .franchise-progress{height:7px;border-radius:999px;background:#f0e4d1;overflow:hidden;margin-bottom:14px}
 .franchise-progress div{height:100%;background:linear-gradient(90deg,var(--corn),var(--cherry));border-radius:999px;transition:width .25s ease}
 .franchise-step-label{margin:0 0 18px;color:var(--muted);font-weight:800;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
 .franchise-step{display:grid;gap:14px}
-.franchise-step h2{margin:0 0 4px;font-size:clamp(26px,4vw,36px)}
+.franchise-step h3{margin:0 0 4px;font-size:clamp(26px,4vw,36px)}
+.franchise-step-help{margin:0;color:var(--muted);font-weight:650}
 .franchise-choice{border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:grid;gap:10px}
 .franchise-choice legend{padding:0 6px;font-weight:850}
+.franchise-choice-hint{margin:0;color:var(--muted);font-size:14px;font-weight:650}
 .franchise-choice label{display:flex;align-items:center;gap:10px;font-weight:700}
 .franchise-terms{display:flex;align-items:flex-start;gap:10px;font-weight:700;margin-top:6px}
 .franchise-actions{display:flex;justify-content:space-between;gap:12px;margin-top:22px;flex-wrap:wrap}
 .franchise-success{display:grid;gap:16px;text-align:center;place-items:center;min-height:280px}
 .franchise-success h2{margin:0;font-size:clamp(28px,4vw,42px)}
+@media(max-width:900px){.franchise-hero-inner{padding:96px 0 56px;text-align:left;justify-items:start}.franchise-story-grid,.franchise-benefit-list{grid-template-columns:1fr;gap:22px}.franchise-story-visual,.franchise-story-visual img{min-height:240px}}
 
 .menu-section{margin-bottom:36px;scroll-margin-top:calc(var(--nav-h, 88px) + 66px)}
 .menu-section-inner{/* stable section body — no clipPath/opacity jitter */}
@@ -1217,11 +1241,22 @@ button.product-card:focus-visible{
   width:100%;
   border:1px solid var(--line);
   border-radius:16px;
-  padding:15px 16px;
+  padding:15px 42px 15px 16px;
   font:inherit;
   background:#fff;
   color:var(--text);
   outline:none;
+  appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--mole) 50%),linear-gradient(135deg,var(--mole) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 12px) 50%;
+  background-size:6px 6px,6px 6px;
+  background-repeat:no-repeat;
+  transition:border-color .18s ease,box-shadow .18s ease;
+  cursor:pointer;
+}
+.form-field select:focus{
+  border-color:#aac9ff;
+  box-shadow:0 0 0 4px rgba(0,86,215,.12);
 }
 @media(max-width:920px){
   .product-modal-panel{grid-template-columns:1fr}

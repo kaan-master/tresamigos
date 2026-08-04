@@ -56,14 +56,30 @@ export async function submitApplication(body: unknown) {
   return data;
 }
 
+function apiErrorMessage(data: unknown, fallback: string) {
+  if (!data || typeof data !== "object") return fallback;
+  const message = (data as { message?: unknown }).message;
+  if (typeof message === "string" && message.trim()) return message;
+  if (message && typeof message === "object" && "message" in message) {
+    const nested = (message as { message?: unknown }).message;
+    if (typeof nested === "string" && nested.trim()) return nested;
+  }
+  return fallback;
+}
+
 export async function submitFranchiseInquiry(body: unknown) {
-  const response = await fetch(apiUrl("/api/franchise"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
+  let response: Response;
+  try {
+    response = await fetch(apiUrl("/api/franchise"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+  } catch {
+    throw new Error("Verbinding mislukt. Probeer het zo opnieuw.");
+  }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.message || "Verzenden mislukt.");
+  if (!response.ok) throw new Error(apiErrorMessage(data, "Verzenden mislukt."));
   return data;
 }
 

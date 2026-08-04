@@ -568,6 +568,7 @@ export interface FranchiseInquiry {
   currentRole: string;
   company: string;
   investment: string;
+  financing: string;
   visitedLocation: string;
   termsAccepted: boolean;
 }
@@ -584,6 +585,7 @@ export interface CreateFranchiseInquiryInput {
   currentRole?: string;
   company?: string;
   investment?: string;
+  financing?: string;
   visitedLocation?: string;
   termsAccepted: boolean;
 }
