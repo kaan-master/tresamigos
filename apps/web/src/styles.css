@@ -482,6 +482,8 @@ main{background:var(--paper)}.hero{padding:54px 0 46px;background:linear-gradien
 .vacancy-jobs{display:grid;gap:14px;margin-bottom:48px}
 .vacancy-job-card{display:grid;grid-template-columns:148px 1fr;gap:18px;align-items:start;padding:16px;border:1px solid var(--line);border-radius:20px;background:#fff;box-shadow:0 12px 30px rgba(31,22,11,.05)}
 .vacancy-job-photo{min-height:0;width:148px}
+.vacancy-job-photo>img,
+.vacancy-job-photo>.site-video{width:100%;aspect-ratio:4/3;height:auto;min-height:110px;object-fit:cover;border-radius:14px;display:block;background:#f3eee6}
 .vacancy-logo-frame{display:grid;place-items:center;width:100%;aspect-ratio:4/3;min-height:0;max-height:120px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-sizing:border-box}
 .vacancy-logo-frame img{width:100%;max-width:120px;height:auto;max-height:72px;min-height:0;object-fit:contain;border-radius:0;box-shadow:none}
 .vacancy-job-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
@@ -514,6 +516,8 @@ main{background:var(--paper)}.hero{padding:54px 0 46px;background:linear-gradien
 .application-modal-visual{overflow:hidden;background:#fff;min-height:420px;display:grid;place-items:center;padding:clamp(28px,4vw,56px)}
 .application-modal-visual img{width:100%;max-width:240px;height:auto;min-height:0;object-fit:contain;display:block}
 .application-modal-visual video{width:100%;height:100%;min-height:100%;object-fit:cover;display:block}
+.application-modal-visual.is-photo{padding:0;place-items:stretch}
+.application-modal-visual.is-photo img{max-width:none;width:100%;height:100%;min-height:420px;object-fit:cover}
 .application-shell-modal{border:0;border-radius:0;box-shadow:none;width:100%;display:grid;grid-template-rows:auto auto 1fr;max-height:calc(100vh - clamp(24px,5vw,56px));overflow:hidden}
 .application-form-modal{padding:0;display:grid;grid-template-rows:1fr auto auto;overflow-y:auto;max-height:calc(100vh - clamp(24px,5vw,56px) - 40px)}
 .application-form-modal .application-step{min-height:280px;padding:clamp(22px,4vw,36px)}
@@ -637,7 +641,7 @@ main{background:var(--paper)}.hero{padding:54px 0 46px;background:linear-gradien
 .story-paragraph{margin:0;color:var(--muted);font-size:clamp(17px,1.35vw,19px);font-weight:620;line-height:1.78}
 .story-visual{margin:0}
 .story-visual img,.story-visual video{width:100%;border-radius:28px;box-shadow:0 28px 80px rgba(31,22,11,.14);object-fit:cover;display:block;aspect-ratio:3/4;background:#111}
-@media(max-width:920px){.vacancy-hero-grid,.vacancy-job-card{grid-template-columns:1fr}.vacancy-job-photo{width:100%}.vacancy-logo-frame{max-height:96px;aspect-ratio:16/5}.application-modal-grid{grid-template-columns:1fr}.application-modal-visual{display:none}.contact-compose{grid-template-columns:1fr}.contact-compose-visual img{min-height:200px;max-height:240px}.story-layout{grid-template-columns:1fr}.story-visual{order:-1}.value-atmosphere-grid{grid-template-columns:1fr;gap:12px}.value-atmosphere-grid figure,.value-atmosphere-grid img{min-height:180px}.value-atmosphere-hide-mobile{display:none}}
+@media(max-width:920px){.vacancy-hero-grid,.vacancy-job-card{grid-template-columns:1fr}.vacancy-job-photo{width:100%}.vacancy-job-photo>img,.vacancy-job-photo>.site-video{aspect-ratio:16/9;min-height:160px}.vacancy-logo-frame{max-height:96px;aspect-ratio:16/5}.application-modal-grid{grid-template-columns:1fr}.application-modal-visual{display:none}.contact-compose{grid-template-columns:1fr}.contact-compose-visual img{min-height:200px;max-height:240px}.story-layout{grid-template-columns:1fr}.story-visual{order:-1}.value-atmosphere-grid{grid-template-columns:1fr;gap:12px}.value-atmosphere-grid figure,.value-atmosphere-grid img{min-height:180px}.value-atmosphere-hide-mobile{display:none}}
 @media(max-width:640px){.day-picker{grid-template-columns:repeat(4,minmax(0,1fr))}.contact-locations-list{grid-template-columns:1fr}.contact-location-link{border-right:0}.contact-location-link:nth-last-child(-n+2){border-bottom:1px solid var(--line)}.contact-location-link:last-child{border-bottom:0}}
 .lang-switch{display:inline-flex;align-items:center;gap:5px;padding:5px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.92);box-shadow:0 8px 22px rgba(31,22,11,.06)}
 .lang-switch button{position:relative;border:0;background:transparent;border-radius:999px;padding:10px 15px;font:inherit;font-size:13px;font-weight:900;color:rgba(33,23,12,.68);cursor:pointer;transition:transform .22s cubic-bezier(.34,1.56,.64,1),color .22s ease,background .22s ease,box-shadow .22s ease}

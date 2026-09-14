@@ -4114,6 +4114,7 @@ body.admin-tablet-mode .ta-action-dock {
 .entra-count{font-size:13px;color:#616161;font-weight:650;white-space:nowrap}
 .entra-form{max-width:920px}
 .entra-job-thumb{width:100%;max-height:140px;object-fit:cover;border-radius:6px}
+.entra-job-mini{width:40px;height:40px;object-fit:cover;border-radius:6px;display:block;background:#f3f2f1}
 .entra-embed{min-width:0}
 .entra-embed .ta-stack-panel{margin:0}
 .entra-embed .catering-settings-page{margin-top:0}

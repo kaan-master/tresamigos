@@ -3,13 +3,55 @@ import type { SiteContent, VacancyJob } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { ApplicationWizardModal } from "../components/ApplicationWizardModal";
 import { NewsletterInline } from "../components/NewsletterInline";
+import { SiteVideo } from "../components/SiteVideo";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { assetUrl } from "../lib/api";
+import { isVideoSrc } from "../lib/isVideoSrc";
 import { pageMediaImgStyle, resolvePageMediaSrc } from "../lib/pageMedia";
 import { pageSeo } from "../lib/seo";
+import { videoPosterUrl } from "../lib/videoPoster";
 
 const WORK_WITH_US_FALLBACK = "/assets/site/work-with-us-hero.png";
 const BRAND_LOGO = "/assets/site/tres-amigos-logo-new.png";
+
+function isBrandLogoSrc(src: string) {
+  return /tres-amigos-logo/i.test(src);
+}
+
+function JobPhoto({ src, alt }: { src: string; alt: string }) {
+  const resolved = src || BRAND_LOGO;
+  const isLogo = isBrandLogoSrc(resolved);
+
+  if (isVideoSrc(resolved)) {
+    return (
+      <div className="vacancy-job-photo">
+        <SiteVideo
+          src={assetUrl(resolved)}
+          poster={assetUrl(videoPosterUrl(resolved))}
+          preload="metadata"
+          bootDefer
+          aria-hidden
+        />
+      </div>
+    );
+  }
+
+  if (isLogo) {
+    return (
+      <div className="vacancy-job-photo is-logo">
+        <div className="vacancy-logo-frame">
+          <img src={assetUrl(resolved)} alt={alt} loading="lazy" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="vacancy-job-photo">
+      <img src={assetUrl(resolved)} alt={alt} loading="lazy" />
+    </div>
+  );
+}
 
 type CategoryKey = "kitchen" | "leadership" | "operations";
 type EmploymentKey = "fulltime" | "parttime";
@@ -95,11 +137,7 @@ export function VacancyPage({ content }: { content: SiteContent }) {
               {filteredJobs.length ? (
                 filteredJobs.map((job) => (
                   <article className="vacancy-job-card" key={job.id}>
-                    <div className="vacancy-job-photo">
-                      <div className="vacancy-logo-frame">
-                        <img src={assetUrl(BRAND_LOGO)} alt="Tres Amigos" loading="lazy" />
-                      </div>
-                    </div>
+                    <JobPhoto src={job.image} alt={job.title} />
                     <div className="vacancy-job-copy">
                       <div className="vacancy-job-meta">
                         {job.location ? <span>{job.location}</span> : null}
@@ -154,7 +192,7 @@ export function VacancyPage({ content }: { content: SiteContent }) {
       <ApplicationWizardModal
         open={Boolean(applyJob)}
         job={applyJob}
-        formImage={BRAND_LOGO}
+        formImage={applyJob?.image || vacancy.formImage || BRAND_LOGO}
         onClose={() => setApplyJob(null)}
       />
     </>

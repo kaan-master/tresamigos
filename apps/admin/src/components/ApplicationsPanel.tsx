@@ -363,6 +363,7 @@ function JobsView({
         <table className="entra-table">
           <thead>
             <tr>
+              <th>Foto</th>
               <th>Functie</th>
               <th>Locatie</th>
               <th>Dienstverband</th>
@@ -377,6 +378,13 @@ function JobsView({
                 onClick={() => openJob(item)}
               >
                 <td>
+                  {item.image ? (
+                    <img className="entra-job-mini" src={mediaAssetUrl(item.image)} alt="" />
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td>
                   <button type="button" className="entra-link" onClick={() => openJob(item)}>
                     {item.title}
                   </button>
@@ -390,7 +398,7 @@ function JobsView({
             ))}
             {!filtered.length ? (
               <tr>
-                <td colSpan={4} className="entra-empty">
+                <td colSpan={5} className="entra-empty">
                   Geen functies gevonden.
                 </td>
               </tr>

@@ -115,6 +115,9 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
 
   if (!open || !job) return null;
 
+  const visualSrc = job.image || formImage || "/assets/site/tres-amigos-logo-new.png";
+  const visualIsLogo = /tres-amigos-logo/i.test(visualSrc);
+
   function dayShort(day: string) {
     const key = DAY_SHORT_I18N_KEYS[day];
     return key ? t(key) : day.slice(0, 2);
@@ -239,16 +242,16 @@ export function ApplicationWizardModal({ open, job, formImage, onClose }: Props)
       <button className="application-modal-backdrop" type="button" aria-label={t("common.close")} onClick={onClose} disabled={submitting} />
       <div className="application-modal-panel">
         <div className="application-modal-grid">
-          <aside className="application-modal-visual" aria-hidden="true">
-            {isVideoSrc(formImage) ? (
+          <aside className={`application-modal-visual${visualIsLogo ? "" : " is-photo"}`} aria-hidden="true">
+            {isVideoSrc(visualSrc) ? (
               <SiteVideo
-                src={assetUrl(formImage)}
-                poster={assetUrl(videoPosterUrl(formImage))}
+                src={assetUrl(visualSrc)}
+                poster={assetUrl(videoPosterUrl(visualSrc))}
                 preload="metadata"
                 bootDefer
               />
             ) : (
-              <img src={assetUrl(formImage)} alt="" loading="lazy" />
+              <img src={assetUrl(visualSrc)} alt="" loading="lazy" />
             )}
           </aside>
 

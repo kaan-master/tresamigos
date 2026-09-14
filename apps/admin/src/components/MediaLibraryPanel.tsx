@@ -54,6 +54,9 @@ function cmsImageAssets(content: SiteContent): MediaAsset[] {
   add(content.site.ourStory.sideImage, "Our Story zijafbeelding");
   add(content.site.vacancy.heroImage, "Vacature hero");
   add(content.site.vacancy.formImage, "Vacature formulier");
+  for (const job of content.site.vacancy.jobs) {
+    add(job.image, job.title);
+  }
   for (const category of content.menu) {
     for (const item of category.items) {
       add(item.image, item.name);
