@@ -1,13 +1,12 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { isTellingPin, tellingPinHint } from "@tresamigos/utils";
 import {
   createSessionToken,
   generateTellingPin,
   hashPassword,
-  isTellingPin,
-  tellingPinHint,
   tellingPinLookup,
   verifyPassword
-} from "@tresamigos/utils";
+} from "@tresamigos/utils/crypto-node";
 import type { Request } from "express";
 import { PrismaService } from "../prisma/prisma.module";
 import { RedisService } from "../redis/redis.module";

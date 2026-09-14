@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ADMIN_TAB_IDS, type AdminSessionUser, type AdminTabId } from "@tresamigos/types";
-import { createSessionToken, passwordMatches, verifyPassword } from "@tresamigos/utils";
+import { createSessionToken, passwordMatches, verifyPassword } from "@tresamigos/utils/crypto-node";
 import { PrismaService } from "../prisma/prisma.module";
 import { RedisService } from "../redis/redis.module";
 

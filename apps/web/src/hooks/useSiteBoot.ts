@@ -13,6 +13,9 @@ export function useSiteBoot({ active, skipImages = false }: Options) {
     if (!active) return;
 
     let cancelled = false;
+    const safetyId = window.setTimeout(() => {
+      if (!cancelled) dismissSiteBoot();
+    }, 10_000);
 
     async function reveal() {
       if (!skipImages) {
@@ -31,6 +34,7 @@ export function useSiteBoot({ active, skipImages = false }: Options) {
     void reveal();
     return () => {
       cancelled = true;
+      window.clearTimeout(safetyId);
     };
   }, [active, skipImages]);
 }

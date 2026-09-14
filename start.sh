@@ -424,9 +424,40 @@ run_production() {
 
   step "Nginx config + reload"
   if command -v nginx >/dev/null 2>&1; then
-    if [[ -f deploy/nginx-tresamigos.conf ]]; then
+    if [[ -f deploy/nginx-tresamigos.conf && -f deploy/nginx-tresamigos-app.inc ]]; then
       if [[ -d /etc/nginx/sites-available ]]; then
-        cp deploy/nginx-tresamigos.conf /etc/nginx/sites-available/tresamigos
+        mkdir -p /etc/nginx/snippets
+        cp deploy/nginx-tresamigos-app.inc /etc/nginx/snippets/tresamigos-app.conf
+
+        ssl_cert=""
+        ssl_key=""
+        for live in /etc/letsencrypt/live/tresamigos.nl /etc/letsencrypt/live/www.tresamigos.nl; do
+          if [[ -f "$live/fullchain.pem" && -f "$live/privkey.pem" ]]; then
+            ssl_cert="$live/fullchain.pem"
+            ssl_key="$live/privkey.pem"
+            break
+          fi
+        done
+        if [[ -z "$ssl_cert" && -d /etc/letsencrypt/live ]]; then
+          for live in /etc/letsencrypt/live/*; do
+            [[ -d "$live" ]] || continue
+            [[ "$(basename "$live")" == "README" ]] && continue
+            if [[ -f "$live/fullchain.pem" && -f "$live/privkey.pem" ]]; then
+              ssl_cert="$live/fullchain.pem"
+              ssl_key="$live/privkey.pem"
+              break
+            fi
+          done
+        fi
+
+        if [[ -n "$ssl_cert" && -f deploy/nginx-tresamigos-ssl.conf ]]; then
+          sed -e "s|__SSL_CERT__|${ssl_cert}|g" -e "s|__SSL_KEY__|${ssl_key}|g" \
+            deploy/nginx-tresamigos-ssl.conf > /etc/nginx/sites-available/tresamigos
+          ok "Nginx SSL-config geplaatst (${ssl_cert})"
+        else
+          cp deploy/nginx-tresamigos.conf /etc/nginx/sites-available/tresamigos
+          warn "Geen Let's Encrypt certificaat gevonden — nginx luistert alleen op poort 80"
+        fi
         ln -sf /etc/nginx/sites-available/tresamigos /etc/nginx/sites-enabled/tresamigos
         rm -f /etc/nginx/sites-enabled/default
         ok "Nginx config gekopieerd naar sites-available/tresamigos"

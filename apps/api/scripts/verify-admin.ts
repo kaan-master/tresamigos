@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { verifyPassword } from "@tresamigos/utils";
+import { verifyPassword } from "@tresamigos/utils/crypto-node";
 
 const prisma = new PrismaClient();
 

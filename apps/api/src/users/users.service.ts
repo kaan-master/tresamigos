@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ADMIN_TAB_IDS, type AdminTabId, type AdminUserRecord, type CreateAdminUserInput, type UpdateAdminUserInput } from "@tresamigos/types";
-import { hashPassword } from "@tresamigos/utils";
+import { hashPassword } from "@tresamigos/utils/crypto-node";
 import { PrismaService } from "../prisma/prisma.module";
 
 function sanitizePermissions(input: string[] | undefined): AdminTabId[] {

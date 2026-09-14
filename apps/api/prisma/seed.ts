@@ -2,7 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ADMIN_TAB_IDS, type SiteContent } from "@tresamigos/types";
-import { hashPassword, sanitizeContent } from "@tresamigos/utils";
+import { sanitizeContent } from "@tresamigos/utils";
+import { hashPassword } from "@tresamigos/utils/crypto-node";
 import { COUNT_LISTS } from "./countCatalog";
 
 const prisma = new PrismaClient({

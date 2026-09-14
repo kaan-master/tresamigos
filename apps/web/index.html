@@ -36,6 +36,13 @@
       <img src="/assets/site/tres-amigos-logo-new.png" alt="Tres Amigos" width="168" height="61" />
     </div>
     <div id="root"></div>
+    <script>
+      window.setTimeout(function () {
+        var boot = document.getElementById("site-boot");
+        document.documentElement.classList.add("site-ready");
+        if (boot) boot.classList.add("is-done");
+      }, 12000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

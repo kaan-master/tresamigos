@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import type {
   Application,
   CateringCartLine,
@@ -31,6 +30,20 @@ import { SEO_PAGE_KEYS, WEEK_DAYS, formatStoreCode } from "@tresamigos/types";
 import { DEFAULT_CATERING_SETTINGS } from "./cateringDefaults";
 import { sanitizeCateringFulfillmentSettings } from "./cateringHours";
 import { DEFAULT_NAV_SETTINGS, sanitizeNavSettings } from "./navDefaults";
+
+function newId(): string {
+  const webCrypto = globalThis.crypto;
+  if (webCrypto && typeof webCrypto.randomUUID === "function") return webCrypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  if (webCrypto && typeof webCrypto.getRandomValues === "function") webCrypto.getRandomValues(bytes);
+  else {
+    for (let i = 0; i < 16; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 
 export function cleanText(value: unknown, fallback = "", max = 1000): string {
   if (typeof value !== "string") return fallback;
@@ -811,7 +824,7 @@ export function sanitizeApplication(input: CreateApplicationInput | Application)
   const pdfData = cleanText(pdf?.data, "", 16_000_000);
 
   return {
-    id: cleanText(input?.id, crypto.randomUUID(), 80),
+    id: cleanText(input?.id, newId(), 80),
     createdAt: cleanText(input?.createdAt, new Date().toISOString(), 80),
     status: cleanText(input?.status, "nieuw", 40),
     role: cleanText(input?.role, "", 160),
@@ -837,7 +850,7 @@ export function sanitizeFranchiseInquiry(
   input: CreateFranchiseInquiryInput | FranchiseInquiry
 ): FranchiseInquiry {
   return {
-    id: cleanText(input?.id, crypto.randomUUID(), 80),
+    id: cleanText(input?.id, newId(), 80),
     createdAt: cleanText(input?.createdAt, new Date().toISOString(), 80),
     status: cleanText(input?.status, "nieuw", 40),
     name: cleanText(input?.name, "", 160),
@@ -914,7 +927,7 @@ export function sanitizeCateringOrder(input: Partial<CateringOrder | CreateCater
   const items = sanitizeCartLines((input as Partial<CateringOrder>)?.items);
 
   return {
-    id: cleanText((input as Partial<CateringOrder>)?.id, crypto.randomUUID(), 80),
+    id: cleanText((input as Partial<CateringOrder>)?.id, newId(), 80),
     orderNumber: cleanText((input as Partial<CateringOrder>)?.orderNumber, "", 40),
     createdAt: cleanText((input as Partial<CateringOrder>)?.createdAt, new Date().toISOString(), 80),
     updatedAt: cleanText((input as Partial<CateringOrder>)?.updatedAt, new Date().toISOString(), 80),
@@ -1334,7 +1347,7 @@ export function sanitizeReviewSubmission(input: unknown): import("@tresamigos/ty
     statusRaw === "approved" || statusRaw === "spam" || statusRaw === "pending" ? statusRaw : "pending";
 
   return {
-    id: cleanText(raw.id, crypto.randomUUID(), 80),
+    id: cleanText(raw.id, newId(), 80),
     createdAt: cleanText(raw.createdAt, new Date().toISOString(), 40),
     status,
     author: cleanText(raw.author, "Guest", 120),
@@ -1355,56 +1368,10 @@ export function sanitizeCreateReviewInput(input: unknown): import("@tresamigos/t
   };
 }
 
-export function timingSafeStringEqual(a: string, b: string): boolean {
-  const left = Buffer.from(String(a));
-  const right = Buffer.from(String(b));
-  if (left.length !== right.length) return false;
-  return crypto.timingSafeEqual(left, right);
-}
-
-export function passwordMatches(password: string, env: NodeJS.ProcessEnv): boolean {
-  const hashConfig = env.ADMIN_PASSWORD_HASH || "";
-  const passwordConfig = env.ADMIN_PASSWORD || "";
-
-  if (hashConfig.includes(":")) {
-    const [salt, expected] = hashConfig.split(":");
-    const actual = crypto.scryptSync(password, salt, 64).toString("hex");
-    return timingSafeStringEqual(actual, expected);
-  }
-
-  if (passwordConfig) return timingSafeStringEqual(password, passwordConfig);
-  return false;
-}
-
-export function createSessionToken(): string {
-  return crypto.randomBytes(32).toString("hex");
-}
-
-export function hashPassword(password: string): string {
-  const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto.scryptSync(password, salt, 64).toString("hex");
-  return `${salt}:${hash}`;
-}
-
-export function verifyPassword(password: string, stored: string): boolean {
-  if (!stored.includes(":")) return false;
-  const [salt, expected] = stored.split(":");
-  const actual = crypto.scryptSync(password, salt, 64).toString("hex");
-  return timingSafeStringEqual(actual, expected);
-}
-
 export function isTellingPin(value: string): boolean {
   return /^\d{9}$/.test(value);
 }
 
-export function generateTellingPin(): string {
-  return String(100_000_000 + crypto.randomInt(900_000_000));
-}
-
 export function tellingPinHint(pin: string): string {
   return pin.slice(-4);
-}
-
-export function tellingPinLookup(pin: string, secret: string): string {
-  return crypto.createHmac("sha256", secret).update(pin).digest("hex");
 }

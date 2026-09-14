@@ -9,7 +9,8 @@
     "baseUrl": ".",
     "paths": {
       "@tresamigos/types": ["../../packages/types/dist/index.d.ts"],
-      "@tresamigos/utils": ["../../packages/utils/dist/index.d.ts"]
+      "@tresamigos/utils": ["../../packages/utils/dist/index.d.ts"],
+      "@tresamigos/utils/crypto-node": ["../../packages/utils/dist/crypto-node.d.ts"]
     },
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,

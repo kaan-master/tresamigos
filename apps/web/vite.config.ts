@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
         "@tresamigos/types": path.resolve(repoRoot, "packages/types/src/index.ts"),
         "@tresamigos/utils/api-url": path.resolve(repoRoot, "packages/utils/src/api-url.ts"),
         "@tresamigos/utils/navDefaults": path.resolve(repoRoot, "packages/utils/src/navDefaults.ts"),
+        "@tresamigos/utils/cateringDefaults": path.resolve(repoRoot, "packages/utils/src/cateringDefaults.ts"),
         "@tresamigos/utils/cateringHours": path.resolve(repoRoot, "packages/utils/src/cateringHours.ts"),
         "@tresamigos/utils": path.resolve(repoRoot, "packages/utils/src/index.ts")
       }

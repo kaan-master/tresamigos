@@ -1,5 +1,5 @@
 import type { CateringCategoryId, CateringPackageTier } from "@tresamigos/types";
-import { DEFAULT_CATERING_CATEGORIES, DEFAULT_CATERING_PRODUCTS } from "@tresamigos/utils";
+import { DEFAULT_CATERING_CATEGORIES, DEFAULT_CATERING_PRODUCTS } from "@tresamigos/utils/cateringDefaults";
 
 export type FulfillmentMode = "pickup" | "delivery";
 

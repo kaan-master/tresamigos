@@ -4,6 +4,7 @@
   "private": true,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -17,9 +18,17 @@
       "types": "./dist/navDefaults.d.ts",
       "default": "./dist/navDefaults.js"
     },
+    "./cateringDefaults": {
+      "types": "./dist/cateringDefaults.d.ts",
+      "default": "./dist/cateringDefaults.js"
+    },
     "./cateringHours": {
       "types": "./dist/cateringHours.d.ts",
       "default": "./dist/cateringHours.js"
+    },
+    "./crypto-node": {
+      "types": "./dist/crypto-node.d.ts",
+      "default": "./dist/crypto-node.js"
     }
   },
   "scripts": {

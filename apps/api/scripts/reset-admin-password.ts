@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { hashPassword } from "@tresamigos/utils";
+import { hashPassword } from "@tresamigos/utils/crypto-node";
 
 const prisma = new PrismaClient();
 

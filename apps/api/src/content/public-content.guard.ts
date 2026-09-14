@@ -17,6 +17,27 @@ function originFromUrl(value: string | undefined) {
   }
 }
 
+function hostsFromOrigins(origins: string[]) {
+  const hosts = new Set<string>();
+  for (const origin of origins) {
+    try {
+      hosts.add(new URL(origin).host.toLowerCase());
+    } catch {
+      /* ignore invalid origin */
+    }
+  }
+  return hosts;
+}
+
+function requestHost(headers: Record<string, string | undefined>) {
+  const forwarded = String(headers["x-forwarded-host"] || "")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+  const host = (forwarded || String(headers.host || "")).trim().toLowerCase();
+  return host;
+}
+
 function isPrivateDevOrigin(origin: string) {
   try {
     const { hostname, protocol } = new URL(origin);
@@ -31,7 +52,11 @@ function isPrivateDevOrigin(origin: string) {
   }
 }
 
-/** Blokkeert kale browser-opens van /api/content; alleen requests vanaf toegestane site-origins. */
+function header(headers: Record<string, string | undefined>, name: string) {
+  return String(headers[name] || "").trim().toLowerCase();
+}
+
+/** Blokkeert kale browser-opens van /api/content; same-origin fetches vanaf de site blijven toegestaan. */
 @Injectable()
 export class PublicContentGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
@@ -40,13 +65,32 @@ export class PublicContentGuard implements CanActivate {
       method?: string;
     }>();
 
-    const allowed = new Set(parseOrigins(process.env.CORS_ORIGINS));
+    const allowed = parseOrigins(process.env.CORS_ORIGINS);
+    const allowedOrigins = new Set(allowed);
+    const allowedHosts = hostsFromOrigins(allowed);
     const isDev = process.env.NODE_ENV !== "production";
     const origin = (request.headers.origin || "").replace(/\/$/, "");
     const refererOrigin = originFromUrl(request.headers.referer);
-
     const candidate = origin || refererOrigin;
-    if (candidate && (allowed.has(candidate) || (isDev && isPrivateDevOrigin(candidate)))) {
+
+    if (candidate && (allowedOrigins.has(candidate) || (isDev && isPrivateDevOrigin(candidate)))) {
+      return true;
+    }
+
+    const site = header(request.headers, "sec-fetch-site");
+    const dest = header(request.headers, "sec-fetch-dest");
+    const mode = header(request.headers, "sec-fetch-mode");
+    const host = requestHost(request.headers);
+    const hostAllowed = Boolean(host && allowedHosts.has(host));
+    const sameSiteFetch = site === "same-origin" || site === "same-site";
+    const documentNavigation = dest === "document" || mode === "navigate";
+
+    if (hostAllowed && sameSiteFetch && !documentNavigation) {
+      return true;
+    }
+
+    // Oudere browsers sturen geen Sec-Fetch-*; same-origin GET via nginx heeft dan alleen Host.
+    if (hostAllowed && !site && !documentNavigation) {
       return true;
     }
 

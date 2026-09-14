@@ -1,0 +1,49 @@
+root /var/www/tresamigos/apps/web/dist;
+index index.html;
+
+location /api/ {
+    proxy_pass http://127.0.0.1:3100/api/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location /assets/uploads/ {
+    proxy_pass http://127.0.0.1:3100/assets/uploads/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    add_header Cache-Control "public, max-age=31536000, immutable";
+}
+
+location /assets/ {
+    expires 1y;
+    add_header Cache-Control "public, max-age=31536000, immutable";
+    try_files $uri @assets_api;
+}
+
+location @assets_api {
+    proxy_pass http://127.0.0.1:3100;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "public, max-age=31536000, immutable";
+}
+
+location = /admin {
+    return 301 /admin/;
+}
+
+# alias + try_files: laatste param is relatief aan alias, NIET /admin/index.html
+location /admin/ {
+    alias /var/www/tresamigos/apps/admin/dist/;
+    index index.html;
+    try_files $uri $uri/ index.html;
+}
+
+location / {
+    try_files $uri $uri/ /index.html;
+}
+
+client_max_body_size 15M;
