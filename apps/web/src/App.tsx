@@ -16,6 +16,7 @@ import { MenuPage } from "./pages/MenuPage";
 import { OurStoryPage } from "./pages/OurStoryPage";
 import { OurValuePage } from "./pages/OurValuePage";
 import { VacancyPage } from "./pages/VacancyPage";
+import { TellingPage } from "./pages/TellingPage";
 
 function ShellRoutes() {
   const { t } = useLanguage();
@@ -62,6 +63,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginRoute />} />
+      <Route path="/telling" element={<TellingPage />} />
       <Route path="/*" element={<ShellRoutes />} />
     </Routes>
   );

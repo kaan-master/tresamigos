@@ -27,7 +27,7 @@ export class AdminContentController {
   }
 
   @Put("content")
-  @RequirePermissions("home", "locations", "products", "media", "seo", "navigation", "footer")
+  @RequirePermissions("home", "locations", "products", "media", "pageMedia", "seo", "navigation", "footer")
   saveContent(@Body() body: unknown) {
     return this.contentService.saveContent(body);
   }

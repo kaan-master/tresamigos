@@ -27,7 +27,7 @@ import type {
   VacancyRoleConfig,
   WeekDay
 } from "@tresamigos/types";
-import { SEO_PAGE_KEYS, WEEK_DAYS } from "@tresamigos/types";
+import { SEO_PAGE_KEYS, WEEK_DAYS, formatStoreCode } from "@tresamigos/types";
 import { DEFAULT_CATERING_SETTINGS } from "./cateringDefaults";
 import { sanitizeCateringFulfillmentSettings } from "./cateringHours";
 import { DEFAULT_NAV_SETTINGS, sanitizeNavSettings } from "./navDefaults";
@@ -123,7 +123,10 @@ const DEFAULT_VACANCY_JOBS: SiteContent["site"]["vacancy"]["jobs"] = [
     fullDescription:
       "As a Preparation Chef, you will be responsible for efficiently and effectively preparing all ingredients and components required for the daily operations of the Mexican restaurant. You keep prep stations stocked, maintain quality standards and support the line during peak hours.",
     applyLabel: "Apply here",
-    image: "assets/site/restaurant-interior.jpg"
+    image: "assets/site/tres-amigos-logo-new.png",
+    category: "kitchen",
+    employmentType: "fulltime",
+    location: "Amsterdam Oost"
   },
   {
     id: "kitchen-employee",
@@ -139,7 +142,10 @@ const DEFAULT_VACANCY_JOBS: SiteContent["site"]["vacancy"]["jobs"] = [
     fullDescription:
       "As a member of the kitchen crew, you will be responsible for various tasks that contribute to the smooth operation of the takeaway service and ensure a great experience for our customers. From assembly to packaging, you help keep orders moving fast and fresh.",
     applyLabel: "Apply here",
-    image: "assets/brand/mega-burrito.mp4"
+    image: "assets/site/tres-amigos-logo-new.png",
+    category: "kitchen",
+    employmentType: "parttime",
+    location: "Amsterdam Zuid"
   },
   {
     id: "shift-leader",
@@ -155,7 +161,10 @@ const DEFAULT_VACANCY_JOBS: SiteContent["site"]["vacancy"]["jobs"] = [
     fullDescription:
       "You are responsible for coordinating and managing daily operational activities during your shift at Tres Amigos. You act as the link between management and staff, keep service smooth and step in when the pace picks up.",
     applyLabel: "Apply here",
-    image: "assets/site/quesadilla-drinks.webp"
+    image: "assets/site/tres-amigos-logo-new.png",
+    category: "leadership",
+    employmentType: "fulltime",
+    location: "Amsterdam West"
   },
   {
     id: "branch-manager",
@@ -172,17 +181,27 @@ const DEFAULT_VACANCY_JOBS: SiteContent["site"]["vacancy"]["jobs"] = [
     fullDescription:
       "As the Manager of Tres Amigos, you will be responsible for effectively leading the team and overseeing all operational aspects of the takeaway service. You set the tone, protect quality and build a crew people want to work with.",
     applyLabel: "Apply here",
-    image: "assets/menu/tacos/tacos-pulled-chicken.png"
+    image: "assets/site/tres-amigos-logo-new.png",
+    category: "leadership",
+    employmentType: "fulltime",
+    location: "Amsterdam Nieuw-West"
   }
 ];
 
 const DEFAULT_VACANCY: SiteContent["site"]["vacancy"] = {
   heroTitle: "Join the crew",
   heroIntro: "Build your career at Tres Amigos. Choose a role, read the full description and apply in a few simple steps.",
-  heroImage: "assets/site/restaurant-interior.jpg",
-  formImage: "assets/menu/quesadillas/quesadilla-kip.png",
+  heroImage: "assets/site/work-with-us-hero.png",
+  formImage: "assets/site/tres-amigos-logo-new.png",
   jobs: DEFAULT_VACANCY_JOBS
 };
+
+function inferVacancyCategory(title: string) {
+  const value = title.toLowerCase();
+  if (/chef|kitchen|kok|keuken|prep/i.test(value)) return "kitchen";
+  if (/manager|leader|leiding|shift/i.test(value)) return "leadership";
+  return "operations";
+}
 
 function sanitizeVacancySettings(vacancy: SiteContent["site"]["vacancy"] | undefined) {
   const raw = vacancy || DEFAULT_VACANCY;
@@ -208,27 +227,38 @@ function sanitizeVacancySettings(vacancy: SiteContent["site"]["vacancy"] | undef
       : DEFAULT_VACANCY_JOBS;
 
   const jobs = rawJobs.slice(0, 20).map((job, index) => {
-    const title = cleanText(job?.title, DEFAULT_VACANCY_JOBS[index]?.title || `Role ${index + 1}`, 160);
-    const requirements = Array.isArray(job?.requirements)
-      ? job.requirements.map((item) => cleanText(item, "", 240)).filter(Boolean).slice(0, 12)
+    const source = job as Partial<SiteContent["site"]["vacancy"]["jobs"][number]>;
+    const title = cleanText(source?.title, DEFAULT_VACANCY_JOBS[index]?.title || `Role ${index + 1}`, 160);
+    const requirements = Array.isArray(source?.requirements)
+      ? source.requirements.map((item) => cleanText(item, "", 240)).filter(Boolean).slice(0, 12)
       : DEFAULT_VACANCY_JOBS[index]?.requirements || [];
+    const fallback = DEFAULT_VACANCY_JOBS[index];
 
     return {
-      id: cleanSlug(job?.id, cleanSlug(title, `job-${index + 1}`)),
-      enabled: job?.enabled !== false,
+      id: cleanSlug(source?.id, cleanSlug(title, `job-${index + 1}`)),
+      enabled: source?.enabled !== false,
       title,
-      summary: cleanText(job?.summary, DEFAULT_VACANCY_JOBS[index]?.summary || "", 800),
+      summary: cleanText(source?.summary, fallback?.summary || "", 800),
       requirements,
-      fullDescription: cleanText(job?.fullDescription, DEFAULT_VACANCY_JOBS[index]?.fullDescription || "", 2000),
-      applyLabel: cleanText(job?.applyLabel, "Apply here", 80),
-      image: cleanUrl(job?.image) || DEFAULT_VACANCY_JOBS[index]?.image || DEFAULT_VACANCY.heroImage
+      fullDescription: cleanText(source?.fullDescription, fallback?.fullDescription || "", 2000),
+      applyLabel: cleanText(source?.applyLabel, "Apply here", 80),
+      image: cleanUrl(source?.image) || fallback?.image || DEFAULT_VACANCY.heroImage,
+      category: cleanSlug(source?.category || fallback?.category || inferVacancyCategory(title), "operations"),
+      employmentType: cleanSlug(
+        source?.employmentType || fallback?.employmentType || "fulltime",
+        "fulltime"
+      ),
+      location: cleanText(source?.location || fallback?.location || "", "", 120)
     };
   });
 
   return {
     heroTitle: cleanText(raw.heroTitle, DEFAULT_VACANCY.heroTitle, 160),
     heroIntro: cleanText(raw.heroIntro, DEFAULT_VACANCY.heroIntro, 600),
-    heroImage: cleanUrl(raw.heroImage) || DEFAULT_VACANCY.heroImage,
+    heroImage: upgradeAssetSrc(raw.heroImage, DEFAULT_VACANCY.heroImage, [
+      "assets/site/work-with-us.jpg",
+      "assets/site/restaurant-interior.jpg"
+    ]),
     formImage: cleanUrl(raw.formImage) || DEFAULT_VACANCY.formImage,
     jobs: jobs.length ? jobs : DEFAULT_VACANCY_JOBS
   };
@@ -260,7 +290,7 @@ const DEFAULT_OUR_STORY: SiteContent["site"]["ourStory"] = {
     "What sets us apart is not only our menu, but especially the energy we bring as young entrepreneurs. We build with heart and soul a place where you feel welcome – whether you step in for a quick bite or a cozy evening with friends."
   ],
   scheduleSummary: "Open 7 Days a week · Sun–Thu: 11 am–10:30 pm · Fri–Sat: 11 am–1 am",
-  heroImage: "assets/site/restaurant-interior.jpg",
+  heroImage: "assets/site/our-story-hero.png",
   sideImage: "assets/brand/best-in-amsterdam.mp4"
 };
 
@@ -275,9 +305,121 @@ const DEFAULT_OUR_VALUE: SiteContent["site"]["ourValue"] = {
     "We keep our prices fair because good food should be for everyone. Our goal is simple: leave you satisfied, not just full, and make you want to come back with friends."
   ],
   scheduleSummary: "Four Amsterdam locations · Open 7 days a week",
-  heroImage: "assets/brand/with-love.png",
-  sideImage: "assets/brand/with-love.png"
+  heroImage: "assets/site/our-value-hero.png",
+  sideImage: "assets/site/home-hero.png"
 };
+
+function defaultPageMediaSlot(src: string): SiteContent["site"]["pageMedia"]["loyalty"]["hero"] {
+  return { src, focalPointX: 50, focalPointY: 50 };
+}
+
+export const DEFAULT_PAGE_MEDIA: SiteContent["site"]["pageMedia"] = {
+  loyalty: {
+    hero: defaultPageMediaSlot("assets/site/loyalty-hero.png"),
+    guests: defaultPageMediaSlot("assets/site/loyalty-cheers.jpg"),
+    dining: defaultPageMediaSlot("assets/site/loyalty-dining.jpg"),
+    cheers: defaultPageMediaSlot("assets/site/story-guest.jpg")
+  },
+  franchise: {
+    hero: defaultPageMediaSlot("assets/site/restaurant-interior.jpg"),
+    story: defaultPageMediaSlot("assets/site/loyalty-dining.jpg")
+  },
+  vacancy: {
+    hero: defaultPageMediaSlot("assets/site/work-with-us-hero.png")
+  },
+  home: {
+    showcase: defaultPageMediaSlot("assets/site/home-hero.png")
+  },
+  ourValue: {
+    hero: defaultPageMediaSlot("assets/site/our-value-hero.png"),
+    side: defaultPageMediaSlot("assets/site/home-hero.png"),
+    grid1: defaultPageMediaSlot("assets/site/loyalty-dining.jpg"),
+    grid2: defaultPageMediaSlot("assets/site/secretfoodspot.jpg"),
+    grid3: defaultPageMediaSlot("assets/site/grab-jaritos.jpg")
+  },
+  ourStory: {
+    hero: defaultPageMediaSlot("assets/site/our-story-hero.png")
+  },
+  contact: {
+    visual: defaultPageMediaSlot("assets/site/contact-hero.png")
+  }
+};
+
+function clampFocal(value: unknown, fallback = 50): number {
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(100, Math.max(0, Math.round(n)));
+}
+
+function normalizeAssetSrc(src: string) {
+  return src.replace(/^\//, "");
+}
+
+function upgradeAssetSrc(src: string | undefined, fallback: string, replaceSrcs: string[]) {
+  const legacySrc = cleanUrl(src);
+  if (!legacySrc) return fallback;
+  const normalized = normalizeAssetSrc(legacySrc);
+  if (replaceSrcs.some((item) => normalizeAssetSrc(item) === normalized)) return fallback;
+  return legacySrc;
+}
+
+function sanitizePageMediaSlot(
+  value: unknown,
+  fallback: SiteContent["site"]["pageMedia"]["loyalty"]["hero"],
+  replaceSrcs: string[] = []
+): SiteContent["site"]["pageMedia"]["loyalty"]["hero"] {
+  const raw = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  return {
+    src: upgradeAssetSrc(typeof raw.src === "string" ? raw.src : undefined, fallback.src, replaceSrcs),
+    focalPointX: clampFocal(raw.focalPointX, fallback.focalPointX),
+    focalPointY: clampFocal(raw.focalPointY, fallback.focalPointY)
+  };
+}
+
+function sanitizePageMedia(value: SiteContent["site"]["pageMedia"] | undefined): SiteContent["site"]["pageMedia"] {
+  const raw = value && typeof value === "object" ? value : ({} as SiteContent["site"]["pageMedia"]);
+  return {
+    loyalty: {
+      hero: sanitizePageMediaSlot(raw.loyalty?.hero, DEFAULT_PAGE_MEDIA.loyalty.hero, [
+        "assets/site/loyalty-guests.jpg"
+      ]),
+      guests: sanitizePageMediaSlot(raw.loyalty?.guests, DEFAULT_PAGE_MEDIA.loyalty.guests),
+      dining: sanitizePageMediaSlot(raw.loyalty?.dining, DEFAULT_PAGE_MEDIA.loyalty.dining),
+      cheers: sanitizePageMediaSlot(raw.loyalty?.cheers, DEFAULT_PAGE_MEDIA.loyalty.cheers)
+    },
+    franchise: {
+      hero: sanitizePageMediaSlot(raw.franchise?.hero, DEFAULT_PAGE_MEDIA.franchise.hero),
+      story: sanitizePageMediaSlot(raw.franchise?.story, DEFAULT_PAGE_MEDIA.franchise.story)
+    },
+    vacancy: {
+      hero: sanitizePageMediaSlot(raw.vacancy?.hero, DEFAULT_PAGE_MEDIA.vacancy.hero, [
+        "assets/site/work-with-us.jpg",
+        "assets/site/restaurant-interior.jpg"
+      ])
+    },
+    home: {
+      showcase: sanitizePageMediaSlot(raw.home?.showcase, DEFAULT_PAGE_MEDIA.home.showcase, [
+        "assets/site/loyalty-cheers.jpg"
+      ])
+    },
+    ourValue: {
+      hero: sanitizePageMediaSlot(raw.ourValue?.hero, DEFAULT_PAGE_MEDIA.ourValue.hero),
+      side: sanitizePageMediaSlot(raw.ourValue?.side, DEFAULT_PAGE_MEDIA.ourValue.side),
+      grid1: sanitizePageMediaSlot(raw.ourValue?.grid1, DEFAULT_PAGE_MEDIA.ourValue.grid1),
+      grid2: sanitizePageMediaSlot(raw.ourValue?.grid2, DEFAULT_PAGE_MEDIA.ourValue.grid2),
+      grid3: sanitizePageMediaSlot(raw.ourValue?.grid3, DEFAULT_PAGE_MEDIA.ourValue.grid3)
+    },
+    ourStory: {
+      hero: sanitizePageMediaSlot(raw.ourStory?.hero, DEFAULT_PAGE_MEDIA.ourStory.hero, [
+        "assets/site/story-guest.jpg",
+        "assets/site/restaurant-interior.jpg"
+      ])
+    },
+    contact: {
+      visual: sanitizePageMediaSlot(raw.contact?.visual, DEFAULT_PAGE_MEDIA.contact.visual)
+    }
+  };
+}
 
 const DEFAULT_REVIEWS: SiteContent["site"]["reviews"] = {
   enabled: true,
@@ -403,7 +545,7 @@ const DEFAULT_CONTACT_FORM: SiteContent["site"]["contactForm"] = {
   intro: "Questions about locations, catering or partnerships? Fill in the form and we will reply by email.",
   successMessage: "Thanks, your message has been sent. We will get back to you soon.",
   notifySubject: "New contact message via tresamigos.nl",
-  image: "assets/site/restaurant-interior.jpg"
+  image: "assets/site/contact-hero.png"
 };
 
 function sanitizeOpeningHours(value: SiteContent["site"]["openingHours"] | undefined) {
@@ -442,7 +584,10 @@ function sanitizeOurStory(value: SiteContent["site"]["ourStory"] | undefined) {
     intro: cleanText(raw.intro, DEFAULT_OUR_STORY.intro, 600),
     paragraphs: paragraphs.length ? paragraphs : DEFAULT_OUR_STORY.paragraphs,
     scheduleSummary: cleanText(raw.scheduleSummary, DEFAULT_OUR_STORY.scheduleSummary, 240),
-    heroImage: cleanUrl(raw.heroImage) || DEFAULT_OUR_STORY.heroImage,
+    heroImage: upgradeAssetSrc(raw.heroImage, DEFAULT_OUR_STORY.heroImage, [
+      "assets/site/story-guest.jpg",
+      "assets/site/restaurant-interior.jpg"
+    ]),
     sideImage: cleanUrl(raw.sideImage) || DEFAULT_OUR_STORY.sideImage
   };
 }
@@ -459,8 +604,14 @@ function sanitizeOurValue(value: SiteContent["site"]["ourValue"] | undefined) {
     intro: cleanText(raw.intro, DEFAULT_OUR_VALUE.intro, 600),
     paragraphs: paragraphs.length ? paragraphs : DEFAULT_OUR_VALUE.paragraphs,
     scheduleSummary: cleanText(raw.scheduleSummary, DEFAULT_OUR_VALUE.scheduleSummary, 240),
-    heroImage: cleanUrl(raw.heroImage) || DEFAULT_OUR_VALUE.heroImage,
-    sideImage: cleanUrl(raw.sideImage) || DEFAULT_OUR_VALUE.sideImage
+    heroImage: upgradeAssetSrc(raw.heroImage, DEFAULT_OUR_VALUE.heroImage, [
+      "assets/site/serving.jpg",
+      "assets/brand/with-love.png"
+    ]),
+    sideImage: upgradeAssetSrc(raw.sideImage, DEFAULT_OUR_VALUE.sideImage, [
+      "assets/site/home-guests.jpg",
+      "assets/brand/with-love.png"
+    ])
   };
 }
 
@@ -558,7 +709,10 @@ function sanitizeContactForm(value: SiteContent["site"]["contactForm"] | undefin
     intro: cleanText(raw.intro, DEFAULT_CONTACT_FORM.intro, 500),
     successMessage: cleanText(raw.successMessage, DEFAULT_CONTACT_FORM.successMessage, 240),
     notifySubject: cleanText(raw.notifySubject, DEFAULT_CONTACT_FORM.notifySubject, 180),
-    image: cleanUrl(raw.image) || DEFAULT_CONTACT_FORM.image
+    image: upgradeAssetSrc(raw.image, DEFAULT_CONTACT_FORM.image, [
+      "assets/site/home-guests.jpg",
+      "assets/site/restaurant-interior.jpg"
+    ])
   };
 }
 
@@ -1004,7 +1158,9 @@ export function sanitizeContent(input: unknown): SiteContent {
   const mailRelay = site.mailRelay;
   const contactForm = site.contactForm;
   const catering = site.catering;
+  const pageMedia = site.pageMedia;
 
+  const usedStoreCodes = new Set<string>();
   const locations = Array.isArray(payload.locations)
     ? payload.locations.slice(0, 50).map((location, index) => {
         const name = cleanText(location.name, `Vestiging ${index + 1}`, 120);
@@ -1048,6 +1204,14 @@ export function sanitizeContent(input: unknown): SiteContent {
           name,
           address: cleanText(location.address, "", 240),
           note: cleanText(location.note, "Take away and delivery options", 240),
+          code: (() => {
+            let code = formatStoreCode(location.code, index);
+            while (usedStoreCodes.has(code)) {
+              code = formatStoreCode(Number(code) + 1);
+            }
+            usedStoreCodes.add(code);
+            return code;
+          })(),
           featured: location.featured === true,
           active: location.active !== false,
           links
@@ -1102,7 +1266,10 @@ export function sanitizeContent(input: unknown): SiteContent {
   return {
     site: {
       seo: {
-        image: cleanUrl(seo.image),
+        image: upgradeAssetSrc(seo.image, "assets/site/home-hero.png", [
+          "assets/site/restaurant-interior.jpg",
+          "assets/site/home-guests.jpg"
+        ]),
         siteUrl: cleanUrl(seo.siteUrl) || "https://tresamigos.nl",
         googleSiteVerification: cleanText(seo.googleSiteVerification, "", 120),
         bingSiteVerification: cleanText(seo.bingSiteVerification, "", 120),
@@ -1151,7 +1318,8 @@ export function sanitizeContent(input: unknown): SiteContent {
       mailRelay: sanitizeMailRelay(mailRelay),
       contactForm: sanitizeContactForm(contactForm),
       vacancy: sanitizeVacancySettings(vacancy),
-      catering: sanitizeCateringSettings(catering)
+      catering: sanitizeCateringSettings(catering),
+      pageMedia: sanitizePageMedia(pageMedia)
     },
     videos,
     menu,
@@ -1223,4 +1391,20 @@ export function verifyPassword(password: string, stored: string): boolean {
   const [salt, expected] = stored.split(":");
   const actual = crypto.scryptSync(password, salt, 64).toString("hex");
   return timingSafeStringEqual(actual, expected);
+}
+
+export function isTellingPin(value: string): boolean {
+  return /^\d{9}$/.test(value);
+}
+
+export function generateTellingPin(): string {
+  return String(100_000_000 + crypto.randomInt(900_000_000));
+}
+
+export function tellingPinHint(pin: string): string {
+  return pin.slice(-4);
+}
+
+export function tellingPinLookup(pin: string, secret: string): string {
+  return crypto.createHmac("sha256", secret).update(pin).digest("hex");
 }

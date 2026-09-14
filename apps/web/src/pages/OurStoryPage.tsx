@@ -3,6 +3,7 @@ import { NewsletterInline } from "../components/NewsletterInline";
 import { SiteVideo } from "../components/SiteVideo";
 import { assetUrl } from "../lib/api";
 import { isVideoSrc } from "../lib/isVideoSrc";
+import { pageMediaObjectPosition, resolvePageMediaSrc } from "../lib/pageMedia";
 import { pageSeo } from "../lib/seo";
 import { videoPosterUrl } from "../lib/videoPoster";
 import type { SiteContent } from "@tresamigos/types";
@@ -10,7 +11,8 @@ import type { SiteContent } from "@tresamigos/types";
 export function OurStoryPage({ content }: { content: SiteContent }) {
   const seo = pageSeo(content, "ourStory");
   const story = content.site.ourStory;
-  const heroImage = story.heroImage || "assets/site/restaurant-interior.jpg";
+  const heroSlot = content.site.pageMedia.ourStory.hero;
+  const heroImage = resolvePageMediaSrc(heroSlot, story.heroImage || "assets/site/our-story-hero.png");
   const sideMedia =
     story.sideImage ||
     content.videos.find((video) => video.active !== false)?.src ||
@@ -22,7 +24,10 @@ export function OurStoryPage({ content }: { content: SiteContent }) {
       <Helmet title={seo.title} description={seo.description} />
       <header
         className="story-hero"
-        style={{ backgroundImage: `linear-gradient(180deg,rgba(19,12,5,.25),rgba(19,12,5,.72)),url(${assetUrl(heroImage)})` }}
+        style={{
+          backgroundImage: `linear-gradient(180deg,rgba(19,12,5,.25),rgba(19,12,5,.72)),url(${assetUrl(heroImage)})`,
+          backgroundPosition: pageMediaObjectPosition(heroSlot)
+        }}
       >
         <div className="shell story-hero-inner">
           <h1>{story.title}</h1>

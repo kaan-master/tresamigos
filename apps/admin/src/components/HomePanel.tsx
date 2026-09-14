@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import type { SiteContent } from "@tresamigos/types";
-import { AdminFilterChips, AdminSearchBar } from "./AdminListUi";
+import { AdminSearchBar } from "./AdminListUi";
 import { FormSaveBar, type PanelSaveProps } from "./FormSaveBar";
 import { MediaField } from "./MediaPickerModal";
+import { EntraCommand, EntraCommands } from "./telling/entraUi";
 
 type HomeView = "hero" | "hours" | "story" | "value";
 
@@ -330,9 +331,13 @@ function StorySection({ content, onChange }: { content: SiteContent; onChange: (
             <span>Openingstijden op verhalenpagina</span>
             <input value={story.scheduleSummary} onChange={(event) => patchStory({ scheduleSummary: event.target.value })} />
           </label>
-          <MediaField label="Hero afbeelding" value={story.heroImage} onChange={(value) => patchStory({ heroImage: value })} />
-          <MediaField label="Zij-afbeelding" value={story.sideImage} onChange={(value) => patchStory({ sideImage: value })} />
+          <MediaField
+            label="Zij-media (foto of video naast de tekst)"
+            value={story.sideImage}
+            onChange={(value) => patchStory({ sideImage: value })}
+          />
         </div>
+        <p className="entra-meta">De hero-foto van Ons verhaal wijzig je bij Pagina-foto&apos;s.</p>
       </article>
 
       <article className="ta-home-card">
@@ -426,9 +431,8 @@ function ValueSection({ content, onChange }: { content: SiteContent; onChange: (
             <span>Slotregel</span>
             <input value={value.scheduleSummary} onChange={(event) => patchValue({ scheduleSummary: event.target.value })} />
           </label>
-          <MediaField label="Hero afbeelding" value={value.heroImage} onChange={(heroImage) => patchValue({ heroImage })} />
-          <MediaField label="Zij-afbeelding" value={value.sideImage} onChange={(sideImage) => patchValue({ sideImage })} />
         </div>
+        <p className="entra-meta">Foto&apos;s van Onze waarden wijzig je bij Pagina-foto&apos;s.</p>
       </article>
 
       <article className="ta-home-card">
@@ -488,19 +492,22 @@ export function HomePanel({
 } & PanelSaveProps) {
   const [view, setView] = useState<HomeView>("hero");
 
-  const options = useMemo(
-    () => [
-      { value: "hero", label: "Hero & navigatie" },
-      { value: "hours", label: "Openingstijden" },
-      { value: "story", label: "Our Story" },
-      { value: "value", label: "Our Value" }
-    ],
-    []
-  );
-
   return (
     <div className="ta-stack-panel">
-      <AdminFilterChips value={view} onChange={(value) => setView(value as HomeView)} options={options} />
+      <EntraCommands>
+        <EntraCommand active={view === "hero"} onClick={() => setView("hero")}>
+          Hero &amp; knoppen
+        </EntraCommand>
+        <EntraCommand active={view === "hours"} onClick={() => setView("hours")}>
+          Openingstijden
+        </EntraCommand>
+        <EntraCommand active={view === "story"} onClick={() => setView("story")}>
+          Ons verhaal
+        </EntraCommand>
+        <EntraCommand active={view === "value"} onClick={() => setView("value")}>
+          Onze waarden
+        </EntraCommand>
+      </EntraCommands>
       {view === "hero" ? (
         <>
           <HeroSection content={content} onChange={onChange} />

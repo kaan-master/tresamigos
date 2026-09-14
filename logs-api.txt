@@ -1,0 +1,619 @@
+
+> @tresamigos/api@1.0.0 dev C:\tresamigos\tresamigos\apps\api
+> nest start --watch --path tsconfig.build.json
+
+[2J[3J[H[[90m11:42:12 PM[0m] Starting compilation in watch mode...
+
+[[90m11:42:18 PM[0m] Found 0 errors. Watching for file changes.
+
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [NestFactory] Starting Nest application...
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] PrismaModule dependencies initialized +25ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] RedisModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] AppModule dependencies initialized +5ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] ConfigHostModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] MailModule dependencies initialized +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] ConfigModule dependencies initialized +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] SeoModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] AuthModule dependencies initialized +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] MediaModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] ContactModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] InstagramModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] PromoModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] UsersModule dependencies initialized +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] ContentModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] ApplicationsModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] FranchiseModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] NewsletterModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] AnalyticsModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] IntegrationsModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] CateringModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [InstanceLoader] ReviewsModule dependencies initialized +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] HealthController {/}: +6ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/health, GET} route +3ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] AuthController {/api/admin}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/login, POST} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/me, GET} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/logout, POST} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] PublicContentController {/api}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/content, GET} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] AdminContentController {/api/admin}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/content, GET} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/content, PUT} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] PublicApplicationsController {/api}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/applications, POST} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] AdminApplicationsController {/api/admin}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/applications, GET} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] PublicFranchiseController {/api}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/franchise, POST} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] AdminFranchiseController {/api/admin}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/franchise, GET} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] PublicNewsletterController {/api}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/newsletter/subscribe, POST} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] AdminNewsletterController {/api/admin}: +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/newsletter, GET} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/newsletter/:email, DELETE} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] AdminIntegrationsController {/api/admin}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/integrations, GET} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/integrations/mailrelay, PUT} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/integrations/google-ads, PUT} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/integrations/newsletter, PUT} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/integrations/mailrelay/test, POST} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] PublicIntegrationsController {/api}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/integrations, GET} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] PublicCateringController {/api}: +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/catering, POST} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/catering/catalog, GET} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] AdminCateringController {/api/admin}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/catering-orders, GET} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/catering-orders/:id, PATCH} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/catering/settings, GET} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/catering/settings, PUT} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] MediaController {/api/admin/media}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/media, GET} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/media/upload, POST} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/media, DELETE} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] PublicAnalyticsController {/api/analytics}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/analytics/ping, POST} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/analytics/ping, GET} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/analytics/stats, GET} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] AdminAnalyticsController {/api/admin/analytics}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/analytics, GET} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] PromoController {/api}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/promo/subscribe, POST} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] PublicReviewsController {/api/reviews}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/reviews, GET} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/reviews/submit, POST} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] AdminReviewSubmissionsController {/api/admin/review-submissions}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/review-submissions, GET} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/review-submissions/:id, PATCH} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] ContactController {/api}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/contact, POST} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] InstagramController {/api/instagram}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/instagram/feed, GET} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] UsersController {/api/admin/users}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/users, GET} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/users, POST} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/users/:id, PATCH} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/api/admin/users/:id, DELETE} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RoutesResolver] SeoController {/}: +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/robots.txt, GET} route +1ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RouterExplorer] Mapped {/sitemap.xml, GET} route +0ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [RedisService] Redis verbonden — live analytics actief.
+[Nest] 36880  - 08/05/2026, 11:42:20 PM     LOG [NestApplication] Nest application successfully started +4ms
+[Nest] 36880  - 08/05/2026, 11:42:20 PM   ERROR [NestApplication] Error: listen EADDRINUSE: address already in use 0.0.0.0:3100 +2ms
+node:net:1940
+    const ex = new UVExceptionWithHostPort(err, 'listen', address, port);
+               ^
+
+Error: listen EADDRINUSE: address already in use 0.0.0.0:3100
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 3100
+}
+
+Node.js v22.19.0
+[2J[3J[H[[90m12:11:32 AM[0m] File change detected. Starting incremental compilation...
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m               ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m41[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m                                        ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m87[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m                                                                                      ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m178[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m178[0m             ? (site.pageMedia as unknown as SiteContent["site"]["pageMedia"])
+[7m   [0m [91m                    ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m178[0m:[93m65[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type 'SiteSettings'.
+
+[7m178[0m             ? (site.pageMedia as unknown as SiteContent["site"]["pageMedia"])
+[7m   [0m [91m                                                                ~~~~~~~~~~~[0m
+
+[[90m12:11:33 AM[0m] Found 5 errors. Watching for file changes.
+
+[2J[3J[H[[90m12:11:33 AM[0m] File change detected. Starting incremental compilation...
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m               ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m41[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m                                        ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m87[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m                                                                                      ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m178[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m178[0m             ? (site.pageMedia as unknown as SiteContent["site"]["pageMedia"])
+[7m   [0m [91m                    ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m178[0m:[93m65[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type 'SiteSettings'.
+
+[7m178[0m             ? (site.pageMedia as unknown as SiteContent["site"]["pageMedia"])
+[7m   [0m [91m                                                                ~~~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m263[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'pageMedia' does not exist in type '(Without<SiteSettingsCreateInput, SiteSettingsUncheckedCreateInput> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput)'.
+
+[7m263[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m          ~~~~~~~~~[0m
+
+  [96m../../node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/index.d.ts[0m:[93m3465[0m:[93m5[0m
+    [7m3465[0m     create: XOR<SiteSettingsCreateInput, SiteSettingsUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'create' which is declared here on type '{ select?: SiteSettingsSelect<DefaultArgs> | null | undefined; omit?: SiteSettingsOmit<DefaultArgs> | null | undefined; where: SiteSettingsWhereUniqueInput; create: (Without<...> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput); update: (Without<...> & SiteSettingsUncheckedUpdateInput) ...'
+
+[96msrc/content/content.service.ts[0m:[93m263[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type 'SiteSettings'.
+
+[7m263[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m                                  ~~~~~~~~~[0m
+
+[[90m12:11:34 AM[0m] Found 7 errors. Watching for file changes.
+
+[2J[3J[H[[90m12:11:34 AM[0m] File change detected. Starting incremental compilation...
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m               ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m41[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m                                        ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m87[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m                                                                                      ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m178[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m178[0m             ? (site.pageMedia as unknown as SiteContent["site"]["pageMedia"])
+[7m   [0m [91m                    ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m178[0m:[93m65[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type 'SiteSettings'.
+
+[7m178[0m             ? (site.pageMedia as unknown as SiteContent["site"]["pageMedia"])
+[7m   [0m [91m                                                                ~~~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m263[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'pageMedia' does not exist in type '(Without<SiteSettingsCreateInput, SiteSettingsUncheckedCreateInput> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput)'.
+
+[7m263[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m          ~~~~~~~~~[0m
+
+  [96m../../node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/index.d.ts[0m:[93m3465[0m:[93m5[0m
+    [7m3465[0m     create: XOR<SiteSettingsCreateInput, SiteSettingsUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'create' which is declared here on type '{ select?: SiteSettingsSelect<DefaultArgs> | null | undefined; omit?: SiteSettingsOmit<DefaultArgs> | null | undefined; where: SiteSettingsWhereUniqueInput; create: (Without<...> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput); update: (Without<...> & SiteSettingsUncheckedUpdateInput) ...'
+
+[96msrc/content/content.service.ts[0m:[93m263[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type 'SiteSettings'.
+
+[7m263[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m                                  ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m305[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'pageMedia' does not exist in type '(Without<SiteSettingsUpdateInput, SiteSettingsUncheckedUpdateInput> & SiteSettingsUncheckedUpdateInput) | (Without<...> & SiteSettingsUpdateInput)'.
+
+[7m305[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m          ~~~~~~~~~[0m
+
+  [96m../../node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/index.d.ts[0m:[93m3469[0m:[93m5[0m
+    [7m3469[0m     update: XOR<SiteSettingsUpdateInput, SiteSettingsUncheckedUpdateInput>
+    [7m    [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'update' which is declared here on type '{ select?: SiteSettingsSelect<DefaultArgs> | null | undefined; omit?: SiteSettingsOmit<DefaultArgs> | null | undefined; where: SiteSettingsWhereUniqueInput; create: (Without<...> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput); update: (Without<...> & SiteSettingsUncheckedUpdateInput) ...'
+
+[96msrc/content/content.service.ts[0m:[93m305[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type 'SiteSettings'.
+
+[7m305[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m                                  ~~~~~~~~~[0m
+
+[[90m12:11:34 AM[0m] Found 9 errors. Watching for file changes.
+
+[2J[3J[H[[90m12:11:34 AM[0m] File change detected. Starting incremental compilation...
+
+[96msrc/content/content.controller.ts[0m:[93m30[0m:[93m65[0m - [91merror[0m[90m TS2345: [0mArgument of type '"pageMedia"' is not assignable to parameter of type '"overview" | "home" | "locations" | "products" | "media" | "applications" | "franchise" | "newsletter" | "catering" | "reviews" | "seo" | "navigation" | "footer" | "integrations" | "users"'.
+
+[7m30[0m   @RequirePermissions("home", "locations", "products", "media", "pageMedia", "seo", "navigation", "footer")
+[7m  [0m [91m                                                                ~~~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m               ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m41[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m                                        ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m87[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m                                                                                      ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m178[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ id: string; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; seoImage: string; navCtaLabel: string; navCtaUrl: string; heroEyebrow: string; heroTitle: string; ... 30 more ...; updatedAt: Date; }'.
+
+[7m178[0m             ? (site.pageMedia as unknown as SiteContent["site"]["pageMedia"])
+[7m   [0m [91m                    ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m178[0m:[93m65[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type 'SiteSettings'.
+
+[7m178[0m             ? (site.pageMedia as unknown as SiteContent["site"]["pageMedia"])
+[7m   [0m [91m                                                                ~~~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m263[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'pageMedia' does not exist in type '(Without<SiteSettingsCreateInput, SiteSettingsUncheckedCreateInput> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput)'.
+
+[7m263[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m          ~~~~~~~~~[0m
+
+  [96m../../node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/index.d.ts[0m:[93m3465[0m:[93m5[0m
+    [7m3465[0m     create: XOR<SiteSettingsCreateInput, SiteSettingsUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'create' which is declared here on type '{ select?: SiteSettingsSelect<DefaultArgs> | null | undefined; omit?: SiteSettingsOmit<DefaultArgs> | null | undefined; where: SiteSettingsWhereUniqueInput; create: (Without<...> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput); update: (Without<...> & SiteSettingsUncheckedUpdateInput) ...'
+
+[96msrc/content/content.service.ts[0m:[93m263[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type 'SiteSettings'.
+
+[7m263[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m                                  ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m305[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'pageMedia' does not exist in type '(Without<SiteSettingsUpdateInput, SiteSettingsUncheckedUpdateInput> & SiteSettingsUncheckedUpdateInput) | (Without<...> & SiteSettingsUpdateInput)'.
+
+[7m305[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m          ~~~~~~~~~[0m
+
+  [96m../../node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/index.d.ts[0m:[93m3469[0m:[93m5[0m
+    [7m3469[0m     update: XOR<SiteSettingsUpdateInput, SiteSettingsUncheckedUpdateInput>
+    [7m    [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'update' which is declared here on type '{ select?: SiteSettingsSelect<DefaultArgs> | null | undefined; omit?: SiteSettingsOmit<DefaultArgs> | null | undefined; where: SiteSettingsWhereUniqueInput; create: (Without<...> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput); update: (Without<...> & SiteSettingsUncheckedUpdateInput) ...'
+
+[96msrc/content/content.service.ts[0m:[93m305[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type 'SiteSettings'.
+
+[7m305[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m                                  ~~~~~~~~~[0m
+
+[[90m12:11:35 AM[0m] Found 10 errors. Watching for file changes.
+
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [NestFactory] Starting Nest application...
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] PrismaModule dependencies initialized +33ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] RedisModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] AppModule dependencies initialized +7ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] ConfigHostModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] MailModule dependencies initialized +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] ConfigModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] SeoModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] AuthModule dependencies initialized +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] MediaModule dependencies initialized +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] ContactModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] InstagramModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] PromoModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] UsersModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] ContentModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] ApplicationsModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] FranchiseModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] NewsletterModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] AnalyticsModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] IntegrationsModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] CateringModule dependencies initialized +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [InstanceLoader] ReviewsModule dependencies initialized +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] HealthController {/}: +5ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/health, GET} route +2ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] AuthController {/api/admin}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/login, POST} route +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/me, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/logout, POST} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] PublicContentController {/api}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/content, GET} route +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] AdminContentController {/api/admin}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/content, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/content, PUT} route +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] PublicApplicationsController {/api}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/applications, POST} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] AdminApplicationsController {/api/admin}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/applications, GET} route +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] PublicFranchiseController {/api}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/franchise, POST} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] AdminFranchiseController {/api/admin}: +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/franchise, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] PublicNewsletterController {/api}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/newsletter/subscribe, POST} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] AdminNewsletterController {/api/admin}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/newsletter, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/newsletter/:email, DELETE} route +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] AdminIntegrationsController {/api/admin}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/integrations, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/integrations/mailrelay, PUT} route +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/integrations/google-ads, PUT} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/integrations/newsletter, PUT} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/integrations/mailrelay/test, POST} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] PublicIntegrationsController {/api}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/integrations, GET} route +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] PublicCateringController {/api}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/catering, POST} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/catering/catalog, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] AdminCateringController {/api/admin}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/catering-orders, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/catering-orders/:id, PATCH} route +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/catering/settings, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/catering/settings, PUT} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] MediaController {/api/admin/media}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/media, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/media/upload, POST} route +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/media, DELETE} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] PublicAnalyticsController {/api/analytics}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/analytics/ping, POST} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/analytics/ping, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/analytics/stats, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] AdminAnalyticsController {/api/admin/analytics}: +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/analytics, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] PromoController {/api}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/promo/subscribe, POST} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] PublicReviewsController {/api/reviews}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/reviews, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/reviews/submit, POST} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] AdminReviewSubmissionsController {/api/admin/review-submissions}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/review-submissions, GET} route +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/review-submissions/:id, PATCH} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] ContactController {/api}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/contact, POST} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] InstagramController {/api/instagram}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/instagram/feed, GET} route +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] UsersController {/api/admin/users}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/users, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/users, POST} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/users/:id, PATCH} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/api/admin/users/:id, DELETE} route +1ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RoutesResolver] SeoController {/}: +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/robots.txt, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RouterExplorer] Mapped {/sitemap.xml, GET} route +0ms
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [RedisService] Redis verbonden — live analytics actief.
+[Nest] 33876  - 08/06/2026, 12:11:37 AM     LOG [NestApplication] Nest application successfully started +3ms
+Tres Amigos API draait op http://0.0.0.0:3100
+[2J[3J[H[[90m12:14:01 AM[0m] File change detected. Starting incremental compilation...
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ reviews: JsonValue; navigation: JsonValue; id: string; updatedAt: Date; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; ... 32 more ...; ourValue: JsonValue; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m               ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m41[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ reviews: JsonValue; navigation: JsonValue; id: string; updatedAt: Date; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; ... 32 more ...; ourValue: JsonValue; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m                                        ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m87[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ reviews: JsonValue; navigation: JsonValue; id: string; updatedAt: Date; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; ... 32 more ...; ourValue: JsonValue; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m                                                                                      ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m178[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ reviews: JsonValue; navigation: JsonValue; id: string; updatedAt: Date; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; ... 32 more ...; ourValue: JsonValue; }'.
+
+[7m178[0m             ? (site.pageMedia as unknown as SiteContent["site"]["pageMedia"])
+[7m   [0m [91m                    ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m263[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'pageMedia' does not exist in type '(Without<SiteSettingsCreateInput, SiteSettingsUncheckedCreateInput> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput)'.
+
+[7m263[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m          ~~~~~~~~~[0m
+
+  [96m../../node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/index.d.ts[0m:[93m3465[0m:[93m5[0m
+    [7m3465[0m     create: XOR<SiteSettingsCreateInput, SiteSettingsUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'create' which is declared here on type '{ select?: SiteSettingsSelect<DefaultArgs> | null | undefined; omit?: SiteSettingsOmit<DefaultArgs> | null | undefined; where: SiteSettingsWhereUniqueInput; create: (Without<...> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput); update: (Without<...> & SiteSettingsUncheckedUpdateInput) ...'
+
+[96msrc/content/content.service.ts[0m:[93m305[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'pageMedia' does not exist in type '(Without<SiteSettingsUpdateInput, SiteSettingsUncheckedUpdateInput> & SiteSettingsUncheckedUpdateInput) | (Without<...> & SiteSettingsUpdateInput)'.
+
+[7m305[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m          ~~~~~~~~~[0m
+
+  [96m../../node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/index.d.ts[0m:[93m3469[0m:[93m5[0m
+    [7m3469[0m     update: XOR<SiteSettingsUpdateInput, SiteSettingsUncheckedUpdateInput>
+    [7m    [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'update' which is declared here on type '{ select?: SiteSettingsSelect<DefaultArgs> | null | undefined; omit?: SiteSettingsOmit<DefaultArgs> | null | undefined; where: SiteSettingsWhereUniqueInput; create: (Without<...> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput); update: (Without<...> & SiteSettingsUncheckedUpdateInput) ...'
+
+[[90m12:14:01 AM[0m] Found 6 errors. Watching for file changes.
+
+[2J[3J[H[[90m12:14:03 AM[0m] File change detected. Starting incremental compilation...
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ reviews: JsonValue; navigation: JsonValue; id: string; updatedAt: Date; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; ... 32 more ...; ourValue: JsonValue; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m               ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m41[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ reviews: JsonValue; navigation: JsonValue; id: string; updatedAt: Date; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; ... 32 more ...; ourValue: JsonValue; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m                                        ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m177[0m:[93m87[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ reviews: JsonValue; navigation: JsonValue; id: string; updatedAt: Date; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; ... 32 more ...; ourValue: JsonValue; }'.
+
+[7m177[0m           site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+[7m   [0m [91m                                                                                      ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m178[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'pageMedia' does not exist on type '{ reviews: JsonValue; navigation: JsonValue; id: string; updatedAt: Date; seoTitle: string; seoDescription: string; seoMenuTitle: string; seoMenuDescription: string; ... 32 more ...; ourValue: JsonValue; }'.
+
+[7m178[0m             ? (site.pageMedia as unknown as SiteContent["site"]["pageMedia"])
+[7m   [0m [91m                    ~~~~~~~~~[0m
+
+[96msrc/content/content.service.ts[0m:[93m263[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'pageMedia' does not exist in type '(Without<SiteSettingsCreateInput, SiteSettingsUncheckedCreateInput> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput)'.
+
+[7m263[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m          ~~~~~~~~~[0m
+
+  [96m../../node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/index.d.ts[0m:[93m3465[0m:[93m5[0m
+    [7m3465[0m     create: XOR<SiteSettingsCreateInput, SiteSettingsUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'create' which is declared here on type '{ select?: SiteSettingsSelect<DefaultArgs> | null | undefined; omit?: SiteSettingsOmit<DefaultArgs> | null | undefined; where: SiteSettingsWhereUniqueInput; create: (Without<...> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput); update: (Without<...> & SiteSettingsUncheckedUpdateInput) ...'
+
+[96msrc/content/content.service.ts[0m:[93m305[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'pageMedia' does not exist in type '(Without<SiteSettingsUpdateInput, SiteSettingsUncheckedUpdateInput> & SiteSettingsUncheckedUpdateInput) | (Without<...> & SiteSettingsUpdateInput)'.
+
+[7m305[0m           pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
+[7m   [0m [91m          ~~~~~~~~~[0m
+
+  [96m../../node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/index.d.ts[0m:[93m3469[0m:[93m5[0m
+    [7m3469[0m     update: XOR<SiteSettingsUpdateInput, SiteSettingsUncheckedUpdateInput>
+    [7m    [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'update' which is declared here on type '{ select?: SiteSettingsSelect<DefaultArgs> | null | undefined; omit?: SiteSettingsOmit<DefaultArgs> | null | undefined; where: SiteSettingsWhereUniqueInput; create: (Without<...> & SiteSettingsUncheckedCreateInput) | (Without<...> & SiteSettingsCreateInput); update: (Without<...> & SiteSettingsUncheckedUpdateInput) ...'
+
+[[90m12:14:04 AM[0m] Found 6 errors. Watching for file changes.
+
+[2J[3J[H[[90m12:14:29 AM[0m] File change detected. Starting incremental compilation...
+
+[[90m12:14:30 AM[0m] Found 0 errors. Watching for file changes.
+
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [NestFactory] Starting Nest application...
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] PrismaModule dependencies initialized +27ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] RedisModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] AppModule dependencies initialized +8ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] ConfigHostModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] MailModule dependencies initialized +1ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] ConfigModule dependencies initialized +1ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] SeoModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] AuthModule dependencies initialized +1ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] MediaModule dependencies initialized +1ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] ContactModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] InstagramModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] PromoModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] UsersModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] ContentModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] ApplicationsModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] FranchiseModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] NewsletterModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] AnalyticsModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] IntegrationsModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] CateringModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [InstanceLoader] ReviewsModule dependencies initialized +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] HealthController {/}: +8ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/health, GET} route +3ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] AuthController {/api/admin}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/login, POST} route +1ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/me, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/logout, POST} route +1ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] PublicContentController {/api}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/content, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] AdminContentController {/api/admin}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/content, GET} route +1ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/content, PUT} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] PublicApplicationsController {/api}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/applications, POST} route +1ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] AdminApplicationsController {/api/admin}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/applications, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] PublicFranchiseController {/api}: +1ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/franchise, POST} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] AdminFranchiseController {/api/admin}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/franchise, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] PublicNewsletterController {/api}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/newsletter/subscribe, POST} route +1ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] AdminNewsletterController {/api/admin}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/newsletter, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/newsletter/:email, DELETE} route +1ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] AdminIntegrationsController {/api/admin}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/integrations, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/integrations/mailrelay, PUT} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/integrations/google-ads, PUT} route +1ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/integrations/newsletter, PUT} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/integrations/mailrelay/test, POST} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] PublicIntegrationsController {/api}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/integrations, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] PublicCateringController {/api}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/catering, POST} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/catering/catalog, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] AdminCateringController {/api/admin}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/catering-orders, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/catering-orders/:id, PATCH} route +1ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/catering/settings, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/catering/settings, PUT} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RoutesResolver] MediaController {/api/admin/media}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/media, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:32 AM     LOG [RouterExplorer] Mapped {/api/admin/media/upload, POST} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/admin/media, DELETE} route +1ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RoutesResolver] PublicAnalyticsController {/api/analytics}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/analytics/ping, POST} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/analytics/ping, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/analytics/stats, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RoutesResolver] AdminAnalyticsController {/api/admin/analytics}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/admin/analytics, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RoutesResolver] PromoController {/api}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/promo/subscribe, POST} route +1ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RoutesResolver] PublicReviewsController {/api/reviews}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/reviews, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/reviews/submit, POST} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RoutesResolver] AdminReviewSubmissionsController {/api/admin/review-submissions}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/admin/review-submissions, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/admin/review-submissions/:id, PATCH} route +1ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RoutesResolver] ContactController {/api}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/contact, POST} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RoutesResolver] InstagramController {/api/instagram}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/instagram/feed, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RoutesResolver] UsersController {/api/admin/users}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/admin/users, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/admin/users, POST} route +1ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/admin/users/:id, PATCH} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/api/admin/users/:id, DELETE} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RoutesResolver] SeoController {/}: +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/robots.txt, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RouterExplorer] Mapped {/sitemap.xml, GET} route +0ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [RedisService] Redis verbonden — live analytics actief.
+[Nest] 40256  - 08/06/2026, 12:14:33 AM     LOG [NestApplication] Nest application successfully started +3ms
+[Nest] 40256  - 08/06/2026, 12:14:33 AM   ERROR [NestApplication] Error: listen EADDRINUSE: address already in use 0.0.0.0:3100 +1ms
+node:net:1940
+    const ex = new UVExceptionWithHostPort(err, 'listen', address, port);
+               ^
+
+Error: listen EADDRINUSE: address already in use 0.0.0.0:3100
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 3100
+}
+
+Node.js v22.19.0
+[2J[3J[H[[90m12:15:47 AM[0m] File change detected. Starting incremental compilation...
+
+[2J[3J[H[[90m12:15:47 AM[0m] File change detected. Starting incremental compilation...
+

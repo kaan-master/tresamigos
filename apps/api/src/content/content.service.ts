@@ -172,6 +172,10 @@ export class ContentService {
         catering:
           site.cateringCatalog && typeof site.cateringCatalog === "object" && !Array.isArray(site.cateringCatalog)
             ? (site.cateringCatalog as unknown as SiteContent["site"]["catering"])
+            : undefined,
+        pageMedia:
+          site.pageMedia && typeof site.pageMedia === "object" && !Array.isArray(site.pageMedia)
+            ? (site.pageMedia as unknown as SiteContent["site"]["pageMedia"])
             : undefined
       },
       locations: locations.map((location) => ({
@@ -180,6 +184,7 @@ export class ContentService {
         name: location.name,
         address: location.address,
         note: location.note,
+        code: location.code,
         featured: location.featured,
         active: location.active,
         links: location.links.map((link) => ({ label: link.label, url: link.url }))
@@ -255,7 +260,8 @@ export class ContentService {
           promoPopup: content.site.promoPopup as unknown as Prisma.InputJsonValue,
           mailRelay: content.site.mailRelay as unknown as Prisma.InputJsonValue,
           contactForm: content.site.contactForm as unknown as Prisma.InputJsonValue,
-          cateringCatalog: content.site.catering as unknown as Prisma.InputJsonValue
+          cateringCatalog: content.site.catering as unknown as Prisma.InputJsonValue,
+          pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
         },
         update: {
           seoTitle: content.site.seo.pages.home.title,
@@ -296,32 +302,62 @@ export class ContentService {
           promoPopup: content.site.promoPopup as unknown as Prisma.InputJsonValue,
           mailRelay: content.site.mailRelay as unknown as Prisma.InputJsonValue,
           contactForm: content.site.contactForm as unknown as Prisma.InputJsonValue,
-          cateringCatalog: content.site.catering as unknown as Prisma.InputJsonValue
+          cateringCatalog: content.site.catering as unknown as Prisma.InputJsonValue,
+          pageMedia: content.site.pageMedia as unknown as Prisma.InputJsonValue
         }
       });
 
       await tx.orderLink.deleteMany();
-      await tx.location.deleteMany();
+      const keepLocationIds = content.locations.map((location) => location.id);
       for (const [index, location] of content.locations.entries()) {
-        await tx.location.create({
-          data: {
+        await tx.location.upsert({
+          where: { id: location.id },
+          create: {
             id: location.id,
             area: location.area,
             name: location.name,
             address: location.address,
             note: location.note,
+            code: `__${index}`,
             featured: location.featured === true,
             active: location.active !== false,
-            sortOrder: index,
-            links: {
-              create: location.links.map((link: OrderLink, linkIndex: number) => ({
-                label: link.label,
-                url: link.url,
-                sortOrder: linkIndex
-              }))
-            }
+            sortOrder: index
+          },
+          update: {
+            area: location.area,
+            name: location.name,
+            address: location.address,
+            note: location.note,
+            code: `__${index}`,
+            featured: location.featured === true,
+            active: location.active !== false,
+            sortOrder: index
           }
         });
+      }
+      if (keepLocationIds.length) {
+        await tx.location.deleteMany({ where: { id: { notIn: keepLocationIds } } });
+      }
+      for (const [index, location] of content.locations.entries()) {
+        const code = location.code || String(index + 1).padStart(3, "0");
+        await tx.location.update({
+          where: { id: location.id },
+          data: { code }
+        });
+        await tx.countSession.updateMany({
+          where: { locationId: location.id },
+          data: { locationCode: code, locationName: location.name }
+        });
+        if (location.links.length) {
+          await tx.orderLink.createMany({
+            data: location.links.map((link: OrderLink, linkIndex: number) => ({
+              locationId: location.id,
+              label: link.label,
+              url: link.url,
+              sortOrder: linkIndex
+            }))
+          });
+        }
       }
 
       await tx.video.deleteMany();

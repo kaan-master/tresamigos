@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import type { NewsletterSubscriber } from "@tresamigos/types";
+import { useAdminFeedback } from "../context/AdminFeedbackContext";
 import { api } from "../lib/api";
 import { AdminSearchBar } from "./AdminListUi";
 
 export function NewsletterPanel() {
+  const { runSave } = useAdminFeedback();
   const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -48,8 +50,15 @@ export function NewsletterPanel() {
   async function handleDelete(email: string) {
     if (!window.confirm(`Abonnee ${email} verwijderen?`)) return;
     try {
-      await api(`/api/admin/newsletter/${encodeURIComponent(email)}`, { method: "DELETE" });
-      setSubscribers((current) => current.filter((subscriber) => subscriber.email !== email));
+      await runSave(
+        async () => {
+          await api(`/api/admin/newsletter/${encodeURIComponent(email)}`, { method: "DELETE" });
+        },
+        {
+          refresh: load,
+          successMessage: "Abonnee verwijderd en lijst vernieuwd."
+        }
+      );
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "Verwijderen mislukt.");
     }

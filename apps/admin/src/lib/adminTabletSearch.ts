@@ -1,9 +1,13 @@
 import { CATERING_NAV_SECTIONS } from "../components/catering/cateringNav";
 import type { CateringView } from "../components/catering/cateringNav";
+import type { ApplicationsView } from "../components/ApplicationsPanel";
+import type { SiteSettingsView } from "../components/SiteSettingsPanel";
 
 export type AdminSearchTarget =
   | { kind: "tab"; tabId: string }
-  | { kind: "catering"; view: CateringView };
+  | { kind: "catering"; view: CateringView }
+  | { kind: "applications"; view: ApplicationsView }
+  | { kind: "siteSettings"; view: SiteSettingsView };
 
 export interface AdminSearchItem {
   id: string;
@@ -14,7 +18,13 @@ export interface AdminSearchItem {
   target: AdminSearchTarget;
 }
 
-export function buildAdminSearchItems(visibleTabs: ReadonlyArray<readonly [string, string]>): AdminSearchItem[] {
+export function buildAdminSearchItems(
+  visibleTabs: ReadonlyArray<readonly [string, string]>,
+  extras: { siteSettingViews: SiteSettingsView[]; hasApplications: boolean } = {
+    siteSettingViews: [],
+    hasApplications: false
+  }
+): AdminSearchItem[] {
   const items: AdminSearchItem[] = [];
 
   for (const [id, label] of visibleTabs) {
@@ -39,6 +49,64 @@ export function buildAdminSearchItems(visibleTabs: ReadonlyArray<readonly [strin
         target: { kind: "catering", view: item.id }
       });
     }
+  }
+
+  if (visibleTabs.some(([id]) => id === "tellingen")) {
+    for (const [id, label] of [
+      ["overview", "Telling-overzicht"],
+      ["charts", "Telling-grafieken"],
+      ["product-charts", "Telling-productgrafieken"],
+      ["users", "Telling-gebruikers"],
+      ["products", "Telling-producten"],
+      ["export", "Telling-export"]
+    ] as const) {
+      items.push({
+        id: `tellingen-${id}`,
+        label,
+        group: "Tellingen",
+        description: "Voorraadtellingen",
+        searchText: `${label} tellingen voorraad`,
+        target: { kind: "tab", tabId: "tellingen" }
+      });
+    }
+  }
+
+  if (extras.hasApplications) {
+    for (const [id, label, description] of [
+      ["incoming", "Inkomende sollicitaties", "Filter sollicitaties"],
+      ["jobs", "Vacature functies", "Functies beheren"],
+      ["page", "Vacaturepagina", "Work With Us"]
+    ] as const) {
+      items.push({
+        id: `applications-${id}`,
+        label,
+        group: "Sollicitaties",
+        description,
+        searchText: `${label} ${description} sollicitaties vacatures`,
+        target: { kind: "applications", view: id }
+      });
+    }
+  }
+
+  const siteLabels: Record<SiteSettingsView, { label: string; description: string }> = {
+    home: { label: "Home-tekst", description: "Hero, uren en paginatekst" },
+    pageMedia: { label: "Pagina-foto's", description: "Alle pagina-afbeeldingen" },
+    navigation: { label: "Menu", description: "Navbar-links en volgorde" },
+    footer: { label: "Footer", description: "Footer, promo-mail en contact" },
+    integrations: { label: "Koppelingen", description: "Google Ads, nieuwsbrief en mailrelay" },
+    users: { label: "Gebruikers", description: "Accounts en rechten" }
+  };
+
+  for (const view of extras.siteSettingViews) {
+    const copy = siteLabels[view];
+    items.push({
+      id: `site-${view}`,
+      label: copy.label,
+      group: "Website-instellingen",
+      description: copy.description,
+      searchText: `${copy.label} ${copy.description} website instellingen`,
+      target: { kind: "siteSettings", view }
+    });
   }
 
   return items;

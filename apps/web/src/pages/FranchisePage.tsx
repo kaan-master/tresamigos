@@ -3,11 +3,13 @@ import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { assetUrl, submitFranchiseInquiry } from "../lib/api";
+import { pageMediaImgStyle, pageMediaObjectPosition, resolvePageMediaSrc } from "../lib/pageMedia";
 import { pageSeo } from "../lib/seo";
 
 const TOTAL_STEPS = 4;
-const HERO_IMAGE = "/assets/site/restaurant-interior.jpg";
-const STORY_IMAGE = "/assets/site/quesadilla-drinks.webp";
+/** Fallback — enige pagina met restaurant-interior als default. */
+const HERO_FALLBACK = "/assets/site/restaurant-interior.jpg";
+const STORY_FALLBACK = "/assets/site/loyalty-dining.jpg";
 
 const INVESTMENT_KEYS = ["10", "25", "50", "75", "100", "150", "200", "250plus"] as const;
 const FINANCING_KEYS = ["equity", "bank", "investors", "exploring"] as const;
@@ -48,6 +50,9 @@ const emptyForm = (): FormState => ({
 export function FranchisePage({ content }: { content: SiteContent }) {
   const { t } = useLanguage();
   const seo = pageSeo(content, "franchise");
+  const media = content.site.pageMedia.franchise;
+  const heroSrc = resolvePageMediaSrc(media.hero, HERO_FALLBACK);
+  const storySrc = resolvePageMediaSrc(media.story, STORY_FALLBACK);
   const locations = content.locations.filter((location) => location.active !== false);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -173,7 +178,10 @@ export function FranchisePage({ content }: { content: SiteContent }) {
 
       <header
         className="franchise-hero"
-        style={{ backgroundImage: `url(${assetUrl(HERO_IMAGE)})` }}
+        style={{
+          backgroundImage: `url(${assetUrl(heroSrc)})`,
+          backgroundPosition: pageMediaObjectPosition(media.hero)
+        }}
       >
         <div className="franchise-hero-veil" aria-hidden="true" />
         <div className="shell franchise-hero-inner">
@@ -195,7 +203,12 @@ export function FranchisePage({ content }: { content: SiteContent }) {
             <p className="franchise-story-note">{t("franchise.storyNote")}</p>
           </div>
           <figure className="franchise-story-visual">
-            <img src={assetUrl(STORY_IMAGE)} alt={t("franchise.storyImageAlt")} loading="lazy" />
+            <img
+              src={assetUrl(storySrc)}
+              alt={t("franchise.storyImageAlt")}
+              loading="lazy"
+              style={pageMediaImgStyle(media.story)}
+            />
           </figure>
         </div>
       </section>

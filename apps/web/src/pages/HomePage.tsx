@@ -6,11 +6,14 @@ import { ReviewsSection } from "../components/ReviewsSection";
 import { SiteVideo } from "../components/SiteVideo";
 import type { SiteContent } from "@tresamigos/types";
 import { assetUrl, pageUrl } from "../lib/api";
+import { pageMediaImgStyle, resolvePageMediaSrc } from "../lib/pageMedia";
 import { productImageUrl } from "../lib/productImage";
 import { pageSeo } from "../lib/seo";
 import { useLanguage } from "../i18n/LanguageProvider";
 import { googleMapsUrl } from "../lib/maps";
 import { videoPosterUrl } from "../lib/videoPoster";
+
+const SHOWCASE_FALLBACK = "/assets/site/home-hero.png";
 
 function buildMarqueeTags(tags: string[]) {
   const repeats = Math.max(4, Math.ceil(24 / Math.max(tags.length, 1)));
@@ -21,6 +24,8 @@ export function HomePage({ content }: { content: SiteContent }) {
   const { t } = useLanguage();
   const { site, videos, menu, locations } = content;
   const seo = pageSeo(content, "home");
+  const showcaseSlot = site.pageMedia.home.showcase;
+  const showcaseSrc = resolvePageMediaSrc(showcaseSlot, SHOWCASE_FALLBACK);
   const featuredItems = menu
     .flatMap((category) => category.items.filter((item) => item.active !== false))
     .filter((item) => item.featured)
@@ -103,7 +108,7 @@ export function HomePage({ content }: { content: SiteContent }) {
               <p className="lead">{t("home.videos.intro")}</p>
             </div>
             <div className="hero-card food-first">
-              <img src={assetUrl(site.seo.image || "/assets/site/restaurant-interior.jpg")} alt="Tres Amigos restaurant interior" />
+              <img src={assetUrl(site.seo.image || "/assets/site/home-hero.png")} alt="Tres Amigos gasten" />
               <div className="image-caption">{t("home.videos.caption")}</div>
             </div>
           </div>
@@ -113,7 +118,11 @@ export function HomePage({ content }: { content: SiteContent }) {
           <div className="shell">
             <div className="menu-showcase">
               <div className="showcase-photo">
-                <img src={assetUrl("/assets/site/quesadilla-drinks.webp")} alt="Tres Amigos quesadillas and drinks" />
+                <img
+                  src={assetUrl(showcaseSrc)}
+                  alt="Tres Amigos sfeer"
+                  style={pageMediaImgStyle(showcaseSlot)}
+                />
               </div>
               <div className="showcase-panel">
                 <h2>{t("home.menu.title")}</h2>

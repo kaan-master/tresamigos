@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { CateringLocalizedText, CateringSettings } from "@tresamigos/types";
+import { useAdminFeedback } from "../../context/AdminFeedbackContext";
 import { saveCateringSettings } from "../../lib/cateringSettingsApi";
 
 export function localizedLabel(value: CateringLocalizedText, lang: "nl" | "en" = "nl") {
@@ -37,6 +38,7 @@ export interface CateringSettingsPanelProps {
 }
 
 export function useCateringSettingsSave(settings: CateringSettings, onSettingsChange: (settings: CateringSettings) => void) {
+  const { runSave } = useAdminFeedback();
   const [message, setMessage] = useState("");
   const [localSaving, setLocalSaving] = useState(false);
 
@@ -44,9 +46,14 @@ export function useCateringSettingsSave(settings: CateringSettings, onSettingsCh
     setLocalSaving(true);
     setMessage("");
     try {
-      const saved = await saveCateringSettings(settings);
-      onSettingsChange(saved);
-      setMessage("Opgeslagen.");
+      await runSave(
+        async () => {
+          const saved = await saveCateringSettings(settings);
+          onSettingsChange(saved);
+          return saved;
+        },
+        { successMessage: "Catering-instellingen opgeslagen en vernieuwd." }
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Opslaan mislukt.");
     } finally {

@@ -10,6 +10,16 @@ function Icon({ children, ...props }: IconProps & { children: React.ReactNode })
   );
 }
 
+export function IconMenu(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h16" />
+    </Icon>
+  );
+}
+
 export function IconOverview(props: IconProps) {
   return (
     <Icon {...props}>
@@ -53,6 +63,17 @@ export function IconMedia(props: IconProps) {
       <rect x="3" y="5" width="18" height="14" rx="2" />
       <circle cx="9" cy="10" r="2" />
       <path d="m21 15-5-5L5 19" />
+    </Icon>
+  );
+}
+
+export function IconPageMedia(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 9h18" />
+      <circle cx="8" cy="14" r="1.5" />
+      <path d="m12 16 2.5-3 3.5 4H7z" />
     </Icon>
   );
 }
@@ -137,6 +158,15 @@ export function IconNavigation(props: IconProps) {
   );
 }
 
+export function IconSettings(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H8a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V8c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
+    </Icon>
+  );
+}
+
 export function IconSave(props: IconProps) {
   return (
     <Icon {...props}>
@@ -200,6 +230,51 @@ export function IconUsers(props: IconProps) {
   );
 }
 
+export function IconTellingen(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+      <rect x="9" y="3" width="6" height="4" rx="1" />
+      <path d="M9 12h6M9 16h4" />
+    </Icon>
+  );
+}
+
+export function IconList(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M8 6h13M8 12h13M8 18h13" />
+      <path d="M3 6h.01M3 12h.01M3 18h.01" />
+    </Icon>
+  );
+}
+
+export function IconChart(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+    </Icon>
+  );
+}
+
+export function IconProductChart(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 20V12M9 20V6M14 20v-8M19 20V9" />
+      <path d="M3 20h18" />
+    </Icon>
+  );
+}
+
+export function IconDownload(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3v12M7 10l5 5 5-5" />
+      <path d="M5 21h14" />
+    </Icon>
+  );
+}
+
 export function IconEye(props: IconProps) {
   return (
     <Icon {...props}>
@@ -251,14 +326,17 @@ export const tabIcons = {
   locations: IconLocations,
   products: IconProducts,
   media: IconMedia,
+  pageMedia: IconPageMedia,
   applications: IconApplications,
   franchise: IconFranchise,
   newsletter: IconNewsletter,
   catering: IconCatering,
   reviews: IconReviews,
   seo: IconSeo,
+  siteSettings: IconSettings,
   navigation: IconNavigation,
   footer: IconFooter,
   integrations: IconIntegrations,
-  users: IconUsers
+  users: IconUsers,
+  tellingen: IconTellingen
 } as const;

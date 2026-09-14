@@ -5,6 +5,7 @@ import type {
   UpdateIntegrationMailRelayInput,
   UpdateIntegrationNewsletterInput
 } from "@tresamigos/types";
+import { useAdminFeedback } from "../context/AdminFeedbackContext";
 import { api } from "../lib/api";
 
 type MailForm = {
@@ -108,6 +109,7 @@ function requestIntegrationMailto(item: AvailableIntegration) {
 }
 
 export function IntegrationsPanel() {
+  const { runSave } = useAdminFeedback();
   const [settings, setSettings] = useState<IntegrationSettingsPublic | null>(null);
   const [mailForm, setMailForm] = useState<MailForm | null>(null);
   const [googleForm, setGoogleForm] = useState<GoogleAdsForm | null>(null);
@@ -247,12 +249,17 @@ export function IntegrationsPanel() {
     }
 
     try {
-      const result = await api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations/mailrelay", {
-        method: "PUT",
-        body: JSON.stringify(payload)
-      });
-      applySettings(result.integrations);
-      setMessage("Mailrelay opgeslagen.");
+      await runSave(
+        async () => {
+          const result = await api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations/mailrelay", {
+            method: "PUT",
+            body: JSON.stringify(payload)
+          });
+          applySettings(result.integrations);
+          return result;
+        },
+        { successMessage: "Mailrelay opgeslagen en vernieuwd." }
+      );
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Opslaan mislukt.");
     } finally {
@@ -273,12 +280,17 @@ export function IntegrationsPanel() {
     };
 
     try {
-      const result = await api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations/google-ads", {
-        method: "PUT",
-        body: JSON.stringify(payload)
-      });
-      applySettings(result.integrations);
-      setMessage("Google Ads opgeslagen.");
+      await runSave(
+        async () => {
+          const result = await api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations/google-ads", {
+            method: "PUT",
+            body: JSON.stringify(payload)
+          });
+          applySettings(result.integrations);
+          return result;
+        },
+        { successMessage: "Google Ads opgeslagen en vernieuwd." }
+      );
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Opslaan mislukt.");
     } finally {
@@ -296,12 +308,17 @@ export function IntegrationsPanel() {
     const payload: UpdateIntegrationNewsletterInput = { ...newsletterForm };
 
     try {
-      const result = await api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations/newsletter", {
-        method: "PUT",
-        body: JSON.stringify(payload)
-      });
-      applySettings(result.integrations);
-      setMessage("Nieuwsbrief-integratie opgeslagen.");
+      await runSave(
+        async () => {
+          const result = await api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations/newsletter", {
+            method: "PUT",
+            body: JSON.stringify(payload)
+          });
+          applySettings(result.integrations);
+          return result;
+        },
+        { successMessage: "Nieuwsbrief-integratie opgeslagen en vernieuwd." }
+      );
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Opslaan mislukt.");
     } finally {
@@ -315,15 +332,20 @@ export function IntegrationsPanel() {
     setError("");
     setMessage("");
     try {
-      const result = await api<{ message: string; integrations: IntegrationSettingsPublic }>(
-        "/api/admin/integrations/mailrelay/test",
-        {
-          method: "POST",
-          body: JSON.stringify({ to: testRecipient.trim() })
-        }
+      await runSave(
+        async () => {
+          const result = await api<{ message: string; integrations: IntegrationSettingsPublic }>(
+            "/api/admin/integrations/mailrelay/test",
+            {
+              method: "POST",
+              body: JSON.stringify({ to: testRecipient.trim() })
+            }
+          );
+          applySettings(result.integrations);
+          return result;
+        },
+        { successMessage: "Testmail verstuurd." }
       );
-      applySettings(result.integrations);
-      setMessage(result.message);
     } catch (testError) {
       setError(testError instanceof Error ? testError.message : "Testmail mislukt.");
     } finally {

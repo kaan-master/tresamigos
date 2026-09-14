@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { MediaAsset, SiteContent } from "@tresamigos/types";
+import { useAdminFeedback } from "../context/AdminFeedbackContext";
 import { deleteMedia, listMedia, uploadMedia } from "../lib/api";
 import { mediaAssetUrl } from "../lib/media";
 import { AdminButton } from "./AdminButton";
@@ -78,6 +79,7 @@ function kindLabel(kind: MediaAsset["kind"]) {
 }
 
 export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) {
+  const { runSave, notifySuccess } = useAdminFeedback();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [view, setView] = useState<MediaView>("library");
   const [assets, setAssets] = useState<MediaAsset[]>([]);
@@ -138,12 +140,17 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
     setUploading(true);
     setMessage("");
     try {
-      for (const file of Array.from(files)) {
-        await uploadMedia(file);
-      }
-      setMessageTone("success");
-      setMessage(`¡Olé! ${files.length} bestand(en) geüpload.`);
-      await loadAssets();
+      await runSave(
+        async () => {
+          for (const file of Array.from(files)) {
+            await uploadMedia(file);
+          }
+        },
+        {
+          refresh: loadAssets,
+          successMessage: `¡Olé! ${files.length} bestand(en) geüpload en bibliotheek vernieuwd.`
+        }
+      );
     } catch (error) {
       setMessageTone("error");
       setMessage(error instanceof Error ? error.message : "Upload mislukt.");
@@ -158,10 +165,15 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
     if (!asset.removable) return;
     if (!window.confirm(`Verwijder ${asset.filename}?`)) return;
     try {
-      await deleteMedia(asset.url);
-      setMessageTone("success");
-      setMessage("Bestand verwijderd.");
-      await loadAssets();
+      await runSave(
+        async () => {
+          await deleteMedia(asset.url);
+        },
+        {
+          refresh: loadAssets,
+          successMessage: "Bestand verwijderd en bibliotheek vernieuwd."
+        }
+      );
     } catch (error) {
       setMessageTone("error");
       setMessage(error instanceof Error ? error.message : "Verwijderen mislukt.");
@@ -170,8 +182,7 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
 
   async function copyUrl(url: string) {
     await navigator.clipboard.writeText(url);
-    setMessageTone("success");
-    setMessage("URL gekopieerd naar klembord.");
+    notifySuccess("Gekopieerd", "URL gekopieerd naar klembord.");
   }
 
   return (

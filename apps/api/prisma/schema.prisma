@@ -48,6 +48,7 @@ model SiteSettings {
   seoGoogleVerification String  @default("")
   seoBingVerification   String  @default("")
   ourValue             Json     @default("{}")
+  pageMedia            Json     @default("{}")
   updatedAt          DateTime @updatedAt
 }
 
@@ -104,17 +105,20 @@ model IntegrationSettings {
 }
 
 model Location {
-  id        String      @id
-  area      String
-  name      String
-  address   String
-  note      String
-  featured  Boolean     @default(false)
-  active    Boolean     @default(true)
-  sortOrder Int         @default(0)
-  links     OrderLink[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id            String         @id
+  area          String
+  name          String
+  address       String
+  note          String
+  code          String         @unique
+  featured      Boolean        @default(false)
+  active        Boolean        @default(true)
+  sortOrder     Int            @default(0)
+  links         OrderLink[]
+  countStaff    CountStaff[]
+  countSessions CountSession[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model OrderLink {
@@ -232,4 +236,106 @@ model CateringOrder {
   adminNotes   String   @default("")
   items        Json     @default("[]")
   subtotalCents Int     @default(0)
+}
+
+model CountList {
+  id         String             @id
+  title      String
+  active     Boolean            @default(true)
+  sortOrder  Int                @default(0)
+  products   CountListProduct[]
+  sessions   CountSession[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+}
+
+model CountCategory {
+  id        String         @id
+  name      String
+  active    Boolean        @default(true)
+  sortOrder Int            @default(0)
+  products  CountProduct[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model CountProduct {
+  id         String             @id
+  categoryId String
+  category   CountCategory      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name       String
+  active     Boolean            @default(true)
+  sortOrder  Int                @default(0)
+  lines      CountLine[]
+  lists      CountListProduct[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@index([categoryId, sortOrder])
+}
+
+model CountListProduct {
+  listId    String
+  productId String
+  sortOrder Int          @default(0)
+  list      CountList    @relation(fields: [listId], references: [id], onDelete: Cascade)
+  product   CountProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([listId, productId])
+  @@index([listId, sortOrder])
+}
+
+model CountStaff {
+  id          String         @id @default(uuid())
+  name        String
+  loginLookup String         @unique
+  loginHash   String
+  loginHint   String
+  active      Boolean        @default(true)
+  locationId  String?
+  location    Location?      @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  sessions    CountSession[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model CountSession {
+  id           String      @id @default(uuid())
+  locationId   String
+  location     Location    @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  locationName String
+  locationCode String      @default("")
+  listId       String
+  list         CountList   @relation(fields: [listId], references: [id], onDelete: Restrict)
+  listTitle    String
+  staffId      String?
+  staff        CountStaff? @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  staffName    String
+  shift        String
+  status       String      @default("draft")
+  countDate    String
+  submittedAt  DateTime?
+  lines        CountLine[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@unique([locationId, countDate, shift, listId])
+  @@index([countDate, shift])
+  @@index([staffId])
+  @@index([listId])
+}
+
+model CountLine {
+  id           String       @id @default(uuid())
+  sessionId    String
+  session      CountSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  productId    String?
+  product      CountProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName  String
+  categoryName String
+  quantity     Decimal?     @db.Decimal(10, 2)
+  note         String       @default("")
+  sortOrder    Int          @default(0)
+
+  @@index([sessionId, sortOrder])
 }

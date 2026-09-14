@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CateringOrder, CateringOrderStatus } from "@tresamigos/types";
+import { useAdminFeedback } from "../context/AdminFeedbackContext";
 import { api } from "../lib/api";
 import {
   DateFilterPreset,
@@ -40,6 +41,7 @@ function sortOrders(orders: CateringOrder[], sortMode: SortMode) {
 }
 
 export function CateringOrdersPanel({ orders, onOrdersChange, isActive, initialSelectedId = null }: Props) {
+  const { runSave } = useAdminFeedback();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("incoming");
   const [periodFilter, setPeriodFilter] = useState<DateFilterPreset>("upcoming");
@@ -130,17 +132,22 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive, initialS
     setSaving(true);
     setMessage("");
     try {
-      const updated = await api<CateringOrder>(`/api/admin/catering-orders/${selected.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          status: nextStatus,
-          adminNotes: nextNotes
-        })
-      });
-      onOrdersChange(orders.map((order) => (order.id === updated.id ? updated : order)));
-      setDraftStatus(updated.status);
-      setDraftNotes(updated.adminNotes);
-      setMessage("Opgeslagen.");
+      await runSave(
+        async () => {
+          const updated = await api<CateringOrder>(`/api/admin/catering-orders/${selected.id}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+              status: nextStatus,
+              adminNotes: nextNotes
+            })
+          });
+          onOrdersChange(orders.map((order) => (order.id === updated.id ? updated : order)));
+          setDraftStatus(updated.status);
+          setDraftNotes(updated.adminNotes);
+          return updated;
+        },
+        { successMessage: "Bestelling opgeslagen en vernieuwd." }
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Opslaan mislukt.");
     } finally {

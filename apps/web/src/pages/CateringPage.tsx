@@ -369,7 +369,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
                         <div className="catering-product-card-media">
                           <img src={cateringImageUrl(product.image)} alt={productLabel(product, t)} loading="lazy" />
                         </div>
-                        <div>
+                        <div className="catering-product-card-body">
                           <strong>{productLabel(product, t)}</strong>
                           <p>{productDescription(product, t)}</p>
                           <span>{formatEuro(product.basePriceCents)}+</span>

@@ -20,9 +20,22 @@ export interface Location {
   name: string;
   address: string;
   note: string;
+  code?: string;
   featured?: boolean;
   active?: boolean;
   links: OrderLink[];
+}
+
+export function formatStoreCode(raw: unknown, fallbackIndex = 0): string {
+  const digits = String(raw ?? "").replace(/\D/g, "");
+  const parsed = digits ? Number(digits.slice(-3)) : fallbackIndex + 1;
+  const value = Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 999) : fallbackIndex + 1;
+  return String(value).padStart(3, "0");
+}
+
+export function storeLabel(code: string | null | undefined, name: string) {
+  const trimmed = String(code || "").trim();
+  return trimmed ? `${trimmed} ${name}` : name;
 }
 
 export interface Video {
@@ -142,6 +155,7 @@ export const ADMIN_TAB_IDS = [
   "locations",
   "products",
   "media",
+  "pageMedia",
   "applications",
   "franchise",
   "newsletter",
@@ -151,7 +165,8 @@ export const ADMIN_TAB_IDS = [
   "navigation",
   "footer",
   "integrations",
-  "users"
+  "users",
+  "tellingen"
 ] as const;
 
 export type AdminTabId = (typeof ADMIN_TAB_IDS)[number];
@@ -162,6 +177,7 @@ export const ADMIN_TAB_LABELS: Record<AdminTabId, string> = {
   locations: "Vestigingen",
   products: "Producten",
   media: "Media",
+  pageMedia: "Pagina media",
   applications: "Sollicitaties",
   franchise: "Franchise",
   newsletter: "Nieuwsbrief",
@@ -171,7 +187,8 @@ export const ADMIN_TAB_LABELS: Record<AdminTabId, string> = {
   navigation: "Navigatie",
   footer: "Footer",
   integrations: "Integraties",
-  users: "Gebruikers"
+  users: "Gebruikers",
+  tellingen: "Tellingen"
 };
 
 export interface AdminUserRecord {
@@ -220,6 +237,12 @@ export interface VacancyJob {
   fullDescription: string;
   applyLabel: string;
   image: string;
+  /** kitchen | leadership | operations */
+  category?: string;
+  /** fulltime | parttime */
+  employmentType?: string;
+  /** Vestiging of gebied, bv. Amsterdam Oost */
+  location?: string;
 }
 
 /** @deprecated gebruik VacancyJob */
@@ -264,6 +287,67 @@ export interface OurStorySettings {
 }
 
 export type OurValueSettings = OurStorySettings;
+
+/** Relatieve focus in procent (0–100) voor object-position / background-position. */
+export interface PageMediaSlot {
+  src: string;
+  focalPointX: number;
+  focalPointY: number;
+}
+
+export const PAGE_MEDIA_PAGE_IDS = [
+  "home",
+  "ourStory",
+  "ourValue",
+  "loyalty",
+  "franchise",
+  "vacancy",
+  "contact"
+] as const;
+
+export type PageMediaPageId = (typeof PAGE_MEDIA_PAGE_IDS)[number];
+
+export const PAGE_MEDIA_PAGE_LABELS: Record<PageMediaPageId, string> = {
+  home: "Home",
+  ourStory: "Ons verhaal",
+  ourValue: "Onze waarden",
+  loyalty: "Loyalty",
+  franchise: "Franchise",
+  vacancy: "Werken bij ons",
+  contact: "Contact"
+};
+
+export interface PageMediaSettings {
+  loyalty: {
+    hero: PageMediaSlot;
+    guests: PageMediaSlot;
+    dining: PageMediaSlot;
+    cheers: PageMediaSlot;
+  };
+  franchise: {
+    hero: PageMediaSlot;
+    story: PageMediaSlot;
+  };
+  vacancy: {
+    hero: PageMediaSlot;
+  };
+  home: {
+    showcase: PageMediaSlot;
+  };
+  ourValue: {
+    hero: PageMediaSlot;
+    side: PageMediaSlot;
+    grid1: PageMediaSlot;
+    grid2: PageMediaSlot;
+    grid3: PageMediaSlot;
+  };
+  ourStory: {
+    hero: PageMediaSlot;
+  };
+  contact: {
+    visual: PageMediaSlot;
+  };
+}
 
 export interface GoogleReview {
   id: string;
@@ -476,6 +560,7 @@ export interface SiteSettings {
   contactForm: ContactFormSettings;
   vacancy: VacancySettings;
   catering: CateringSettings;
+  pageMedia: PageMediaSettings;
 }
 
 export interface ReviewsResponse {
@@ -901,4 +986,219 @@ export interface CreateCateringOrderResponse extends ApiMessage {
     orderNumber: string;
     createdAt: string;
   };
+}
+
+export const COUNT_SHIFTS = ["morning", "evening"] as const;
+export type CountShift = (typeof COUNT_SHIFTS)[number];
+
+export const COUNT_STATUSES = ["draft", "submitted"] as const;
+export type CountStatus = (typeof COUNT_STATUSES)[number];
+
+export const COUNT_SHIFT_LABELS: Record<CountShift, string> = {
+  morning: "Ochtendtelling",
+  evening: "Avondtelling"
+};
+
+export interface CountList {
+  id: string;
+  title: string;
+  active: boolean;
+  sortOrder: number;
+  productIds: string[];
+  productCount: number;
+}
+
+export interface CountCategory {
+  id: string;
+  name: string;
+  active: boolean;
+  sortOrder: number;
+  products: CountProduct[];
+}
+
+export interface CountProduct {
+  id: string;
+  categoryId: string;
+  name: string;
+  active: boolean;
+  sortOrder: number;
+}
+
+export interface CountStaffRecord {
+  id: string;
+  name: string;
+  loginHint: string;
+  active: boolean;
+  locationId: string | null;
+  locationName: string | null;
+  locationCode: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCountStaffInput {
+  name: string;
+  loginNumber?: string;
+  active?: boolean;
+  locationId?: string | null;
+}
+
+export interface UpdateCountStaffInput {
+  name?: string;
+  loginNumber?: string;
+  active?: boolean;
+  locationId?: string | null;
+}
+
+export interface CreateCountStaffResponse extends ApiMessage {
+  staff: CountStaffRecord;
+  loginNumber: string;
+}
+
+export interface CountLineInput {
+  productId: string;
+  quantity?: number | null;
+  note?: string;
+}
+
+export interface CountLine {
+  id: string;
+  productId: string | null;
+  productName: string;
+  categoryName: string;
+  quantity: number | null;
+  note: string;
+  sortOrder: number;
+}
+
+export interface CountSession {
+  id: string;
+  locationId: string;
+  locationName: string;
+  locationCode: string;
+  listId: string;
+  listTitle: string;
+  staffId: string | null;
+  staffName: string;
+  shift: CountShift;
+  status: CountStatus;
+  countDate: string;
+  submittedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lines: CountLine[];
+}
+
+export interface CountSessionSummary {
+  id: string;
+  locationId: string;
+  locationName: string;
+  locationCode: string;
+  listId: string;
+  listTitle: string;
+  staffId: string | null;
+  staffName: string;
+  shift: CountShift;
+  status: CountStatus;
+  countDate: string;
+  submittedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lineCount: number;
+  noteCount: number;
+}
+
+export interface SaveCountSessionInput {
+  locationId: string;
+  listId: string;
+  shift: CountShift;
+  countDate?: string;
+  lines: CountLineInput[];
+}
+
+export interface CountLocationOption {
+  id: string;
+  name: string;
+  code: string;
+}
+
+export interface CountStaffSessionUser {
+  id: string;
+  name: string;
+  locationId: string | null;
+  locationName: string | null;
+  locationCode: string | null;
+}
+
+export interface TellingLoginResponse {
+  token: string;
+  staff: CountStaffSessionUser;
+}
+
+export interface TellingMeResponse {
+  staff: CountStaffSessionUser;
+  locations: CountLocationOption[];
+  lists: CountList[];
+}
+
+export interface CreateCountListInput {
+  title: string;
+  productIds?: string[];
+}
+
+export interface UpdateCountListInput {
+  title?: string;
+  active?: boolean;
+  sortOrder?: number;
+  productIds?: string[];
+}
+
+export interface CreateCountCategoryInput {
+  name: string;
+}
+
+export interface UpdateCountCategoryInput {
+  name?: string;
+  active?: boolean;
+  sortOrder?: number;
+}
+
+export interface CreateCountProductInput {
+  name: string;
+  categoryId: string;
+}
+
+export interface UpdateCountProductInput {
+  name?: string;
+  categoryId?: string;
+  active?: boolean;
+  sortOrder?: number;
+}
+
+export interface CountListFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  locationId?: string;
+  staffId?: string;
+  listId?: string;
+  weekday?: string;
+  productId?: string;
+  productName?: string;
+  categoryName?: string;
+  shift?: CountShift;
+  status?: CountStatus;
+}
+
+export interface CountProductStat {
+  productId: string | null;
+  productName: string;
+  categoryName: string;
+  quantity: number;
+  sessionCount: number;
+}
+
+export interface CountCategoryStat {
+  categoryName: string;
+  quantity: number;
+  sessionCount: number;
 }

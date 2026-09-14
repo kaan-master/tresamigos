@@ -1,0 +1,194 @@
+.telling-app{
+  min-height:100dvh;
+  background:#fffdf8;
+  color:#21170c;
+  font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;
+}
+.telling-app *{box-sizing:border-box}
+.telling-shell{width:min(560px,calc(100% - 24px));margin:0 auto;padding:18px 0 120px}
+.telling-login{min-height:100dvh;display:grid;place-items:center;padding:24px}
+.telling-login-card{
+  width:min(420px,100%);
+  background:#fff;
+  border:1px solid #eadcc8;
+  border-radius:28px;
+  padding:28px 22px;
+  box-shadow:0 18px 50px rgba(31,22,11,.08);
+  display:grid;
+  gap:16px
+}
+.telling-login-card img{width:150px;height:auto;margin:0 auto}
+.telling-login-card h1{margin:0;font-size:32px;letter-spacing:-.05em;text-align:center}
+.telling-login-card p{margin:0;color:#655b50;text-align:center;font-weight:600}
+.telling-pin{
+  width:100%;
+  font-size:28px;
+  letter-spacing:.22em;
+  text-align:center;
+  border:1px solid #eadcc8;
+  border-radius:18px;
+  padding:16px 12px;
+  font-weight:800;
+  background:#fff;
+  color:#21170c;
+  cursor:pointer
+}
+.telling-pin.is-placeholder{color:#c4b8a8}
+.telling-btn{
+  width:100%;
+  border:0;
+  border-radius:999px;
+  padding:16px 18px;
+  font:inherit;
+  font-weight:850;
+  background:#fcb92a;
+  color:#21170c;
+  cursor:pointer
+}
+.telling-btn.secondary{background:#fff;border:1px solid #eadcc8}
+.telling-btn:disabled{opacity:.55}
+.telling-error{color:#f34238;font-weight:800;text-align:center;margin:0}
+.telling-top{
+  display:grid;
+  gap:12px;
+  position:sticky;
+  top:0;
+  z-index:5;
+  background:rgba(255,253,248,.96);
+  padding:8px 0 12px;
+  backdrop-filter:blur(10px)
+}
+.telling-top-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.telling-top h1{margin:0;font-size:22px;letter-spacing:-.04em}
+.telling-top select{
+  width:100%;
+  border:1px solid #eadcc8;
+  border-radius:16px;
+  padding:14px 14px;
+  font:inherit;
+  font-weight:750;
+  background:#fff
+}
+.telling-shift{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.telling-shift button{
+  border:1px solid #eadcc8;
+  background:#fff;
+  border-radius:16px;
+  padding:14px 10px;
+  font:inherit;
+  font-weight:850;
+  cursor:pointer
+}
+.telling-shift button.is-active{background:#21170c;color:#fff;border-color:#21170c}
+.telling-category{margin:22px 0}
+.telling-category h2{
+  margin:0 0 12px;
+  font-size:18px;
+  letter-spacing:-.03em;
+  padding-bottom:8px;
+  border-bottom:1px solid #eadcc8
+}
+.telling-item{
+  background:#fff;
+  border:1px solid #eadcc8;
+  border-radius:18px;
+  padding:12px 14px 10px;
+  margin-bottom:8px;
+  display:grid;
+  gap:6px
+}
+.telling-item-head{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.telling-item strong{font-size:15px;line-height:1.25}
+.telling-qty{
+  min-width:72px;
+  flex:none;
+  font-size:26px;
+  font-weight:850;
+  text-align:center;
+  border:1px solid #eadcc8;
+  border-radius:14px;
+  padding:8px 10px;
+  background:#fffaf1;
+  color:#21170c;
+  cursor:pointer
+}
+.telling-pin.is-placeholder{color:#c4b8a8}
+.telling-note-toggle{
+  border:0;
+  background:transparent;
+  color:#9a9086;
+  font:inherit;
+  font-size:11px;
+  font-weight:650;
+  text-align:left;
+  padding:0;
+  cursor:pointer
+}
+.telling-note{
+  width:100%;
+  border:0;
+  border-bottom:1px solid #eadcc8;
+  border-radius:0;
+  padding:2px 0;
+  font:inherit;
+  font-size:11px;
+  line-height:1.3;
+  color:#655b50;
+  background:transparent;
+  min-height:0
+}
+.telling-bar{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  padding:12px 12px calc(12px + env(safe-area-inset-bottom));
+  background:rgba(255,253,248,.96);
+  border-top:1px solid #eadcc8;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px
+}
+.telling-status{margin:0;color:#655b50;font-weight:700}
+.telling-readonly{opacity:.72;pointer-events:none}
+.telling-pad-wrap{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.telling-pad-dim{position:absolute;inset:0;border:0;background:rgba(33,23,12,.35)}
+.telling-pad{
+  position:relative;
+  width:min(420px,100%);
+  background:#fffdf8;
+  border-radius:24px 24px 0 0;
+  padding:18px 16px calc(16px + env(safe-area-inset-bottom));
+  display:grid;
+  gap:12px;
+  box-shadow:0 -12px 40px rgba(31,22,11,.16)
+}
+.telling-pad p{margin:0;text-align:center;font-weight:750;color:#655b50}
+.telling-pad strong{display:block;text-align:center;font-size:42px;letter-spacing:-.04em}
+.telling-pad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.telling-pad-grid button{
+  height:58px;
+  border:1px solid #eadcc8;
+  border-radius:16px;
+  background:#fff;
+  font:inherit;
+  font-size:24px;
+  font-weight:800;
+  cursor:pointer
+}
+.telling-lists{display:grid;gap:12px}
+.telling-list-card{
+  width:100%;
+  border:1px solid #eadcc8;
+  background:#fff;
+  border-radius:22px;
+  padding:20px 18px;
+  text-align:left;
+  cursor:pointer;
+  display:grid;
+  gap:4px
+}
+.telling-list-card strong{font-size:22px;letter-spacing:-.04em}
+.telling-list-card span{color:#655b50;font-weight:650}
+.telling-list-card:active{background:#fff4d8}
+.telling-top-actions{display:flex;gap:8px;flex-shrink:0}

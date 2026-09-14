@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ADMIN_TAB_IDS, type SiteContent } from "@tresamigos/types";
 import { hashPassword, sanitizeContent } from "@tresamigos/utils";
+import { COUNT_LISTS } from "./countCatalog";
 
 const prisma = new PrismaClient({
   log: process.env.DEBUG_SEED === "1" ? ["query", "warn", "error"] : ["warn", "error"]
@@ -67,7 +68,8 @@ async function upsertSite(content: SiteContent) {
     instagramFeed: site.instagram as object,
     promoPopup: site.promoPopup as object,
     mailRelay: site.mailRelay as object,
-    contactForm: site.contactForm as object
+    contactForm: site.contactForm as object,
+    pageMedia: site.pageMedia as object
   };
 
   await prisma.siteSettings.upsert({
@@ -89,6 +91,7 @@ async function upsertLocations(content: SiteContent) {
         name: location.name,
         address: location.address,
         note: location.note,
+        code: location.code || String(index + 1).padStart(3, "0"),
         featured: location.featured === true,
         active: location.active !== false,
         sortOrder: index
@@ -98,6 +101,7 @@ async function upsertLocations(content: SiteContent) {
         name: location.name,
         address: location.address,
         note: location.note,
+        code: location.code || String(index + 1).padStart(3, "0"),
         featured: location.featured === true,
         active: location.active !== false,
         sortOrder: index
@@ -210,6 +214,68 @@ async function upsertMenu(content: SiteContent) {
   }
 }
 
+async function upsertCountCatalog() {
+  for (const [listIndex, list] of COUNT_LISTS.entries()) {
+    await prisma.countList.upsert({
+      where: { id: list.id },
+      create: {
+        id: list.id,
+        title: list.title,
+        active: true,
+        sortOrder: listIndex
+      },
+      update: {
+        title: list.title,
+        active: true,
+        sortOrder: listIndex
+      }
+    });
+
+    const productIds: string[] = [];
+    for (const [categoryIndex, category] of list.categories.entries()) {
+      const existingCategory = await prisma.countCategory.findUnique({ where: { id: category.id } });
+      if (!existingCategory) {
+        await prisma.countCategory.create({
+          data: {
+            id: category.id,
+            name: category.name,
+            active: true,
+            sortOrder: categoryIndex
+          }
+        });
+      } else if (existingCategory.name !== category.name) {
+        await prisma.countCategory.update({
+          where: { id: category.id },
+          data: { name: category.name, sortOrder: categoryIndex }
+        });
+      }
+
+      for (const [productIndex, product] of category.products.entries()) {
+        productIds.push(product.id);
+        const existingProduct = await prisma.countProduct.findUnique({ where: { id: product.id } });
+        if (existingProduct) continue;
+        await prisma.countProduct.create({
+          data: {
+            id: product.id,
+            categoryId: category.id,
+            name: product.name,
+            active: true,
+            sortOrder: productIndex
+          }
+        });
+      }
+    }
+
+    for (const [index, productId] of productIds.entries()) {
+      await prisma.countListProduct.upsert({
+        where: { listId_productId: { listId: list.id, productId } },
+        create: { listId: list.id, productId, sortOrder: index },
+        update: { sortOrder: index }
+      });
+    }
+  }
+}
+
 async function upsertAdminUser(password: string) {
   await prisma.adminUser.upsert({
     where: { email: ADMIN_EMAIL },
@@ -244,6 +310,8 @@ async function main() {
   await upsertMenu(content);
   logStep("admin user");
   await upsertAdminUser(adminPassword);
+  logStep("telling catalogus");
+  await upsertCountCatalog();
 
   console.log("Seed completed.");
   console.log(`Admin login: ${ADMIN_EMAIL}`);

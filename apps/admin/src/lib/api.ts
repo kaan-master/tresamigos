@@ -75,6 +75,21 @@ export async function deleteAdminUser(id: string) {
   return api<{ message: string }>(`/api/admin/users/${id}`, { method: "DELETE" });
 }
 
+export async function apiBlob(path: string) {
+  const headers = new Headers();
+  const token = getToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const response = await fetch(apiUrl(path), { headers });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.message || "Download mislukt.");
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get("content-disposition") || "";
+  const match = disposition.match(/filename="([^"]+)"/);
+  return { blob, filename: match?.[1] || "tellingen.csv" };
+}
+
 export async function uploadMedia(file: File) {
   const headers = new Headers();
   const token = getToken();

@@ -22,6 +22,17 @@ interface LayoutProps {
   content: SiteContent;
 }
 
+/** Routes that render `<NewsletterInline />` — footer signup is skipped there to avoid doubles. */
+const INLINE_NEWSLETTER_PATHS = new Set([
+  "/",
+  "/menu",
+  "/order",
+  "/locations",
+  "/contact",
+  "/our-story",
+  "/vacancy"
+]);
+
 function HamburgerIcon({ open }: { open: boolean }) {
   return (
     <svg className={`hamburger-icon${open ? " is-open" : ""}`} viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
@@ -179,7 +190,16 @@ export function Layout({ content }: LayoutProps) {
   const lockedScrollY = useRef(0);
   const restoreScrollOnClose = useRef(true);
   const mainNavItems = resolveMainNavItems(site.navigation);
-  const showFooterNewsletter = Boolean(integrations?.newsletter.enabled && integrations.newsletter.showFooter);
+  const newsletter = integrations?.newsletter;
+  const inlineNewsletterOnPage =
+    Boolean(newsletter?.enabled) &&
+    INLINE_NEWSLETTER_PATHS.has(location.pathname) &&
+    (location.pathname === "/" ? Boolean(newsletter?.showHome) : Boolean(newsletter?.showPages));
+  const showFooterNewsletter =
+    Boolean(newsletter?.enabled && newsletter.showFooter) &&
+    !inlineNewsletterOnPage &&
+    location.pathname !== "/loyalty" &&
+    location.pathname !== "/franchise";
   useScrollToTop();
   usePageMotion();
 
@@ -277,9 +297,7 @@ export function Layout({ content }: LayoutProps) {
       <div className="page-enter" key={location.pathname}>
         <Outlet />
       </div>
-      {showFooterNewsletter && location.pathname !== "/loyalty" && location.pathname !== "/franchise" ? (
-        <NewsletterSection id="nieuwsbrief-footer" />
-      ) : null}
+      {showFooterNewsletter ? <NewsletterSection id="nieuwsbrief-footer" /> : null}
       <footer className="footer">
         <div className="shell footer-grid">
           <div>

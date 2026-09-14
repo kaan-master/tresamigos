@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Location, SiteContent } from "@tresamigos/types";
+import { formatStoreCode, type Location, type SiteContent } from "@tresamigos/types";
 import { AdminListRow, AdminSearchBar } from "./AdminListUi";
 import { FormSaveBar, type PanelSaveProps } from "./FormSaveBar";
 import { createSlugId } from "../lib/id";
@@ -9,13 +9,14 @@ interface Props extends PanelSaveProps {
   onChange: (content: SiteContent) => void;
 }
 
-function emptyLocation(): Location {
+function emptyLocation(index: number): Location {
   return {
     id: createSlugId("nieuwe-vestiging", "loc"),
     area: "Amsterdam",
     name: "Nieuwe vestiging",
     address: "",
     note: "Take away and delivery options",
+    code: formatStoreCode("", index),
     active: true,
     links: [{ label: "Take Away", url: "" }]
   };
@@ -31,7 +32,7 @@ export function LocationsPanel({ content, onChange, onSave, saving }: Props) {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return content.locations;
     return content.locations.filter((item) =>
-      `${item.name} ${item.area} ${item.address} ${item.note}`.toLowerCase().includes(normalized)
+      `${item.name} ${item.code || ""} ${item.area} ${item.address} ${item.note}`.toLowerCase().includes(normalized)
     );
   }, [content.locations, query]);
 
@@ -46,7 +47,7 @@ export function LocationsPanel({ content, onChange, onSave, saving }: Props) {
   }
 
   function addLocation() {
-    const next = emptyLocation();
+    const next = emptyLocation(content.locations.length);
     setLocations([...content.locations, next]);
     setSelectedId(next.id);
   }
@@ -89,7 +90,7 @@ export function LocationsPanel({ content, onChange, onSave, saving }: Props) {
             filtered.map((item) => (
               <AdminListRow
                 key={item.id}
-                title={item.name}
+                title={item.code ? `${item.code} ${item.name}` : item.name}
                 meta={`${item.area} · ${item.links.length} knoppen`}
                 badge={item.active !== false ? "Actief" : "Verborgen"}
                 active={item.id === selectedId}
@@ -121,6 +122,28 @@ export function LocationsPanel({ content, onChange, onSave, saving }: Props) {
           </label>
 
           <div className="ta-grid">
+            <label className="ta-field">
+              <span>Winkelnummer</span>
+              <input
+                inputMode="numeric"
+                maxLength={3}
+                value={location.code || ""}
+                onChange={(event) =>
+                  updateLocation({
+                    ...location,
+                    code: event.target.value.replace(/\D/g, "").slice(0, 3)
+                  })
+                }
+                onBlur={() =>
+                  updateLocation({
+                    ...location,
+                    code: formatStoreCode(location.code, selectedIndex)
+                  })
+                }
+                placeholder="001"
+                title="Uniek winkelnummer met drie cijfers, bijvoorbeeld 001"
+              />
+            </label>
             <label className="ta-field">
               <span>Naam</span>
               <input value={location.name} onChange={(event) => updateLocation({ ...location, name: event.target.value })} />

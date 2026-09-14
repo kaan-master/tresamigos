@@ -1,39 +1,34 @@
 import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import type { Application, CateringOrder, FranchiseInquiry, SiteContent } from "@tresamigos/types";
 import { api } from "./lib/api";
-import { randomSaveError, randomSaveLoading, randomSaveSuccess } from "./lib/saveMessages";
 import { AdminBadge } from "./components/AdminBadge";
-import { AdminButton } from "./components/AdminButton";
-import { IconLogout, IconSave, tabIcons } from "./components/AdminIcons";
-import { AdminLoaderScreen, AdminLoadingPopup } from "./components/AdminLoadingPopup";
+import { IconLogout, IconMenu, tabIcons } from "./components/AdminIcons";
+import { AdminLoaderScreen } from "./components/AdminLoadingPopup";
 import { OverviewPanel } from "./components/OverviewPanel";
 import { LocationsPanel } from "./components/LocationsPanel";
 import { MediaLibraryPanel } from "./components/MediaLibraryPanel";
 import { ProductsPanel } from "./components/ProductsPanel";
-import { ApplicationsPanel } from "./components/ApplicationsPanel";
+import { ApplicationsPanel, type ApplicationsView } from "./components/ApplicationsPanel";
 import { FranchisePanel } from "./components/FranchisePanel";
 import { NewsletterPanel } from "./components/NewsletterPanel";
-import { IntegrationsPanel } from "./components/IntegrationsPanel";
 import { CateringPanel } from "./components/CateringPanel";
 import type { CateringView } from "./components/catering/cateringNav";
 import { INCOMING_STATUSES } from "./lib/cateringAdmin";
 import { buildAdminSearchItems, type AdminSearchItem } from "./lib/adminTabletSearch";
-import { FooterPanel } from "./components/FooterPanel";
-import { NavbarPanel } from "./components/NavbarPanel";
-import { HomePanel } from "./components/HomePanel";
-import { SeoPanel } from "./components/SeoPanel";
 import { ReviewsPanel } from "./components/ReviewsPanel";
-import { UsersPanel } from "./components/UsersPanel";
+import { SeoPanel } from "./components/SeoPanel";
+import { TellingenPanel } from "./components/TellingenPanel";
+import { allowedSiteSettingsViews, SiteSettingsPanel, type SiteSettingsView } from "./components/SiteSettingsPanel";
 import { AdminStartDock } from "./components/tablet/AdminStartDock";
 import { AdminTabletBar } from "./components/tablet/AdminTabletBar";
 import { AdminTabletHub } from "./components/tablet/AdminTabletHub";
 import { AdminTabletToggle } from "./components/tablet/AdminTabletToggle";
+import { useAdminFeedback } from "./context/AdminFeedbackContext";
 import { useAdminTablet } from "./context/AdminTabletContext";
 import type { AdminSessionUser, AdminTabId } from "@tresamigos/types";
 
 const tabs = [
   ["overview", "Overzicht"],
-  ["home", "Home"],
   ["locations", "Vestigingen"],
   ["products", "Producten"],
   ["media", "Media"],
@@ -43,10 +38,8 @@ const tabs = [
   ["catering", "Catering"],
   ["reviews", "Reviews"],
   ["seo", "SEO"],
-  ["navigation", "Navigatie"],
-  ["footer", "Footer"],
-  ["integrations", "Integraties"],
-  ["users", "Gebruikers"]
+  ["siteSettings", "Website-instellingen"],
+  ["tellingen", "Tellingen"]
 ] as const;
 
 type TabId = (typeof tabs)[number][0];
@@ -58,16 +51,17 @@ interface Props {
 
 export function AdminDashboard({ user, onLogout }: Props) {
   const { enabled: tabletMode, screen: tabletScreen, openPanel } = useAdminTablet();
+  const { notifyLoading, notifyError, clear: clearFeedback, runSave } = useAdminFeedback();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [navOpen, setNavOpen] = useState(false);
   const [cateringNavigateView, setCateringNavigateView] = useState<CateringView | null>(null);
   const [cateringOpenOrderId, setCateringOpenOrderId] = useState<string | null>(null);
+  const [applicationsNavigateView, setApplicationsNavigateView] = useState<ApplicationsView | null>(null);
+  const [siteSettingsNavigateView, setSiteSettingsNavigateView] = useState<SiteSettingsView | null>(null);
   const [content, setContent] = useState<SiteContent | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [franchiseInquiries, setFranchiseInquiries] = useState<FranchiseInquiry[]>([]);
   const [cateringOrders, setCateringOrders] = useState<CateringOrder[]>([]);
-  const [popup, setPopup] = useState<{ title: string; message?: string; tone: "loading" | "success" | "error" } | null>(
-    null
-  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -80,9 +74,15 @@ export function AdminDashboard({ user, onLogout }: Props) {
     }
   }
 
+  async function refreshContent() {
+    const contentData = await api<SiteContent>("/api/admin/content");
+    setContent(contentData);
+    return contentData;
+  }
+
   async function loadAll() {
     setLoading(true);
-    setPopup({ title: "Dashboard laden", message: "Content en inkomende berichten ophalen...", tone: "loading" });
+    notifyLoading("Dashboard laden", "Content en inkomende berichten ophalen...");
     try {
       const [contentData, applicationsData, franchiseData] = await Promise.all([
         api<SiteContent>("/api/admin/content"),
@@ -93,13 +93,9 @@ export function AdminDashboard({ user, onLogout }: Props) {
       setApplications(applicationsData.applications);
       setFranchiseInquiries(franchiseData.inquiries);
       await loadCateringOrders();
-      setPopup(null);
+      clearFeedback();
     } catch (error) {
-      setPopup({
-        title: "Laden mislukt",
-        message: error instanceof Error ? error.message : "Probeer opnieuw.",
-        tone: "error"
-      });
+      notifyError(error instanceof Error ? error.message : "Probeer opnieuw.", "Laden mislukt");
     } finally {
       setLoading(false);
     }
@@ -114,23 +110,21 @@ export function AdminDashboard({ user, onLogout }: Props) {
     return () => window.clearInterval(interval);
   }, []);
 
+  const siteSettingViews = useMemo(() => allowedSiteSettingsViews(user), [user]);
+
   const visibleTabs = useMemo(() => {
     if (!user || user.role === "master") return tabs;
-    return tabs.filter(([id]) => user.permissions.includes(id as AdminTabId));
-  }, [user]);
+    return tabs.filter(([id]) => {
+      if (id === "siteSettings") return siteSettingViews.length > 0;
+      return user.permissions.includes(id as AdminTabId);
+    });
+  }, [user, siteSettingViews]);
 
   useEffect(() => {
     if (!visibleTabs.some(([id]) => id === activeTab)) {
       setActiveTab(visibleTabs[0]?.[0] || "overview");
     }
   }, [visibleTabs, activeTab]);
-
-  const canSaveContent = useMemo(() => {
-    if (!user || user.role === "master") return true;
-    return ["home", "locations", "products", "media", "seo", "navigation", "footer"].some((tab) =>
-      user.permissions.includes(tab as AdminTabId)
-    );
-  }, [user]);
 
   const incomingCateringCount = useMemo(
     () => cateringOrders.filter((order) => INCOMING_STATUSES.has(order.status)).length,
@@ -158,22 +152,24 @@ export function AdminDashboard({ user, onLogout }: Props) {
 
   async function saveContent() {
     if (!content || saving) return;
-    const loadingMsg = randomSaveLoading();
     setSaving(true);
-    setPopup({ title: loadingMsg.title, message: loadingMsg.message, tone: "loading" });
     try {
-      const saved = await api<SiteContent>("/api/admin/content", {
-        method: "PUT",
-        body: JSON.stringify(content)
-      });
-      setContent(saved);
-      const successMsg = randomSaveSuccess();
-      setPopup({ title: successMsg.title, message: successMsg.message, tone: "success" });
-      window.setTimeout(() => setPopup(null), 3200);
-    } catch (error) {
-      const fallback = error instanceof Error ? error.message : "Probeer opnieuw.";
-      const errorMsg = randomSaveError(fallback);
-      setPopup({ title: errorMsg.title, message: errorMsg.message, tone: "error" });
+      await runSave(
+        async () => {
+          await api<SiteContent>("/api/admin/content", {
+            method: "PUT",
+            body: JSON.stringify(content)
+          });
+        },
+        {
+          refresh: async () => {
+            await refreshContent();
+          },
+          successMessage: "Alle wijzigingen zijn opgeslagen en vernieuwd."
+        }
+      );
+    } catch {
+      /* feedback toont de fout */
     } finally {
       setSaving(false);
     }
@@ -190,7 +186,10 @@ export function AdminDashboard({ user, onLogout }: Props) {
     [visibleTabs, newCateringOrderCount]
   );
 
-  const searchItems = useMemo(() => buildAdminSearchItems(visibleTabs), [visibleTabs]);
+  const searchItems = useMemo(
+    () => buildAdminSearchItems(visibleTabs, { siteSettingViews, hasApplications: visibleTabs.some(([id]) => id === "applications") }),
+    [visibleTabs, siteSettingViews]
+  );
 
   const recentOrders = useMemo(
     () => [...cateringOrders].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6),
@@ -198,26 +197,40 @@ export function AdminDashboard({ user, onLogout }: Props) {
   );
 
   if (loading || !content) {
-    return (
-      <>
-        <AdminLoaderScreen />
-        <AdminLoadingPopup visible={Boolean(popup)} title={popup?.title || "Laden..."} message={popup?.message} tone={popup?.tone} />
-      </>
-    );
+    return <AdminLoaderScreen />;
   }
 
   const activeLabel = tabs.find(([id]) => id === activeTab)?.[1] || "Dashboard";
 
   function selectTab(id: TabId) {
     setActiveTab(id);
+    setNavOpen(false);
     openPanel();
+    if (id !== "catering") {
+      setCateringNavigateView(null);
+      setCateringOpenOrderId(null);
+    }
+    if (id !== "applications") setApplicationsNavigateView(null);
+    if (id !== "siteSettings") setSiteSettingsNavigateView(null);
   }
 
   function handleSearchSelect(item: AdminSearchItem) {
     if (item.target.kind === "tab") {
       selectTab(item.target.tabId as TabId);
-      setCateringNavigateView(null);
-      setCateringOpenOrderId(null);
+      return;
+    }
+    if (item.target.kind === "applications") {
+      setActiveTab("applications");
+      setApplicationsNavigateView(item.target.view);
+      setNavOpen(false);
+      openPanel();
+      return;
+    }
+    if (item.target.kind === "siteSettings") {
+      setActiveTab("siteSettings");
+      setSiteSettingsNavigateView(item.target.view);
+      setNavOpen(false);
+      openPanel();
       return;
     }
     setActiveTab("catering");
@@ -267,16 +280,6 @@ export function AdminDashboard({ user, onLogout }: Props) {
         </section>
       ) : null}
 
-      {activeTab === "home" ? (
-        <section className="ta-panel ta-fade-in">
-          <header className="ta-panel-head">
-            <h2>Home</h2>
-            <p>Hero, openingstijden en Our Story. Per onderdeel bewerken met live preview waar het kan.</p>
-          </header>
-          <HomePanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
-        </section>
-      ) : null}
-
       {activeTab === "locations" ? (
         <section className="ta-panel ta-fade-in">
           <header className="ta-panel-head">
@@ -308,12 +311,15 @@ export function AdminDashboard({ user, onLogout }: Props) {
       ) : null}
 
       {activeTab === "applications" ? (
-        <section className="ta-panel ta-fade-in">
-          <header className="ta-panel-head">
-            <h2>Sollicitaties</h2>
-            <p>Inkomende sollicitaties bekijken, functies beheren en vacaturepagina instellen.</p>
-          </header>
-          <ApplicationsPanel content={content} applications={applications} onChange={setContent} onSave={saveContent} saving={saving} />
+        <section className="ta-panel ta-fade-in ta-panel-entra">
+          <ApplicationsPanel
+            content={content}
+            applications={applications}
+            onChange={setContent}
+            onSave={saveContent}
+            saving={saving}
+            initialView={applicationsNavigateView}
+          />
         </section>
       ) : null}
 
@@ -385,64 +391,24 @@ export function AdminDashboard({ user, onLogout }: Props) {
         </section>
       ) : null}
 
-      {activeTab === "users" ? (
-        <section className="ta-panel ta-fade-in">
-          <header className="ta-panel-head">
-            <h2>Medewerkers</h2>
-            <p>Subaccounts voor medewerkers met rechten per onderdeel.</p>
-          </header>
-          <UsersPanel />
+      {activeTab === "tellingen" ? (
+        <section className="ta-panel ta-fade-in ta-panel-entra">
+          <TellingenPanel locations={content.locations} />
         </section>
       ) : null}
 
-      {activeTab === "navigation" ? (
-        <section className="ta-panel ta-fade-in">
-          <header className="ta-panel-head">
-            <h2>Navigatie</h2>
-            <p>Menu-items tonen of verbergen en de volgorde aanpassen, zoals in Shopify.</p>
-          </header>
-          <NavbarPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+      {activeTab === "siteSettings" ? (
+        <section className="ta-panel ta-fade-in ta-panel-entra">
+          <SiteSettingsPanel
+            content={content}
+            onChange={setContent}
+            onSave={saveContent}
+            saving={saving}
+            allowedViews={siteSettingViews}
+            initialView={siteSettingsNavigateView}
+          />
         </section>
       ) : null}
-
-      {activeTab === "footer" ? (
-        <section className="ta-panel ta-fade-in">
-          <header className="ta-panel-head">
-            <h2>Footer & extras</h2>
-            <p>Footer, promo-mail en contactformulier. Per onderdeel bewerken.</p>
-          </header>
-          <FooterPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
-        </section>
-      ) : null}
-
-      {activeTab === "integrations" ? (
-        <section className="ta-panel ta-fade-in">
-          <header className="ta-panel-head">
-            <h2>Integraties</h2>
-            <p>Bekijk en beheer actieve koppelingen: Google Ads, nieuwsbrief, mailrelay. Overige staan klaar tot aankoop.</p>
-          </header>
-          <IntegrationsPanel />
-        </section>
-      ) : null}
-    </>
-  );
-
-  const dockFooter = (
-    <>
-      {canSaveContent ? (
-        <AdminButton
-          variant="primary"
-          icon={<IconSave width={16} height={16} />}
-          loading={saving}
-          loadingText="Opslaan..."
-          onClick={() => void saveContent()}
-        >
-          Opslaan
-        </AdminButton>
-      ) : null}
-      <AdminButton variant="ghost" icon={<IconLogout width={16} height={16} />} onClick={onLogout}>
-        Uitloggen
-      </AdminButton>
     </>
   );
 
@@ -450,7 +416,9 @@ export function AdminDashboard({ user, onLogout }: Props) {
     <>
       <div className={`ta-shell${tabletMode ? " is-tablet-mode" : ""}`}>
         {!tabletMode ? (
-          <aside className="ta-sidebar">
+          <>
+            {navOpen ? <button type="button" className="ta-nav-dim" aria-label="Menu sluiten" onClick={() => setNavOpen(false)} /> : null}
+            <aside className={`ta-sidebar${navOpen ? " is-open" : ""}`}>
             <div className="ta-brand">
               <img src="/assets/site/tres-amigos-logo-new.png" alt="Tres Amigos logo" />
               <div>
@@ -468,7 +436,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
                     key={id}
                     type="button"
                     className={`${activeTab === id ? "is-active" : ""}${id === "catering" && newCateringOrderCount > 0 ? " has-notification" : ""}`}
-                    onClick={() => setActiveTab(id)}
+                    onClick={() => selectTab(id)}
                   >
                     <Icon width={18} height={18} />
                     <span>{label}</span>
@@ -479,11 +447,18 @@ export function AdminDashboard({ user, onLogout }: Props) {
             </nav>
             {user ? (
               <div className="ta-sidebar-user">
-                <strong>{user.name}</strong>
-                <span>{user.role === "master" ? "Beheerder" : user.email}</span>
+                <div className="ta-sidebar-user-meta">
+                  <strong>{user.name}</strong>
+                  <span>{user.role === "master" ? "Beheerder" : user.email}</span>
+                </div>
+                <button type="button" className="ta-sidebar-logout" onClick={onLogout}>
+                  <IconLogout width={16} height={16} />
+                  <span>Uitloggen</span>
+                </button>
               </div>
             ) : null}
           </aside>
+          </>
         ) : null}
 
         <main className="ta-main">
@@ -511,9 +486,14 @@ export function AdminDashboard({ user, onLogout }: Props) {
           ) : (
             <>
               <header className="ta-main-head ta-fade-in">
-                <div>
-                  <AdminBadge />
-                  <h1>{activeLabel}</h1>
+                <div className="ta-main-head-title">
+                  <button type="button" className="ta-nav-toggle" aria-label="Menu" onClick={() => setNavOpen(true)}>
+                    <IconMenu width={20} height={20} />
+                  </button>
+                  <div>
+                    <AdminBadge />
+                    <h1>{activeLabel}</h1>
+                  </div>
                 </div>
                 <AdminTabletToggle />
               </header>
@@ -536,16 +516,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
           onOpenOrders={handleOpenOrders}
           onOpenOrder={handleOpenOrder}
         />
-      ) : (
-        <div className="ta-action-dock">{dockFooter}</div>
-      )}
-
-      <AdminLoadingPopup
-        visible={Boolean(popup)}
-        title={popup?.title || ""}
-        message={popup?.message}
-        tone={popup?.tone}
-      />
+      ) : null}
     </>
   );
 }

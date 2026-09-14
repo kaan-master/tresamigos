@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReviewSubmission, SiteContent } from "@tresamigos/types";
+import { useAdminFeedback } from "../context/AdminFeedbackContext";
 import { api } from "../lib/api";
 import { AdminFilterChips, AdminListRow, AdminSearchBar } from "./AdminListUi";
 import { FormSaveBar, type PanelSaveProps } from "./FormSaveBar";
@@ -26,6 +27,7 @@ function statusLabel(status: ReviewSubmission["status"]) {
 }
 
 function ModerationView() {
+  const { runSave } = useAdminFeedback();
   const [submissions, setSubmissions] = useState<ReviewSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -63,12 +65,21 @@ function ModerationView() {
 
   async function setStatus(id: string, status: ReviewSubmission["status"]) {
     try {
-      await api<ReviewSubmission>(`/api/admin/review-submissions/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status })
-      });
-      setMessage(status === "approved" ? "Review goedgekeurd en zichtbaar in slider." : "Review gemarkeerd als spam.");
-      await load();
+      await runSave(
+        async () => {
+          await api<ReviewSubmission>(`/api/admin/review-submissions/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify({ status })
+          });
+        },
+        {
+          refresh: load,
+          successMessage:
+            status === "approved"
+              ? "Review goedgekeurd, zichtbaar in slider en vernieuwd."
+              : "Review gemarkeerd als spam en vernieuwd."
+        }
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Status bijwerken mislukt.");
     }

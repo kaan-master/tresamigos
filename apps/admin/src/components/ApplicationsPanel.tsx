@@ -1,18 +1,32 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Application, SiteContent, VacancyJob } from "@tresamigos/types";
-import { AdminFilterChips, AdminListRow, AdminSearchBar } from "./AdminListUi";
 import { FormSaveBar, type PanelSaveProps } from "./FormSaveBar";
 import { MediaField } from "./MediaPickerModal";
+import { IconApplications, IconList, IconPageMedia } from "./AdminIcons";
 import { createSlugId } from "../lib/id";
 import { mediaAssetUrl } from "../lib/media";
+import { EntraBlade, EntraCommand, EntraCommands, EntraSearch, EntraShell, type EntraNavItem } from "./telling/entraUi";
 
 interface Props extends PanelSaveProps {
   content: SiteContent;
   applications: Application[];
   onChange: (content: SiteContent) => void;
+  initialView?: ApplicationsView | null;
 }
 
-type PanelView = "incoming" | "jobs" | "page";
+export type ApplicationsView = "incoming" | "jobs" | "page";
+
+const NAV: Array<EntraNavItem<ApplicationsView>> = [
+  { id: "incoming", label: "Inkomend", hint: "Sollicitaties filteren", Icon: IconApplications },
+  { id: "jobs", label: "Functies", hint: "Vacatures beheren", Icon: IconList },
+  { id: "page", label: "Tekst", hint: "Titel en intro", Icon: IconPageMedia }
+];
+
+const TITLES: Record<ApplicationsView, { title: string; subtitle: string }> = {
+  incoming: { title: "Inkomend", subtitle: "Zoek en filter sollicitaties op functie, status en datum" },
+  jobs: { title: "Functies", subtitle: "Vacatures die op de website verschijnen" },
+  page: { title: "Paginatekst", subtitle: "Titel en intro. De foto wijzig je bij Website-instellingen → Pagina-foto's." }
+};
 
 function updateVacancy(content: SiteContent, patch: Partial<SiteContent["site"]["vacancy"]>) {
   return {
@@ -27,11 +41,6 @@ function updateVacancy(content: SiteContent, patch: Partial<SiteContent["site"][
   };
 }
 
-function roleLabel(content: SiteContent, roleId: string) {
-  const job = content.site.vacancy.jobs.find((item) => item.id === roleId || item.title === roleId);
-  return job?.title || roleId;
-}
-
 function emptyJob(): VacancyJob {
   const title = "Nieuwe functie";
   return {
@@ -42,8 +51,39 @@ function emptyJob(): VacancyJob {
     requirements: [],
     fullDescription: "",
     applyLabel: "Solliciteer",
-    image: "assets/site/restaurant-interior.jpg"
+    image: "assets/site/tres-amigos-logo-new.png",
+    category: "operations",
+    employmentType: "parttime",
+    location: ""
   };
+}
+
+function normalizeRole(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function applicationMatchesJob(role: string, job: VacancyJob) {
+  const key = normalizeRole(role);
+  return key === normalizeRole(job.id) || key === normalizeRole(job.title);
+}
+
+function roleLabel(content: SiteContent, roleId: string) {
+  const job = content.site.vacancy.jobs.find((item) => applicationMatchesJob(roleId, item));
+  return job?.title || roleId;
+}
+
+function localDateKey(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function statusLabel(status: string) {
+  if (status === "nieuw") return "Nieuw";
+  return status;
 }
 
 function IncomingView({
@@ -54,32 +94,53 @@ function IncomingView({
   applications: Application[];
 }) {
   const [query, setQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [roleFilter, setRoleFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [selected, setSelected] = useState<Application | null>(null);
 
   const sorted = useMemo(
     () => [...applications].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [applications]
   );
 
-  const roleOptions = useMemo(
-    () => [
-      { value: "all", label: "Alle functies" },
-      ...content.site.vacancy.jobs.map((job) => ({ value: job.id, label: job.title }))
-    ],
-    [content.site.vacancy.jobs]
-  );
+  const roleOptions = useMemo(() => {
+    const jobs = content.site.vacancy.jobs;
+    const options = jobs.map((job) => ({ value: job.id, label: job.title }));
+    const known = new Set(jobs.flatMap((job) => [normalizeRole(job.id), normalizeRole(job.title)]));
+    const orphans = [...new Set(sorted.map((item) => item.role).filter((role) => role && !known.has(normalizeRole(role))))];
+    return [...options, ...orphans.map((role) => ({ value: role, label: role }))];
+  }, [content.site.vacancy.jobs, sorted]);
+
+  const statusOptions = useMemo(() => {
+    const values = [...new Set(sorted.map((item) => item.status).filter(Boolean))];
+    if (!values.includes("nieuw")) values.unshift("nieuw");
+    return values;
+  }, [sorted]);
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
+    const jobs = content.site.vacancy.jobs;
+    const selectedJob = jobs.find((job) => job.id === roleFilter) || jobs.find((job) => job.title === roleFilter) || null;
+
     return sorted.filter((application) => {
-      if (roleFilter !== "all" && application.role !== roleFilter) return false;
+      if (roleFilter) {
+        const matchesJob = selectedJob ? applicationMatchesJob(application.role, selectedJob) : false;
+        const matchesRaw = normalizeRole(application.role) === normalizeRole(roleFilter);
+        if (!matchesJob && !matchesRaw) return false;
+      }
+      if (statusFilter && application.status !== statusFilter) return false;
+      const created = localDateKey(application.createdAt);
+      if (dateFrom && created && created < dateFrom) return false;
+      if (dateTo && created && created > dateTo) return false;
       if (!normalized) return true;
       const haystack = [
         application.name,
         application.email,
         application.phone,
         roleLabel(content, application.role),
+        application.role,
         application.status,
         application.days.join(" "),
         application.experience,
@@ -89,100 +150,137 @@ function IncomingView({
         .toLowerCase();
       return haystack.includes(normalized);
     });
-  }, [sorted, query, roleFilter, content]);
+  }, [sorted, query, roleFilter, statusFilter, dateFrom, dateTo, content]);
 
-  const selected =
-    filtered.find((application) => application.id === selectedId) ||
-    sorted.find((application) => application.id === selectedId) ||
-    null;
+  function resetFilters() {
+    setQuery("");
+    setRoleFilter("");
+    setStatusFilter("");
+    setDateFrom("");
+    setDateTo("");
+  }
 
   return (
-    <div className="ta-master-detail">
-      <div className="ta-list-pane">
-        <AdminSearchBar
-          value={query}
-          onChange={setQuery}
-          placeholder="Zoek naam, e-mail, functie..."
-          label="Sollicitaties zoeken"
-        />
-        <AdminFilterChips value={roleFilter} onChange={setRoleFilter} options={roleOptions} />
-        <p className="ta-seo-hint" style={{ margin: "0 0 10px" }}>
+    <>
+      <EntraCommands>
+        <EntraCommand onClick={resetFilters}>Filters wissen</EntraCommand>
+      </EntraCommands>
+
+      <div className="entra-toolbar entra-toolbar-wrap">
+        <EntraSearch value={query} onChange={setQuery} placeholder="Zoek op naam, e-mail of functie" />
+        <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
+          <option value="">Alle functies</option>
+          {roleOptions.map((option) => (
+            <option value={option.value} key={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <option value="">Alle statussen</option>
+          {statusOptions.map((status) => (
+            <option value={status} key={status}>
+              {statusLabel(status)}
+            </option>
+          ))}
+        </select>
+        <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
+        <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+        <span className="entra-count">
           {filtered.length} van {applications.length} sollicitaties
-        </p>
-        <div className="ta-list-scroll">
-          {filtered.length ? (
-            filtered.map((application) => (
-              <AdminListRow
+        </span>
+      </div>
+
+      <div className="entra-table-wrap">
+        <table className="entra-table">
+          <thead>
+            <tr>
+              <th>Naam</th>
+              <th>Functie</th>
+              <th>E-mail</th>
+              <th>Telefoon</th>
+              <th>Datum</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((application) => (
+              <tr
                 key={application.id}
-                title={application.name}
-                meta={`${roleLabel(content, application.role)} · ${new Date(application.createdAt).toLocaleString("nl-NL")}`}
-                badge={application.status}
-                active={application.id === selectedId}
-                onClick={() => setSelectedId(application.id)}
-              />
-            ))
-          ) : (
-            <div className="ta-empty">{applications.length ? "Geen resultaten." : "Nog geen sollicitaties ontvangen."}</div>
-          )}
-        </div>
+                className={selected?.id === application.id ? "is-selected" : ""}
+                onClick={() => setSelected(application)}
+              >
+                <td>
+                  <button type="button" className="entra-link" onClick={() => setSelected(application)}>
+                    {application.name}
+                  </button>
+                </td>
+                <td>{roleLabel(content, application.role)}</td>
+                <td>{application.email}</td>
+                <td>{application.phone || "—"}</td>
+                <td>{new Date(application.createdAt).toLocaleString("nl-NL")}</td>
+                <td>
+                  <span className={`entra-pill${application.status === "nieuw" ? " is-on" : ""}`}>
+                    {statusLabel(application.status)}
+                  </span>
+                </td>
+              </tr>
+            ))}
+            {!filtered.length ? (
+              <tr>
+                <td colSpan={6} className="entra-empty">
+                  {applications.length ? "Geen sollicitaties voor deze filters." : "Nog geen sollicitaties ontvangen."}
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
       </div>
 
       {selected ? (
-        <div className="ta-detail-pane ta-fade-in" key={selected.id}>
-          <div className="ta-toolbar ta-toolbar-spread">
-            <h3 className="ta-section-title">{selected.name}</h3>
-            <span className="ta-status">{selected.status}</span>
-          </div>
-
-          <div className="ta-grid">
-            <label className="ta-field">
-              <span>Functie</span>
-              <input readOnly value={roleLabel(content, selected.role)} />
-            </label>
-            <label className="ta-field">
-              <span>Datum</span>
-              <input readOnly value={new Date(selected.createdAt).toLocaleString("nl-NL")} />
-            </label>
-            <label className="ta-field">
-              <span>E-mail</span>
-              <input readOnly value={selected.email} />
-            </label>
-            <label className="ta-field">
-              <span>Telefoon</span>
-              <input readOnly value={selected.phone || "-"} />
-            </label>
-            <label className="ta-field ta-grid-wide">
-              <span>Beschikbare dagen</span>
-              <input readOnly value={selected.days.join(", ") || "-"} />
-            </label>
-            <label className="ta-field ta-grid-wide">
-              <span>Opmerking beschikbaarheid</span>
-              <textarea readOnly rows={3} value={selected.availabilityNote || "-"} />
-            </label>
-            <label className="ta-field ta-grid-wide">
-              <span>Ervaring</span>
-              <textarea readOnly rows={5} value={selected.experience || "-"} />
-            </label>
-            <label className="ta-field ta-grid-wide">
-              <span>Motivatie</span>
-              <textarea readOnly rows={5} value={selected.motivation || "-"} />
-            </label>
-          </div>
-
+        <EntraBlade title={selected.name} onClose={() => setSelected(null)}>
+          <p className="entra-meta">
+            {roleLabel(content, selected.role)} · {new Date(selected.createdAt).toLocaleString("nl-NL")} ·{" "}
+            {statusLabel(selected.status)}
+          </p>
+          <label>
+            Functie
+            <input readOnly value={roleLabel(content, selected.role)} />
+          </label>
+          <label>
+            E-mail
+            <input readOnly value={selected.email} />
+          </label>
+          <label>
+            Telefoon
+            <input readOnly value={selected.phone || "—"} />
+          </label>
+          <label>
+            Beschikbare dagen
+            <input readOnly value={selected.days.join(", ") || "—"} />
+          </label>
+          <label>
+            Opmerking beschikbaarheid
+            <textarea readOnly rows={3} value={selected.availabilityNote || "—"} />
+          </label>
+          <label>
+            Ervaring
+            <textarea readOnly rows={5} value={selected.experience || "—"} />
+          </label>
+          <label>
+            Motivatie
+            <textarea readOnly rows={5} value={selected.motivation || "—"} />
+          </label>
           {selected.pdf?.data ? (
-            <a className="ta-btn ta-btn-primary" href={selected.pdf.data} download={selected.pdf.name} style={{ marginTop: 12 }}>
+            <a className="ta-btn ta-btn-primary" href={selected.pdf.data} download={selected.pdf.name}>
               Bijlage downloaden ({selected.pdf.name})
             </a>
           ) : (
-            <p className="ta-seo-hint" style={{ marginTop: 12 }}>
-              Geen bijlage meegestuurd.
-            </p>
+            <p className="entra-meta">Geen bijlage meegestuurd.</p>
           )}
-        </div>
-      ) : (
-        <div className="ta-detail-pane ta-empty">Selecteer een sollicitatie om details te bekijken.</div>
-      )}
-    </div>
+        </EntraBlade>
+      ) : null}
+    </>
   );
 }
 
@@ -197,18 +295,19 @@ function JobsView({
 } & PanelSaveProps) {
   const vacancy = content.site.vacancy;
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(vacancy.jobs[0]?.id || null);
-
-  const selectedIndex = vacancy.jobs.findIndex((job) => job.id === selectedId);
-  const job = selectedIndex >= 0 ? vacancy.jobs[selectedIndex] : null;
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [blade, setBlade] = useState<"edit" | null>(null);
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return vacancy.jobs;
     return vacancy.jobs.filter((item) =>
-      `${item.title} ${item.summary} ${item.id}`.toLowerCase().includes(normalized)
+      `${item.title} ${item.summary} ${item.id} ${item.location || ""}`.toLowerCase().includes(normalized)
     );
   }, [vacancy.jobs, query]);
+
+  const selectedIndex = vacancy.jobs.findIndex((job) => job.id === selectedId);
+  const job = selectedIndex >= 0 ? vacancy.jobs[selectedIndex] : null;
 
   function setJobs(jobs: VacancyJob[]) {
     onChange(updateVacancy(content, { jobs }));
@@ -224,102 +323,156 @@ function JobsView({
     const next = emptyJob();
     setJobs([...vacancy.jobs, next]);
     setSelectedId(next.id);
+    setBlade("edit");
   }
 
   function removeJob() {
     if (!job) return;
+    if (!window.confirm("Deze functie verwijderen?")) return;
     const jobs = vacancy.jobs.filter((item) => item.id !== job.id);
     setJobs(jobs);
     setSelectedId(jobs[0]?.id || null);
+    setBlade(null);
+  }
+
+  function openJob(item: VacancyJob) {
+    setSelectedId(item.id);
+    setBlade("edit");
   }
 
   return (
-    <div className="ta-master-detail">
-      <div className="ta-list-pane">
-        <AdminSearchBar value={query} onChange={setQuery} placeholder="Zoek functietitel..." label="Functies zoeken" />
-        <div className="ta-toolbar">
-          <button className="ta-btn ta-btn-primary" type="button" onClick={addJob}>
-            + Functie
-          </button>
-        </div>
-        <div className="ta-list-scroll">
-          {filtered.length ? (
-            filtered.map((item) => (
-              <AdminListRow
-                key={item.id}
-                title={item.title}
-                meta={item.id}
-                badge={item.enabled ? "Actief" : "Verborgen"}
-                thumb={item.image ? mediaAssetUrl(item.image) : undefined}
-                active={item.id === selectedId}
-                onClick={() => setSelectedId(item.id)}
-              />
-            ))
-          ) : (
-            <div className="ta-empty">Geen functies gevonden.</div>
-          )}
-        </div>
+    <>
+      <EntraCommands>
+        <EntraCommand onClick={addJob}>Nieuwe functie</EntraCommand>
+        <EntraCommand disabled={!job} onClick={() => job && setBlade("edit")}>
+          Bewerken
+        </EntraCommand>
+        <EntraCommand danger disabled={!job} onClick={removeJob}>
+          Verwijderen
+        </EntraCommand>
+      </EntraCommands>
+
+      <div className="entra-toolbar entra-toolbar-wrap">
+        <EntraSearch value={query} onChange={setQuery} placeholder="Zoek functietitel of locatie" />
+        <span className="entra-count">
+          {filtered.length} van {vacancy.jobs.length} functies
+        </span>
       </div>
 
-      {job ? (
-        <div className="ta-detail-pane ta-fade-in" key={job.id}>
-          <div className="ta-toolbar ta-toolbar-spread">
-            <h3 className="ta-section-title">Functie bewerken</h3>
-            <button className="ta-btn ta-btn-danger" type="button" onClick={removeJob}>
-              Verwijderen
-            </button>
-          </div>
+      <div className="entra-table-wrap">
+        <table className="entra-table">
+          <thead>
+            <tr>
+              <th>Functie</th>
+              <th>Locatie</th>
+              <th>Dienstverband</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((item) => (
+              <tr
+                key={item.id}
+                className={item.id === selectedId ? "is-selected" : ""}
+                onClick={() => openJob(item)}
+              >
+                <td>
+                  <button type="button" className="entra-link" onClick={() => openJob(item)}>
+                    {item.title}
+                  </button>
+                </td>
+                <td>{item.location || "—"}</td>
+                <td>{item.employmentType === "fulltime" ? "Fulltime" : "Parttime"}</td>
+                <td>
+                  <span className={`entra-pill${item.enabled ? " is-on" : ""}`}>{item.enabled ? "Actief" : "Verborgen"}</span>
+                </td>
+              </tr>
+            ))}
+            {!filtered.length ? (
+              <tr>
+                <td colSpan={4} className="entra-empty">
+                  Geen functies gevonden.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
 
+      {blade === "edit" && job ? (
+        <EntraBlade title={job.title} onClose={() => setBlade(null)}>
           <label className="ta-toggle">
             <input type="checkbox" checked={job.enabled} onChange={(event) => updateJob({ ...job, enabled: event.target.checked })} />
             <span>Actief op vacaturepagina</span>
           </label>
-
-          <div className="ta-grid">
-            <label className="ta-field">
-              <span>Functietitel</span>
-              <input value={job.title} onChange={(event) => updateJob({ ...job, title: event.target.value })} />
-            </label>
-            <label className="ta-field">
-              <span>Apply knop tekst</span>
-              <input value={job.applyLabel} onChange={(event) => updateJob({ ...job, applyLabel: event.target.value })} />
-            </label>
-            <label className="ta-field ta-grid-wide">
-              <span>Interne ID (voor sollicitaties)</span>
-              <input readOnly value={job.id} />
-            </label>
-            <MediaField label="Functie afbeelding" value={job.image} onChange={(value) => updateJob({ ...job, image: value })} />
-            <label className="ta-field ta-grid-wide">
-              <span>Samenvatting</span>
-              <textarea value={job.summary} rows={3} onChange={(event) => updateJob({ ...job, summary: event.target.value })} />
-            </label>
-            <label className="ta-field ta-grid-wide">
-              <span>Requirements (1 per regel)</span>
-              <textarea
-                rows={4}
-                value={job.requirements.join("\n")}
-                onChange={(event) =>
-                  updateJob({
-                    ...job,
-                    requirements: event.target.value
-                      .split("\n")
-                      .map((line) => line.trim())
-                      .filter(Boolean)
-                  })
-                }
-              />
-            </label>
-            <label className="ta-field ta-grid-wide">
-              <span>Volledige omschrijving</span>
-              <textarea value={job.fullDescription} rows={6} onChange={(event) => updateJob({ ...job, fullDescription: event.target.value })} />
-            </label>
-          </div>
+          <label>
+            Functietitel
+            <input value={job.title} onChange={(event) => updateJob({ ...job, title: event.target.value })} />
+          </label>
+          <label>
+            Apply knop tekst
+            <input value={job.applyLabel} onChange={(event) => updateJob({ ...job, applyLabel: event.target.value })} />
+          </label>
+          <label>
+            Interne ID
+            <input readOnly value={job.id} />
+          </label>
+          <MediaField label="Functie afbeelding" value={job.image} onChange={(value) => updateJob({ ...job, image: value })} />
+          {job.image ? <img className="entra-job-thumb" src={mediaAssetUrl(job.image)} alt="" /> : null}
+          <label>
+            Categorie
+            <select value={job.category || "operations"} onChange={(event) => updateJob({ ...job, category: event.target.value })}>
+              <option value="kitchen">Keuken</option>
+              <option value="leadership">Leiding</option>
+              <option value="operations">Operatie</option>
+            </select>
+          </label>
+          <label>
+            Dienstverband
+            <select
+              value={job.employmentType || "fulltime"}
+              onChange={(event) => updateJob({ ...job, employmentType: event.target.value })}
+            >
+              <option value="fulltime">Fulltime</option>
+              <option value="parttime">Parttime</option>
+            </select>
+          </label>
+          <label>
+            Locatie
+            <input
+              value={job.location || ""}
+              onChange={(event) => updateJob({ ...job, location: event.target.value })}
+              placeholder="Amsterdam Oost"
+            />
+          </label>
+          <label>
+            Samenvatting
+            <textarea value={job.summary} rows={3} onChange={(event) => updateJob({ ...job, summary: event.target.value })} />
+          </label>
+          <label>
+            Requirements (1 per regel)
+            <textarea
+              rows={4}
+              value={job.requirements.join("\n")}
+              onChange={(event) =>
+                updateJob({
+                  ...job,
+                  requirements: event.target.value
+                    .split("\n")
+                    .map((line) => line.trim())
+                    .filter(Boolean)
+                })
+              }
+            />
+          </label>
+          <label>
+            Volledige omschrijving
+            <textarea value={job.fullDescription} rows={6} onChange={(event) => updateJob({ ...job, fullDescription: event.target.value })} />
+          </label>
           <FormSaveBar onSave={onSave} saving={saving} />
-        </div>
-      ) : (
-        <div className="ta-detail-pane ta-empty">Selecteer een functie of voeg een nieuwe toe.</div>
-      )}
-    </div>
+        </EntraBlade>
+      ) : null}
+    </>
   );
 }
 
@@ -335,9 +488,7 @@ function PageView({
   const vacancy = content.site.vacancy;
 
   return (
-    <div className="ta-detail-pane ta-fade-in" style={{ maxWidth: 920 }}>
-      <h3 className="ta-section-title">Vacaturepagina</h3>
-      <p className="ta-seo-hint">Hero en sollicitatiebeeld op Work With Us.</p>
+    <div className="entra-form">
       <div className="ta-grid">
         <label className="ta-field">
           <span>Hero titel</span>
@@ -347,41 +498,27 @@ function PageView({
           <span>Hero intro</span>
           <textarea value={vacancy.heroIntro} rows={3} onChange={(event) => onChange(updateVacancy(content, { heroIntro: event.target.value }))} />
         </label>
-        <MediaField
-          label="Hero afbeelding"
-          value={vacancy.heroImage}
-          onChange={(value) => onChange(updateVacancy(content, { heroImage: value }))}
-        />
-        <MediaField
-          label="Sollicitatieformulier afbeelding"
-          value={vacancy.formImage}
-          onChange={(value) => onChange(updateVacancy(content, { formImage: value }))}
-        />
       </div>
+      <p className="entra-meta">De hero-foto van Werken bij ons wijzig je bij Pagina-foto&apos;s.</p>
       <FormSaveBar onSave={onSave} saving={saving} />
     </div>
   );
 }
 
-export function ApplicationsPanel({ content, applications, onChange, onSave, saving }: Props) {
-  const [view, setView] = useState<PanelView>("incoming");
+export function ApplicationsPanel({ content, applications, onChange, onSave, saving, initialView }: Props) {
+  const [view, setView] = useState<ApplicationsView>(initialView || "incoming");
 
-  const viewOptions = useMemo(
-    () => [
-      { value: "incoming", label: `Inkomend (${applications.length})` },
-      { value: "jobs", label: `Functies (${content.site.vacancy.jobs.length})` },
-      { value: "page", label: "Pagina" }
-    ],
-    [applications.length, content.site.vacancy.jobs.length]
-  );
+  useEffect(() => {
+    if (initialView) setView(initialView);
+  }, [initialView]);
+
+  const copy = TITLES[view];
 
   return (
-    <div className="ta-stack-panel">
-      <AdminFilterChips value={view} onChange={(value) => setView(value as PanelView)} options={viewOptions} />
-
+    <EntraShell brand="Sollicitaties" items={NAV} view={view} onChange={setView} title={copy.title} subtitle={copy.subtitle}>
       {view === "incoming" ? <IncomingView content={content} applications={applications} /> : null}
       {view === "jobs" ? <JobsView content={content} onChange={onChange} onSave={onSave} saving={saving} /> : null}
       {view === "page" ? <PageView content={content} onChange={onChange} onSave={onSave} saving={saving} /> : null}
-    </div>
+    </EntraShell>
   );
 }

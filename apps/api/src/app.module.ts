@@ -19,6 +19,7 @@ import { RedisModule } from "./redis/redis.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { SeoModule } from "./seo/seo.module";
 import { UsersModule } from "./users/users.module";
+import { TellingenModule } from "./tellingen/tellingen.module";
 
 @Module({
   imports: [
@@ -42,7 +43,8 @@ import { UsersModule } from "./users/users.module";
     ContactModule,
     InstagramModule,
     UsersModule,
-    SeoModule
+    SeoModule,
+    TellingenModule
   ],
   controllers: [HealthController]
 })

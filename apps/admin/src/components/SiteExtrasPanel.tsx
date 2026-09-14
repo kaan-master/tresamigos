@@ -144,16 +144,6 @@ export function OurStoryEditor({
           <span>Openingstijden samenvatting</span>
           <input value={story.scheduleSummary} onChange={(event) => onChange(updateSite(content, { ourStory: { ...story, scheduleSummary: event.target.value } }))} />
         </label>
-        <MediaField
-          label="Hero afbeelding"
-          value={story.heroImage}
-          onChange={(value) => onChange(updateSite(content, { ourStory: { ...story, heroImage: value } }))}
-        />
-        <MediaField
-          label="Zij-afbeelding"
-          value={story.sideImage}
-          onChange={(value) => onChange(updateSite(content, { ourStory: { ...story, sideImage: value } }))}
-        />
       </div>
       {story.paragraphs.map((paragraph, index) => (
         <label className="ta-field ta-grid-wide" key={`story-${index}`} style={{ marginTop: 12 }}>
