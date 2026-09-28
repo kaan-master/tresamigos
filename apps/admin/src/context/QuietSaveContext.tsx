@@ -166,20 +166,28 @@ export function QuietSaveCapture({ children }: { children: ReactNode }) {
       );
     }
 
+    function fieldSnapshot(el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): string {
+      if (el instanceof HTMLInputElement && (el.type === "checkbox" || el.type === "radio")) {
+        return String(el.checked);
+      }
+      return el.value;
+    }
+
     function onFocusIn(event: FocusEvent) {
       const el = event.target;
       if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement)) return;
-      el.dataset.quietBefore = el.type === "checkbox" || el.type === "radio" ? String(el.checked) : el.value;
+      el.dataset.quietBefore = fieldSnapshot(el);
     }
 
     function onFocusOut(event: FocusEvent) {
       const el = event.target;
       if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement)) return;
-      if (el.readOnly || el.disabled) return;
+      if (el.disabled) return;
+      if ((el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) && el.readOnly) return;
       if (el.closest("[data-quiet-skip]")) return;
 
       const before = el.dataset.quietBefore ?? "";
-      const after = el.type === "checkbox" || el.type === "radio" ? String(el.checked) : el.value;
+      const after = fieldSnapshot(el);
       if (before === after) return;
 
       const line = resolveLine(el);
