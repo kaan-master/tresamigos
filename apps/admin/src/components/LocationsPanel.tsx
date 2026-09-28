@@ -77,13 +77,6 @@ export function LocationsPanel({ content, onChange, onSaveQuiet, saving = false 
     void persistNow(next);
   }
 
-  function updateLink(linkIndex: number, field: "label" | "url", value: string) {
-    if (!location) return;
-    const links = [...location.links];
-    links[linkIndex] = { ...links[linkIndex], [field]: value };
-    updateLocation({ ...location, links });
-  }
-
   function addLink() {
     if (!location) return;
     const next = setLocations(
@@ -91,6 +84,7 @@ export function LocationsPanel({ content, onChange, onSaveQuiet, saving = false 
         item.id === location.id ? { ...item, links: [...item.links, { label: "Nieuwe knop", url: "" }] } : item
       )
     );
+    // Direct opslaan zodat de knop blijft; lege URL is toegestaan tot de gebruiker hem invult.
     void persistNow(next);
   }
 
@@ -102,6 +96,13 @@ export function LocationsPanel({ content, onChange, onSaveQuiet, saving = false 
       )
     );
     void persistNow(next);
+  }
+
+  function updateLink(linkIndex: number, field: "label" | "url", value: string) {
+    if (!location) return;
+    const links = [...location.links];
+    links[linkIndex] = { ...links[linkIndex], [field]: value };
+    updateLocation({ ...location, links });
   }
 
   return (

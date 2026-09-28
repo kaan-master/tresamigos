@@ -97,7 +97,7 @@ export function QuietSaveProvider({ content, onChange, onSaveQuiet, saving, chil
       if (!contentRef.current) return false;
 
       // Geen stale provider-payload: AdminDashboard contentRef is al bijgewerkt via onChange.
-      const saved = await saveQuietRef.current();
+      const saved = await saveQuietRef.current(contentRef.current || undefined);
       if (!saved) return false;
 
       contentRef.current = saved;

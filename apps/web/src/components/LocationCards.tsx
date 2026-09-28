@@ -20,7 +20,9 @@ export function OrderPlatformLinks({
 }) {
   return (
     <div className="platform-links">
-      {links.map((link) => {
+      {links
+        .filter((link) => Boolean(link.url))
+        .map((link) => {
         const logo = logoForLabel(link.label);
         return (
           <a

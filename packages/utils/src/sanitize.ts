@@ -1217,7 +1217,7 @@ export function sanitizeContent(input: unknown): SiteContent {
 
                 return { label, url };
               })
-              .filter((link) => link.label && link.url)
+              .filter((link) => Boolean(link.label))
           : [];
 
         return {

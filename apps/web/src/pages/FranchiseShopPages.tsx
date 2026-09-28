@@ -1,11 +1,13 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import type { FranchiseShopCatalogProduct, FranchiseShopSessionUser } from "@tresamigos/types";
+import type { FranchiseShopCatalogProduct, FranchiseShopOrder, FranchiseShopSessionUser } from "@tresamigos/types";
+import { assetUrl } from "../lib/api";
 import { dismissSiteBoot } from "../lib/waitForPageImages";
 import {
   clearFranchiseToken,
   fetchFranchiseCatalog,
   fetchFranchiseMe,
+  fetchFranchiseOrders,
   getFranchiseToken,
   loginFranchise,
   logoutFranchise,
@@ -14,8 +16,19 @@ import {
 } from "../lib/franchiseShopApi";
 import "./franchise-shop.css";
 
-function formatEuro(cents: number) {
-  return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(cents / 100);
+type ShopTab = "catalog" | "orders" | "checkout";
+
+const STATUS_LABELS: Record<string, string> = {
+  nieuw: "Nieuw",
+  bevestigd: "Bevestigd",
+  verzonden: "Verzonden",
+  afgerond: "Afgerond",
+  geannuleerd: "Geannuleerd"
+};
+
+function productImage(path?: string) {
+  if (!path) return "/assets/site/tres-amigos-logo-new.png";
+  return assetUrl(path.replace(/^\/+/, ""));
 }
 
 export function FranchiseLoginPage() {
@@ -46,18 +59,25 @@ export function FranchiseLoginPage() {
   }
 
   return (
-    <div className="fs-shell">
+    <div className="fs-shell fs-login">
       <form className="fs-card" onSubmit={(event) => void handleSubmit(event)}>
-        <p className="fs-eyebrow">Franchise</p>
-        <h1>Franchise login</h1>
-        <p className="fs-lead">Log in om merch en materialen te bestellen voor jouw vestiging.</p>
+        <img className="fs-logo" src="/assets/site/tres-amigos-logo-new.png" alt="Tres Amigos" />
+        <p className="fs-eyebrow">Franchise catalogus</p>
+        <h1>Welkom terug</h1>
+        <p className="fs-lead">Bestel materialen en merch voor jouw Tres Amigos-vestiging.</p>
         <label>
           <span>E-mail</span>
           <input type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
         </label>
         <label>
           <span>Wachtwoord</span>
-          <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </label>
         {message ? <p className="fs-error">{message}</p> : null}
         <button type="submit" disabled={loading}>
@@ -75,8 +95,11 @@ export function FranchiseShopPage() {
   const navigate = useNavigate();
   const [user, setUser] = useState<FranchiseShopSessionUser | null>(null);
   const [products, setProducts] = useState<FranchiseShopCatalogProduct[]>([]);
+  const [orders, setOrders] = useState<FranchiseShopOrder[]>([]);
   const [qty, setQty] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState("");
+  const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<ShopTab>("catalog");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -90,9 +113,14 @@ export function FranchiseShopPage() {
     }
     void (async () => {
       try {
-        const [me, catalog] = await Promise.all([fetchFranchiseMe(), fetchFranchiseCatalog()]);
+        const [me, catalog, orderData] = await Promise.all([
+          fetchFranchiseMe(),
+          fetchFranchiseCatalog(),
+          fetchFranchiseOrders().catch(() => ({ orders: [] as FranchiseShopOrder[] }))
+        ]);
         setUser(me.user);
         setProducts(catalog.products);
+        setOrders(orderData.orders);
         setQty(Object.fromEntries(catalog.products.map((product) => [product.id, 0])));
       } catch {
         clearFranchiseToken();
@@ -103,6 +131,14 @@ export function FranchiseShopPage() {
     })();
   }, [navigate]);
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter((product) =>
+      `${product.name} ${product.description} ${product.sku}`.toLowerCase().includes(q)
+    );
+  }, [products, query]);
+
   const cart = useMemo(
     () =>
       products
@@ -111,7 +147,14 @@ export function FranchiseShopPage() {
     [products, qty]
   );
 
-  const total = cart.reduce((sum, line) => sum + line.product.priceCents * line.quantity, 0);
+  const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
+
+  function setLineQty(productId: string, next: number) {
+    setQty((current) => ({
+      ...current,
+      [productId]: Math.max(0, Math.min(999, next))
+    }));
+  }
 
   async function handleLogout() {
     try {
@@ -131,9 +174,11 @@ export function FranchiseShopPage() {
         cart.map((line) => ({ productId: line.product.id, quantity: line.quantity })),
         notes
       );
-      setMessage(`Bestelling ${result.order.orderNumber} geplaatst. Factuur: ${result.order.invoiceNumber}.`);
+      setMessage(`Bestelling ${result.order.orderNumber} is geplaatst.`);
       setQty(Object.fromEntries(products.map((product) => [product.id, 0])));
       setNotes("");
+      setOrders((current) => [result.order, ...current]);
+      setTab("orders");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Bestellen mislukt.");
     } finally {
@@ -141,86 +186,238 @@ export function FranchiseShopPage() {
     }
   }
 
-  if (loading) return <div className="fs-shell"><p className="fs-lead">Laden...</p></div>;
+  if (loading) {
+    return (
+      <div className="fs-shell fs-shop">
+        <div className="fs-loading-wrap">
+          <img src="/assets/site/tres-amigos-logo-new.png" alt="" />
+          <p className="fs-lead">Catalogus laden...</p>
+        </div>
+      </div>
+    );
+  }
   if (!user) return <Navigate to="/franchise/login" replace />;
 
   return (
     <div className="fs-shell fs-shop">
-      <header className="fs-shop-head">
-        <div>
-          <p className="fs-eyebrow">Franchise shop</p>
-          <h1>Hallo {user.name}</h1>
-          <p className="fs-lead">
-            {user.locationCode} {user.locationName} · prijzen voor jouw franchise
-          </p>
+      <header className="fs-hero">
+        <div className="fs-hero-brand">
+          <img src="/assets/site/tres-amigos-logo-new.png" alt="Tres Amigos" />
+          <div>
+            <p className="fs-eyebrow">Tres Amigos</p>
+            <h1>Franchise catalogus</h1>
+            <p className="fs-lead">
+              {user.locationCode} {user.locationName} · welkom {user.name.split(" ")[0]}
+            </p>
+          </div>
         </div>
-        <button type="button" className="fs-ghost" onClick={() => void handleLogout()}>
-          Uitloggen
-        </button>
+        <nav className="fs-tabs" aria-label="Shop navigatie">
+          <button type="button" className={tab === "catalog" ? "is-active" : ""} onClick={() => setTab("catalog")}>
+            Catalogus
+          </button>
+          <button type="button" className={tab === "checkout" ? "is-active" : ""} onClick={() => setTab("checkout")}>
+            Bestellijst{cartCount ? ` · ${cartCount}` : ""}
+          </button>
+          <button type="button" className={tab === "orders" ? "is-active" : ""} onClick={() => setTab("orders")}>
+            Mijn orders
+          </button>
+          <button type="button" className="fs-ghost" onClick={() => void handleLogout()}>
+            Uitloggen
+          </button>
+        </nav>
       </header>
 
-      <div className="fs-shop-grid">
-        <section className="fs-products">
+      {tab === "catalog" ? (
+        <>
+          <div className="fs-catalog-head">
+            <div>
+              <h2>Assortiment</h2>
+              <p className="fs-lead">Kies wat je nodig hebt voor de vestiging. Geen prijzen — alles gaat via Tres Amigos.</p>
+            </div>
+            <label className="fs-search">
+              <span>Zoeken</span>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Zoek op naam of omschrijving..."
+              />
+            </label>
+          </div>
+
           {products.length ? (
-            products.map((product) => (
-              <article key={product.id} className="fs-product">
-                <div>
-                  <h2>{product.name}</h2>
-                  {product.description ? <p>{product.description}</p> : null}
-                  <strong>{formatEuro(product.priceCents)}</strong>
-                </div>
-                <label>
-                  <span>Aantal</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={999}
-                    value={qty[product.id] || 0}
-                    onChange={(e) =>
-                      setQty((current) => ({
-                        ...current,
-                        [product.id]: Math.max(0, Math.min(999, Number(e.target.value) || 0))
-                      }))
-                    }
-                  />
-                </label>
-              </article>
-            ))
+            filtered.length ? (
+              <div className="fs-product-grid">
+                {filtered.map((product) => {
+                  const quantity = qty[product.id] || 0;
+                  const hasPhoto = Boolean(product.image);
+                  return (
+                    <article key={product.id} className="fs-product-card">
+                      <div className={`fs-product-media${hasPhoto ? "" : " is-logo"}`}>
+                        <img src={productImage(product.image)} alt={product.name} loading="lazy" />
+                      </div>
+                      <div className="fs-product-body">
+                        <h3>{product.name}</h3>
+                        {product.description ? <p>{product.description}</p> : <p className="fs-muted">—</p>}
+                        <div className="fs-product-foot">
+                          <div className="fs-qty">
+                            <button type="button" aria-label="Minder" onClick={() => setLineQty(product.id, quantity - 1)}>
+                              −
+                            </button>
+                            <input
+                              type="number"
+                              min={0}
+                              max={999}
+                              value={quantity}
+                              onChange={(e) => setLineQty(product.id, Number(e.target.value) || 0)}
+                            />
+                            <button type="button" aria-label="Meer" onClick={() => setLineQty(product.id, quantity + 1)}>
+                              +
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            className="fs-add"
+                            onClick={() => setLineQty(product.id, Math.max(1, quantity + 1))}
+                          >
+                            {quantity ? "Bijwerken" : "Toevoegen"}
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="fs-empty">
+                <strong>Geen resultaten</strong>
+                <p>Geen producten voor “{query}”.</p>
+              </div>
+            )
           ) : (
-            <p className="fs-lead">Nog geen producten met prijs voor jouw franchise.</p>
+            <div className="fs-empty">
+              <img src="/assets/site/tres-amigos-logo-new.png" alt="" />
+              <strong>Catalogus komt eraan</strong>
+              <p>Er staan nog geen producten klaar voor jouw vestiging. Neem contact op met Tres Amigos.</p>
+            </div>
+          )}
+
+          {cartCount ? (
+            <button type="button" className="fs-cart-fab" onClick={() => setTab("checkout")}>
+              Bestellijst · {cartCount} artikel{cartCount === 1 ? "" : "en"}
+            </button>
+          ) : null}
+        </>
+      ) : null}
+
+      {tab === "checkout" ? (
+        <div className="fs-checkout">
+          <section className="fs-checkout-main">
+            <h2>Bestellijst</h2>
+            {cart.length ? (
+              <ul className="fs-checkout-lines">
+                {cart.map((line) => (
+                  <li key={line.product.id}>
+                    <img src={productImage(line.product.image)} alt="" />
+                    <div>
+                      <strong>{line.product.name}</strong>
+                      <span>Aantal bijwerken</span>
+                    </div>
+                    <div className="fs-qty">
+                      <button type="button" onClick={() => setLineQty(line.product.id, line.quantity - 1)}>
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min={0}
+                        max={999}
+                        value={line.quantity}
+                        onChange={(e) => setLineQty(line.product.id, Number(e.target.value) || 0)}
+                      />
+                      <button type="button" onClick={() => setLineQty(line.product.id, line.quantity + 1)}>
+                        +
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="fs-empty">
+                <strong>Nog leeg</strong>
+                <p>Voeg artikelen toe vanuit de catalogus.</p>
+                <button type="button" className="fs-add" onClick={() => setTab("catalog")}>
+                  Naar catalogus
+                </button>
+              </div>
+            )}
+          </section>
+
+          <aside className="fs-checkout-aside">
+            <img className="fs-aside-logo" src="/assets/site/tres-amigos-logo-new.png" alt="" />
+            <h2>Bestelling afronden</h2>
+            <p className="fs-lead">Je bestelling gaat naar Tres Amigos. Afhandeling en facturatie regelen wij.</p>
+            <label>
+              <span>Opmerking</span>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={4}
+                placeholder="Levertijd, contactpersoon, bijzonderheden..."
+              />
+            </label>
+            <div className="fs-total">
+              <span>Artikelen</span>
+              <strong>{cartCount}</strong>
+            </div>
+            {message && tab === "checkout" ? (
+              <p className={message.includes("geplaatst") ? "fs-success" : "fs-error"}>{message}</p>
+            ) : null}
+            <button type="button" disabled={!cart.length || submitting} onClick={() => void handleOrder()}>
+              {submitting ? "Bezig..." : "Bestelling plaatsen"}
+            </button>
+          </aside>
+        </div>
+      ) : null}
+
+      {tab === "orders" ? (
+        <section className="fs-orders">
+          <div className="fs-catalog-head">
+            <div>
+              <h2>Mijn orders</h2>
+              <p className="fs-lead">Overzicht van geplaatste bestellingen en status.</p>
+            </div>
+          </div>
+          {message && tab === "orders" ? <p className="fs-success">{message}</p> : null}
+          {orders.length ? (
+            <div className="fs-order-list">
+              {orders.map((order) => (
+                <article key={order.id} className="fs-order-card">
+                  <header>
+                    <div>
+                      <strong>{order.orderNumber}</strong>
+                      <span>{new Date(order.createdAt).toLocaleString("nl-NL")}</span>
+                    </div>
+                    <span className="fs-order-status">{STATUS_LABELS[order.status] || order.status}</span>
+                  </header>
+                  <ul>
+                    {order.items.map((item) => (
+                      <li key={item.id}>
+                        <span>
+                          {item.quantity}× {item.productName}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="fs-empty">
+              <strong>Nog geen orders</strong>
+              <p>Plaats je eerste bestelling via de catalogus.</p>
+            </div>
           )}
         </section>
-
-        <aside className="fs-cart">
-          <h2>Winkelwagen</h2>
-          {cart.length ? (
-            <ul>
-              {cart.map((line) => (
-                <li key={line.product.id}>
-                  <span>
-                    {line.quantity}× {line.product.name}
-                  </span>
-                  <strong>{formatEuro(line.product.priceCents * line.quantity)}</strong>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="fs-lead">Nog leeg.</p>
-          )}
-          <label>
-            <span>Opmerking</span>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
-          </label>
-          <div className="fs-total">
-            <span>Totaal</span>
-            <strong>{formatEuro(total)}</strong>
-          </div>
-          {message ? <p className="fs-error">{message}</p> : null}
-          <button type="button" disabled={!cart.length || submitting} onClick={() => void handleOrder()}>
-            {submitting ? "Bezig..." : "Bestelling plaatsen"}
-          </button>
-        </aside>
-      </div>
+      ) : null}
     </div>
   );
 }
