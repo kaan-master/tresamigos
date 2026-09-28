@@ -275,6 +275,18 @@ export function IconDownload(props: IconProps) {
   );
 }
 
+export function IconPdf(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 3v5h5" />
+      <path d="M8 13h3.2a1.6 1.6 0 0 1 0 3.2H8V17" />
+      <path d="M13.5 13H15a1.5 1.5 0 0 1 0 3h-1.5V17M13.5 17v-4" />
+      <path d="M17 17v-2.2A1.8 1.8 0 0 1 18.8 13H20" />
+    </Icon>
+  );
+}
+
 export function IconEye(props: IconProps) {
   return (
     <Icon {...props}>

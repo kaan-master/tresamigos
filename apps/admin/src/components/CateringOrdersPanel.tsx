@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { CateringOrder, CateringOrderStatus } from "@tresamigos/types";
 import { useAdminFeedback } from "../context/AdminFeedbackContext";
 import { api, downloadPdf } from "../lib/api";
+import { IconPdf } from "./AdminIcons";
 import {
   DateFilterPreset,
   formatConfiguration,
@@ -316,9 +317,11 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive, initialS
               </button>
             ) : null}
             <button className="ta-btn ta-btn-ghost" type="button" onClick={() => void downloadInvoicePdf()}>
+              <IconPdf width={16} height={16} />
               Factuur PDF
             </button>
             <button className="ta-btn ta-btn-ghost" type="button" onClick={() => void downloadPackingSlipPdf()}>
+              <IconPdf width={16} height={16} />
               Pakbon PDF
             </button>
             <button className="ta-btn ta-btn-ghost" type="button" onClick={printOrder}>

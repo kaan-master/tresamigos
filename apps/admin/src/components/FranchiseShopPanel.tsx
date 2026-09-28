@@ -10,6 +10,7 @@ import { api, downloadPdf } from "../lib/api";
 import { mediaAssetUrl } from "../lib/media";
 import { useAdminFeedback } from "../context/AdminFeedbackContext";
 import { AdminListRow, AdminSearchBar } from "./AdminListUi";
+import { IconPdf } from "./AdminIcons";
 import { MediaField } from "./MediaPickerModal";
 
 export type FranchiseShopView = "products" | "accounts" | "orders";
@@ -483,9 +484,11 @@ export function FranchiseShopPanel({ content, view }: Props) {
                 <h3 className="ta-section-title">{selectedOrder.orderNumber}</h3>
                 <div className="ta-toolbar">
                   <button className="ta-btn ta-btn-ghost" type="button" onClick={() => void downloadInvoice(selectedOrder)}>
+                    <IconPdf width={16} height={16} />
                     Factuur PDF
                   </button>
                   <button className="ta-btn ta-btn-ghost" type="button" onClick={() => void downloadPackingSlip(selectedOrder)}>
+                    <IconPdf width={16} height={16} />
                     Pakbon PDF
                   </button>
                 </div>

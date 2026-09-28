@@ -12,3 +12,4 @@ data/*.tmp
 legacy/
 .turbo/
 apps/api/uploads/
+.tools/

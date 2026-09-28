@@ -46,8 +46,8 @@ export function ProductDetailModal({ open, product, onClose }: Props) {
           <p>{product.description}</p>
           <strong>{product.price}</strong>
           <div className="product-modal-actions">
-            <Link className="btn primary" to="/catering" onClick={onClose}>
-              {t("menu.cateringCta")}
+            <Link className="btn primary" to="/locations" onClick={onClose}>
+              {t("nav.findTresAmigos")}
             </Link>
             <button type="button" className="btn alt" onClick={onClose}>
               {t("common.close")}
