@@ -1,14 +1,25 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
+  IntegrationGoogleByCategory,
   IntegrationMailNotifications,
   IntegrationSettingsPublic,
+  MailNotifyCategory,
   MailRelayProvider,
   UpdateIntegrationGoogleAdsInput,
   UpdateIntegrationMailRelayInput,
   UpdateIntegrationNewsletterInput
 } from "@tresamigos/types";
+import {
+  IconApplications,
+  IconCatering,
+  IconFranchise,
+  IconIntegrations
+} from "./AdminIcons";
 import { useAdminFeedback } from "../context/AdminFeedbackContext";
 import { api } from "../lib/api";
+import { EntraCommand, EntraCommands } from "./telling/entraUi";
+
+type IntegrationsView = "overview" | "mail" | "googleAds" | "newsletter" | "extra";
 
 type MailForm = {
   enabled: boolean;
@@ -45,25 +56,52 @@ const DEFAULT_NOTIFICATIONS: IntegrationMailNotifications = {
   other: "no-reply@tresamigos.nl"
 };
 
+const EMPTY_GOOGLE_BY_CATEGORY: IntegrationGoogleByCategory = {
+  applications: { connected: false, email: "" },
+  catering: { connected: false, email: "" },
+  franchise: { connected: false, email: "" },
+  other: { connected: false, email: "" }
+};
+
+const CATEGORY_META: Array<{
+  id: MailNotifyCategory;
+  label: string;
+  hint: string;
+  placeholder: string;
+}> = [
+  { id: "applications", label: "Sollicitaties", hint: "Nieuwe sollicitaties", placeholder: "work@tresamigos.nl" },
+  { id: "catering", label: "Catering", hint: "Nieuwe cateringorders", placeholder: "catering@tresamigos.nl" },
+  { id: "franchise", label: "Franchise", hint: "Franchise-aanvragen", placeholder: "Vilmon@tresamigos.nl" },
+  { id: "other", label: "Overig", hint: "Contact en overige mail", placeholder: "no-reply@tresamigos.nl" }
+];
+
 const AVAILABLE_INTEGRATIONS = [
-  {
-    id: "mollie",
-    title: "Mollie",
-    description: "Online betalingen via Mollie."
-  },
-  {
-    id: "postnl",
-    title: "PostNL tracking",
-    description: "Track & trace voor verzendingen."
-  }
+  { id: "mollie", title: "Mollie", description: "Online betalingen via Mollie." },
+  { id: "postnl", title: "PostNL tracking", description: "Track & trace voor verzendingen." }
 ] as const;
 
 type AvailableIntegration = (typeof AVAILABLE_INTEGRATIONS)[number];
 
+const VIEW_TABS: Array<{ id: IntegrationsView; label: string }> = [
+  { id: "overview", label: "Overzicht" },
+  { id: "mail", label: "E-mail" },
+  { id: "googleAds", label: "Google Ads" },
+  { id: "newsletter", label: "Nieuwsbrief" },
+  { id: "extra", label: "Op aanvraag" }
+];
+
+const TITLES: Record<IntegrationsView, { title: string; subtitle: string }> = {
+  overview: { title: "Overzicht", subtitle: "Status van actieve koppelingen" },
+  mail: { title: "E-mail", subtitle: "Google Workspace / Gmail — één keer inloggen per categorie" },
+  googleAds: { title: "Google Ads", subtitle: "gtag.js conversietag op de website" },
+  newsletter: { title: "Nieuwsbrief", subtitle: "Waar het aanmeldformulier zichtbaar is" },
+  extra: { title: "Op aanvraag", subtitle: "Extra koppelingen aanvragen bij Tres Amigos" }
+};
+
 function toMailForm(settings: IntegrationSettingsPublic["mailRelay"]): MailForm {
   return {
     enabled: settings.enabled,
-    provider: settings.provider,
+    provider: settings.provider === "smtp" || settings.provider === "outlook" ? settings.provider : "google",
     host: settings.host,
     port: String(settings.port || 587),
     secure: settings.secure,
@@ -116,6 +154,7 @@ function requestIntegrationMailto(item: AvailableIntegration) {
 
 export function IntegrationsPanel() {
   const { runSave } = useAdminFeedback();
+  const [view, setView] = useState<IntegrationsView>("overview");
   const [settings, setSettings] = useState<IntegrationSettingsPublic | null>(null);
   const [mailForm, setMailForm] = useState<MailForm | null>(null);
   const [googleForm, setGoogleForm] = useState<GoogleAdsForm | null>(null);
@@ -126,39 +165,38 @@ export function IntegrationsPanel() {
   const [testRecipient, setTestRecipient] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [search, setSearch] = useState("");
-  const [openMail, setOpenMail] = useState(true);
-  const [openGoogle, setOpenGoogle] = useState(true);
-  const [openNewsletter, setOpenNewsletter] = useState(true);
-  const [requestedIds, setRequestedIds] = useState<string[]>(() =>
-    typeof window === "undefined" ? [] : readRequestedIds()
-  );
+  const [requestedIds, setRequestedIds] = useState<string[]>(() => readRequestedIds());
+  const [connectingCategory, setConnectingCategory] = useState<MailNotifyCategory | null>(null);
+
+  const copy = TITLES[view];
+  const googleByCategory = settings?.mailRelay.googleByCategory || EMPTY_GOOGLE_BY_CATEGORY;
+
+  async function loadSettings() {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations");
+      setSettings(result.integrations);
+      setMailForm(toMailForm(result.integrations.mailRelay));
+      setGoogleForm({
+        enabled: result.integrations.googleAds.enabled,
+        conversionId: result.integrations.googleAds.conversionId
+      });
+      setNewsletterForm({
+        enabled: result.integrations.newsletter.enabled,
+        showFooter: result.integrations.newsletter.showFooter,
+        showHome: result.integrations.newsletter.showHome,
+        showPages: result.integrations.newsletter.showPages
+      });
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Integraties laden mislukt.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    let cancelled = false;
-    void api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations")
-      .then((result) => {
-        if (cancelled) return;
-        setSettings(result.integrations);
-        setMailForm(toMailForm(result.integrations.mailRelay));
-        setGoogleForm({
-          enabled: result.integrations.googleAds.enabled,
-          conversionId: result.integrations.googleAds.conversionId
-        });
-        setNewsletterForm({ ...result.integrations.newsletter });
-        setTestRecipient(result.integrations.mailRelay.fromEmail || result.integrations.mailRelay.username || "");
-      })
-      .catch((loadError) => {
-        if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : "Integraties laden mislukt.");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+    void loadSettings();
   }, []);
 
   useEffect(() => {
@@ -166,81 +204,48 @@ export function IntegrationsPanel() {
     const googleMail = params.get("googleMail");
     if (!googleMail) return;
     if (googleMail === "connected") {
-      setOpenMail(true);
-      setMessage(`Google Gmail gekoppeld${params.get("email") ? `: ${params.get("email")}` : ""}.`);
-      void api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations").then((result) => {
-        setSettings(result.integrations);
-        setMailForm(toMailForm(result.integrations.mailRelay));
-      });
+      setView("mail");
+      setMessage(`Google gekoppeld${params.get("email") ? `: ${params.get("email")}` : ""}.`);
+      void loadSettings();
     }
     if (googleMail === "error") {
-      setOpenMail(true);
+      setView("mail");
       setError(params.get("message") || "Google login mislukt.");
     }
     params.delete("googleMail");
     params.delete("email");
+    params.delete("category");
     params.delete("message");
-    const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
-    window.history.replaceState({}, "", next);
+    const next = params.toString();
+    window.history.replaceState({}, "", `${window.location.pathname}${next ? `?${next}` : ""}${window.location.hash}`);
   }, []);
-
-  const query = search.trim().toLowerCase();
-  const showMail =
-    !query ||
-    "mail mailrelay smtp outlook google gmail e-mail email notificatie sollicitatie catering franchise"
-      .split(" ")
-      .some((part) => query.includes(part) || part.includes(query));
-  const showGoogle =
-    !query ||
-    "google ads gtag aw conversie advertising tracking".split(" ").some((part) => query.includes(part) || part.includes(query));
-  const showNewsletter =
-    !query ||
-    "nieuwsbrief newsletter mail subscribe abonnees".split(" ").some((part) => query.includes(part) || part.includes(query));
-
-  const availableVisible = useMemo(
-    () =>
-      AVAILABLE_INTEGRATIONS.filter((item) => {
-        if (!query) return true;
-        return `${item.title} ${item.description}`.toLowerCase().includes(query);
-      }),
-    [query]
-  );
-
-  function markRequested(id: string) {
-    setRequestedIds((current) => {
-      if (current.includes(id)) return current;
-      const next = [...current, id];
-      window.localStorage.setItem(REQUESTED_STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
-  }
-
-  function handleRequestIntegration(item: AvailableIntegration) {
-    requestIntegrationMailto(item);
-    markRequested(item.id);
-    setError("");
-    setMessage(`Aanvraag voor ${item.title} is klaargezet in je e-mailprogramma.`);
-  }
 
   const statusItems = useMemo(() => {
     if (!settings) return [];
     return [
-      { id: "google", label: "Google Ads", active: settings.googleAds.enabled, detail: settings.googleAds.conversionId },
+      {
+        id: "mail",
+        label: "E-mail",
+        active: settings.mailRelay.enabled,
+        detail: settings.mailRelay.provider === "google" ? "Google Gmail" : settings.mailRelay.provider.toUpperCase()
+      },
+      {
+        id: "google",
+        label: "Google Ads",
+        active: settings.googleAds.enabled,
+        detail: settings.googleAds.conversionId
+      },
       {
         id: "newsletter",
         label: "Nieuwsbrief",
         active: settings.newsletter.enabled,
-        detail: settings.newsletter.enabled ? "Aanmeldformulieren op de site" : "Uitgeschakeld"
-      },
-      {
-        id: "mail",
-        label: "Mailrelay",
-        active: settings.mailRelay.enabled,
-        detail: settings.mailRelay.googleConnected
-          ? `Google · ${settings.mailRelay.googleEmail}`
-          : settings.mailRelay.enabled
-            ? settings.mailRelay.host || "SMTP actief"
-            : "Uitgeschakeld"
+        detail: [
+          settings.newsletter.showHome ? "Home" : null,
+          settings.newsletter.showPages ? "Pagina's" : null,
+          settings.newsletter.showFooter ? "Footer" : null
+        ]
+          .filter(Boolean)
+          .join(" · ") || "Uit"
       }
     ];
   }, [settings]);
@@ -249,41 +254,31 @@ export function IntegrationsPanel() {
     setSettings(next);
     setMailForm(toMailForm(next.mailRelay));
     setGoogleForm({ enabled: next.googleAds.enabled, conversionId: next.googleAds.conversionId });
-    setNewsletterForm({ ...next.newsletter });
+    setNewsletterForm({
+      enabled: next.newsletter.enabled,
+      showFooter: next.newsletter.showFooter,
+      showHome: next.newsletter.showHome,
+      showPages: next.newsletter.showPages
+    });
   }
 
-  function handleMailTextChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    const { name, value } = event.target;
-    setMailForm((current) => (current ? { ...current, [name]: value } : current));
-  }
-
-  function handleMailToggleChange(event: ChangeEvent<HTMLInputElement>) {
-    const { name, checked } = event.target;
-    setMailForm((current) => (current ? { ...current, [name]: checked } : current));
-  }
-
-  async function saveMailRelay(event?: FormEvent) {
-    event?.preventDefault();
+  async function saveMailRelay() {
     if (!mailForm || savingKey) return;
     setSavingKey("mail");
-    setError("");
     setMessage("");
-
+    setError("");
     const payload: UpdateIntegrationMailRelayInput = {
       enabled: mailForm.enabled,
       provider: mailForm.provider,
-      host: mailForm.host.trim(),
-      port: Number.parseInt(mailForm.port, 10) || 587,
+      host: mailForm.host,
+      port: Number(mailForm.port) || 587,
       secure: mailForm.secure,
-      username: mailForm.username.trim(),
-      fromEmail: mailForm.fromEmail.trim(),
-      fromName: mailForm.fromName.trim(),
+      username: mailForm.username,
+      password: mailForm.password || undefined,
+      fromEmail: mailForm.fromEmail,
+      fromName: mailForm.fromName,
       notifications: mailForm.notifications
     };
-    if (mailForm.password.trim()) {
-      payload.password = mailForm.password.trim();
-    }
-
     try {
       await runSave(
         async () => {
@@ -292,10 +287,10 @@ export function IntegrationsPanel() {
             body: JSON.stringify(payload)
           });
           applySettings(result.integrations);
-          return result;
         },
-        { successMessage: "Mailrelay en notificatie-adressen opgeslagen." }
+        { successMessage: "E-mailinstellingen opgeslagen." }
       );
+      setMessage("E-mailinstellingen opgeslagen.");
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Opslaan mislukt.");
     } finally {
@@ -303,50 +298,49 @@ export function IntegrationsPanel() {
     }
   }
 
-  async function connectGoogleMail() {
+  async function connectGoogleMail(category: MailNotifyCategory) {
+    if (!mailForm) return;
+    setConnectingCategory(category);
     setError("");
-    setMessage("");
     try {
-      const result = await api<{ url: string }>("/api/admin/integrations/mailrelay/google/start");
-      if (!result.url) throw new Error("Geen Google-login URL ontvangen.");
+      const hint = mailForm.notifications[category] || DEFAULT_NOTIFICATIONS[category];
+      const query = new URLSearchParams({ category, loginHint: hint });
+      const result = await api<{ url: string }>(`/api/admin/integrations/mailrelay/google/start?${query.toString()}`);
       window.location.href = result.url;
     } catch (connectError) {
       setError(connectError instanceof Error ? connectError.message : "Google login starten mislukt.");
+      setConnectingCategory(null);
     }
   }
 
-  async function disconnectGoogleMail() {
+  async function disconnectGoogleCategory(category: MailNotifyCategory) {
     setError("");
-    setMessage("");
     try {
       await runSave(
         async () => {
           const result = await api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations/mailrelay", {
             method: "PUT",
-            body: JSON.stringify({ disconnectGoogle: true } satisfies UpdateIntegrationMailRelayInput)
+            body: JSON.stringify({ disconnectGoogleCategory: category } satisfies UpdateIntegrationMailRelayInput)
           });
           applySettings(result.integrations);
-          return result;
         },
-        { successMessage: "Google Gmail ontkoppeld." }
+        { successMessage: "Google-account ontkoppeld." }
       );
+      setMessage("Google-account ontkoppeld.");
     } catch (disconnectError) {
       setError(disconnectError instanceof Error ? disconnectError.message : "Ontkoppelen mislukt.");
     }
   }
 
-  async function saveGoogleAds(event?: FormEvent) {
-    event?.preventDefault();
+  async function saveGoogleAds() {
     if (!googleForm || savingKey) return;
     setSavingKey("google");
-    setError("");
     setMessage("");
-
+    setError("");
     const payload: UpdateIntegrationGoogleAdsInput = {
       enabled: googleForm.enabled,
       conversionId: googleForm.conversionId.trim()
     };
-
     try {
       await runSave(
         async () => {
@@ -355,10 +349,10 @@ export function IntegrationsPanel() {
             body: JSON.stringify(payload)
           });
           applySettings(result.integrations);
-          return result;
         },
-        { successMessage: "Google Ads opgeslagen en vernieuwd." }
+        { successMessage: "Google Ads opgeslagen." }
       );
+      setMessage("Google Ads opgeslagen.");
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Opslaan mislukt.");
     } finally {
@@ -366,15 +360,12 @@ export function IntegrationsPanel() {
     }
   }
 
-  async function saveNewsletter(event?: FormEvent) {
-    event?.preventDefault();
+  async function saveNewsletter() {
     if (!newsletterForm || savingKey) return;
     setSavingKey("newsletter");
-    setError("");
     setMessage("");
-
+    setError("");
     const payload: UpdateIntegrationNewsletterInput = { ...newsletterForm };
-
     try {
       await runSave(
         async () => {
@@ -383,10 +374,10 @@ export function IntegrationsPanel() {
             body: JSON.stringify(payload)
           });
           applySettings(result.integrations);
-          return result;
         },
-        { successMessage: "Nieuwsbrief-integratie opgeslagen en vernieuwd." }
+        { successMessage: "Nieuwsbrief-instellingen opgeslagen." }
       );
+      setMessage("Nieuwsbrief-instellingen opgeslagen.");
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Opslaan mislukt.");
     } finally {
@@ -397,23 +388,18 @@ export function IntegrationsPanel() {
   async function sendTestMail() {
     if (testing) return;
     setTesting(true);
-    setError("");
     setMessage("");
+    setError("");
     try {
-      await runSave(
-        async () => {
-          const result = await api<{ message: string; integrations: IntegrationSettingsPublic }>(
-            "/api/admin/integrations/mailrelay/test",
-            {
-              method: "POST",
-              body: JSON.stringify({ to: testRecipient.trim() })
-            }
-          );
-          applySettings(result.integrations);
-          return result;
-        },
-        { successMessage: "Testmail verstuurd." }
+      const result = await api<{ message: string; integrations: IntegrationSettingsPublic }>(
+        "/api/admin/integrations/mailrelay/test",
+        {
+          method: "POST",
+          body: JSON.stringify({ to: testRecipient })
+        }
       );
+      applySettings(result.integrations);
+      setMessage(result.message);
     } catch (testError) {
       setError(testError instanceof Error ? testError.message : "Testmail mislukt.");
     } finally {
@@ -421,451 +407,414 @@ export function IntegrationsPanel() {
     }
   }
 
+  function handleRequestIntegration(item: AvailableIntegration) {
+    requestIntegrationMailto(item);
+    const next = Array.from(new Set([...requestedIds, item.id]));
+    setRequestedIds(next);
+    window.localStorage.setItem(REQUESTED_STORAGE_KEY, JSON.stringify(next));
+  }
+
   if (loading) {
     return <div className="ta-empty">Integraties laden...</div>;
   }
 
   return (
-    <div className="ta-stack" style={{ gap: 20 }} data-quiet-skip="">
-      <label className="ta-field" style={{ maxWidth: 420 }}>
-        <span>Zoeken</span>
-        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="google, nieuwsbrief, mail..." />
-      </label>
+    <div data-quiet-skip="" className="ta-integrations-hub">
+      <EntraCommands>
+        {VIEW_TABS.map((tab) => (
+          <EntraCommand key={tab.id} active={view === tab.id} onClick={() => setView(tab.id)}>
+            {tab.label}
+          </EntraCommand>
+        ))}
+      </EntraCommands>
+
+      <header className="ta-integrations-view-head">
+        <h3>{copy.title}</h3>
+        <p>{copy.subtitle}</p>
+      </header>
 
       {error ? <p className="ta-error">{error}</p> : null}
       {message ? <p className="ta-success">{message}</p> : null}
 
-      {!query ? (
-        <div className="ta-integration-overview">
-          <div className="ta-integration-overview-head">
-            <strong>Actieve integraties</strong>
-            <p>Overzicht van wat nu live staat op de site en in de mailflow.</p>
-          </div>
-          <div className="ta-integration-overview-grid">
-            {statusItems.map((item) => (
-              <article key={item.id} className={`ta-integration-chip${item.active ? " is-active" : ""}`}>
-                <div className="ta-integration-chip-top">
-                  <strong>{item.label}</strong>
-                  <StatusBadge active={item.active} />
-                </div>
-                <span>{item.detail}</span>
-              </article>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {showGoogle && googleForm ? (
-        <div className="ta-integration-card">
-          <button type="button" className="ta-integration-head" onClick={() => setOpenGoogle((value) => !value)}>
-            <div>
-              <strong>Google Ads</strong>
-              <p>gtag.js conversietag voor Google Ads-campagnes op de website.</p>
+        {view === "overview" ? (
+          <div className="ta-integration-overview">
+            <div className="ta-integration-overview-grid">
+              {statusItems.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`ta-integration-chip${item.active ? " is-active" : ""}`}
+                  onClick={() => setView(item.id as IntegrationsView)}
+                >
+                  <div className="ta-integration-chip-top">
+                    <strong>{item.label}</strong>
+                    <StatusBadge active={item.active} />
+                  </div>
+                  <span>{item.detail}</span>
+                </button>
+              ))}
             </div>
-            <div className="ta-integration-head-meta">
-              <StatusBadge active={settings?.googleAds.enabled ?? false} />
-              <span>{openGoogle ? "−" : "+"}</span>
-            </div>
-          </button>
+            <EntraCommands>
+              <EntraCommand onClick={() => setView("mail")}>E-mail instellen</EntraCommand>
+              <EntraCommand onClick={() => setView("googleAds")}>Google Ads</EntraCommand>
+              <EntraCommand onClick={() => setView("newsletter")}>Nieuwsbrief</EntraCommand>
+            </EntraCommands>
+          </div>
+        ) : null}
 
-          {openGoogle ? (
-            <form className="ta-integration-body" onSubmit={(event) => void saveGoogleAds(event)}>
-              <label className="ta-check">
-                <input
-                  type="checkbox"
-                  checked={googleForm.enabled}
-                  onChange={(event) => setGoogleForm((current) => (current ? { ...current, enabled: event.target.checked } : current))}
-                />
-                <span>Google Ads-tag actief op de website</span>
-              </label>
+        {view === "mail" && mailForm ? (
+          <div className="ta-integrations-mail">
+            <label className="ta-check">
+              <input
+                type="checkbox"
+                checked={mailForm.enabled}
+                onChange={(event) => setMailForm((current) => (current ? { ...current, enabled: event.target.checked } : current))}
+              />
+              <span>Mailrelay actief</span>
+            </label>
 
+            <div className="ta-grid">
               <label className="ta-field">
-                <span>Conversie-ID</span>
+                <span>Provider</span>
+                <select
+                  value={mailForm.provider}
+                  onChange={(event) => {
+                    const provider = event.target.value as MailRelayProvider;
+                    setMailForm((current) =>
+                      current
+                        ? {
+                            ...current,
+                            provider,
+                            host:
+                              provider === "outlook"
+                                ? current.host || "smtp.office365.com"
+                                : provider === "google"
+                                  ? "smtp.gmail.com"
+                                  : current.host,
+                            port: provider === "google" ? "465" : current.port,
+                            secure: provider === "google" ? true : current.secure
+                          }
+                        : current
+                    );
+                  }}
+                >
+                  <option value="google">Google (Gmail / Workspace)</option>
+                  <option value="smtp">SMTP / andere provider</option>
+                  <option value="outlook">Outlook / Microsoft 365</option>
+                </select>
+              </label>
+              <label className="ta-field">
+                <span>Afzender naam</span>
                 <input
-                  value={googleForm.conversionId}
+                  value={mailForm.fromName}
                   onChange={(event) =>
-                    setGoogleForm((current) => (current ? { ...current, conversionId: event.target.value } : current))
+                    setMailForm((current) => (current ? { ...current, fromName: event.target.value } : current))
                   }
-                  placeholder="AW-16851426878"
+                  placeholder="Tres Amigos"
                 />
               </label>
-
-              <div className="ta-integration-monitor">
-                <strong>Status</strong>
-                <span>
-                  Tag:{" "}
-                  {settings?.googleAds.enabled
-                    ? `Live via gtag.js (${settings.googleAds.conversionId})`
-                    : "Uitgeschakeld — niet geladen op de site"}
-                </span>
-                <span>Script: https://www.googletagmanager.com/gtag/js?id={settings?.googleAds.conversionId}</span>
-              </div>
-
-              <div className="ta-toolbar" style={{ gap: 10, flexWrap: "wrap" }}>
-                <button type="submit" className="ta-btn ta-btn-primary" disabled={savingKey === "google"}>
-                  {savingKey === "google" ? "Opslaan..." : "Google Ads opslaan"}
-                </button>
-              </div>
-            </form>
-          ) : null}
-        </div>
-      ) : null}
-
-      {showNewsletter && newsletterForm ? (
-        <div className="ta-integration-card">
-          <button type="button" className="ta-integration-head" onClick={() => setOpenNewsletter((value) => !value)}>
-            <div>
-              <strong>Nieuwsbrief</strong>
-              <p>Aanmeldformulieren op homepage, pagina&apos;s en boven de footer. Abonnees beheer je onder Nieuwsbrief.</p>
             </div>
-            <div className="ta-integration-head-meta">
-              <StatusBadge active={settings?.newsletter.enabled ?? false} />
-              <span>{openNewsletter ? "−" : "+"}</span>
-            </div>
-          </button>
 
-          {openNewsletter ? (
-            <form className="ta-integration-body" onSubmit={(event) => void saveNewsletter(event)}>
-              <label className="ta-check">
-                <input
-                  type="checkbox"
-                  checked={newsletterForm.enabled}
-                  onChange={(event) =>
-                    setNewsletterForm((current) => (current ? { ...current, enabled: event.target.checked } : current))
-                  }
-                />
-                <span>Nieuwsbrief-verzamelaar actief</span>
-              </label>
+            {mailForm.provider === "google" ? (
+              <>
+                <p className="ta-seo-hint">
+                  Tres Amigos-domeinen lopen via Google. Log per categorie één keer in met het juiste Google-account
+                  (bijv. Vilmon@tresamigos.nl voor franchise).
+                </p>
+                {!settings?.mailRelay.googleOAuthConfigured ? (
+                  <p className="ta-error">Zet GOOGLE_MAIL_CLIENT_ID en GOOGLE_MAIL_CLIENT_SECRET in .env om te koppelen.</p>
+                ) : null}
 
-              <div className="ta-grid">
-                <label className="ta-check">
-                  <input
-                    type="checkbox"
-                    checked={newsletterForm.showHome}
-                    disabled={!newsletterForm.enabled}
-                    onChange={(event) =>
-                      setNewsletterForm((current) => (current ? { ...current, showHome: event.target.checked } : current))
-                    }
-                  />
-                  <span>Toon op homepage</span>
-                </label>
-                <label className="ta-check">
-                  <input
-                    type="checkbox"
-                    checked={newsletterForm.showPages}
-                    disabled={!newsletterForm.enabled}
-                    onChange={(event) =>
-                      setNewsletterForm((current) => (current ? { ...current, showPages: event.target.checked } : current))
-                    }
-                  />
-                  <span>Toon op andere pagina&apos;s (menu, contact, …)</span>
-                </label>
-                <label className="ta-check">
-                  <input
-                    type="checkbox"
-                    checked={newsletterForm.showFooter}
-                    disabled={!newsletterForm.enabled}
-                    onChange={(event) =>
-                      setNewsletterForm((current) => (current ? { ...current, showFooter: event.target.checked } : current))
-                    }
-                  />
-                  <span>Toon boven de footer (alle pagina&apos;s)</span>
-                </label>
-              </div>
-
-              <div className="ta-integration-monitor">
-                <strong>Status</strong>
-                <span>
-                  {settings?.newsletter.enabled
-                    ? "Aanmeldingen landen in de Nieuwsbrief-tab"
-                    : "Uitgeschakeld — formulieren zijn verborgen"}
-                </span>
-              </div>
-
-              <div className="ta-toolbar" style={{ gap: 10, flexWrap: "wrap" }}>
-                <button type="submit" className="ta-btn ta-btn-primary" disabled={savingKey === "newsletter"}>
-                  {savingKey === "newsletter" ? "Opslaan..." : "Nieuwsbrief opslaan"}
-                </button>
-              </div>
-            </form>
-          ) : null}
-        </div>
-      ) : null}
-
-      {showMail && mailForm ? (
-        <div className="ta-integration-card">
-          <button type="button" className="ta-integration-head" onClick={() => setOpenMail((value) => !value)}>
-            <div>
-              <strong>Mailrelay & automatische e-mails</strong>
-              <p>Verstuur vanuit Google Gmail of SMTP. Stel per categorie een inbox in.</p>
-            </div>
-            <div className="ta-integration-head-meta">
-              <StatusBadge active={settings?.mailRelay.enabled ?? false} />
-              <span>{openMail ? "−" : "+"}</span>
-            </div>
-          </button>
-
-          {openMail ? (
-            <form className="ta-integration-body" onSubmit={(event) => void saveMailRelay(event)}>
-              <label className="ta-check">
-                <input type="checkbox" name="enabled" checked={mailForm.enabled} onChange={handleMailToggleChange} />
-                <span>Mailrelay actief</span>
-              </label>
-
-              <div className="ta-grid">
-                <label className="ta-field">
-                  <span>Provider</span>
-                  <select
-                    name="provider"
-                    value={mailForm.provider}
-                    onChange={(event) => {
-                      const provider = event.target.value as MailRelayProvider;
-                      setMailForm((current) =>
-                        current
-                          ? {
-                              ...current,
-                              provider,
-                              host:
-                                provider === "outlook"
-                                  ? current.host || "smtp.office365.com"
-                                  : provider === "google"
-                                    ? "smtp.gmail.com"
-                                    : current.host,
-                              port: provider === "google" ? "465" : current.port,
-                              secure: provider === "google" ? true : current.secure
+                <div className="ta-integrations-categories">
+                  {CATEGORY_META.map((category) => {
+                    const connected = googleByCategory[category.id];
+                    const Icon =
+                      category.id === "applications"
+                        ? IconApplications
+                        : category.id === "catering"
+                          ? IconCatering
+                          : category.id === "franchise"
+                            ? IconFranchise
+                            : IconIntegrations;
+                    return (
+                      <article key={category.id} className="ta-integrations-category">
+                        <header>
+                          <Icon width={18} height={18} />
+                          <div>
+                            <strong>{category.label}</strong>
+                            <small>{category.hint}</small>
+                          </div>
+                          <StatusBadge active={connected.connected} />
+                        </header>
+                        <label className="ta-field">
+                          <span>Inbox / Google-account</span>
+                          <input
+                            type="email"
+                            value={mailForm.notifications[category.id]}
+                            placeholder={category.placeholder}
+                            onChange={(event) =>
+                              setMailForm((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      notifications: { ...current.notifications, [category.id]: event.target.value }
+                                    }
+                                  : current
+                              )
                             }
-                          : current
-                      );
-                    }}
-                  >
-                    <option value="google">Google Gmail (inloggen)</option>
-                    <option value="smtp">SMTP / IMAP provider</option>
-                    <option value="outlook">Outlook / Microsoft 365</option>
-                  </select>
-                </label>
-                <label className="ta-field">
-                  <span>Afzender naam</span>
-                  <input name="fromName" value={mailForm.fromName} onChange={handleMailTextChange} placeholder="Tres Amigos" />
-                </label>
-              </div>
-
-              {mailForm.provider === "google" ? (
-                <div className="ta-integration-monitor" style={{ marginBottom: 16 }}>
-                  <strong>Google Gmail</strong>
-                  {settings?.mailRelay.googleConnected ? (
-                    <>
-                      <span>Gekoppeld als {settings.mailRelay.googleEmail}</span>
-                      <span>Mails worden verstuurd vanuit dit Google-account.</span>
-                      <div className="ta-toolbar" style={{ gap: 10, marginTop: 8 }}>
-                        <button type="button" className="ta-btn ta-btn-accent" onClick={() => void connectGoogleMail()}>
-                          Opnieuw koppelen
-                        </button>
-                        <button type="button" className="ta-btn ta-btn-ghost" onClick={() => void disconnectGoogleMail()}>
-                          Ontkoppelen
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <span>
-                        {settings?.mailRelay.googleOAuthConfigured
-                          ? "Nog niet gekoppeld. Log in met het Google-account dat mag versturen."
-                          : "Zet GOOGLE_MAIL_CLIENT_ID en GOOGLE_MAIL_CLIENT_SECRET in .env om te koppelen."}
-                      </span>
-                      <div className="ta-toolbar" style={{ marginTop: 8 }}>
-                        <button
-                          type="button"
-                          className="ta-btn ta-btn-primary"
-                          disabled={!settings?.mailRelay.googleOAuthConfigured}
-                          onClick={() => void connectGoogleMail()}
-                        >
-                          Inloggen met Google
-                        </button>
-                      </div>
-                    </>
-                  )}
-                  <label className="ta-field" style={{ marginTop: 12 }}>
-                    <span>Afzender e-mail (optioneel override)</span>
-                    <input
-                      name="fromEmail"
-                      value={mailForm.fromEmail}
-                      onChange={handleMailTextChange}
-                      placeholder={settings?.mailRelay.googleEmail || "gmail@tresamigos.nl"}
-                    />
-                  </label>
+                          />
+                        </label>
+                        <div className="ta-integrations-category-actions">
+                          {connected.connected ? (
+                            <>
+                              <span className="ta-seo-hint">Gekoppeld als {connected.email}</span>
+                              <EntraCommands>
+                                <EntraCommand
+                                  onClick={() => void connectGoogleMail(category.id)}
+                                  disabled={!settings?.mailRelay.googleOAuthConfigured || connectingCategory === category.id}
+                                >
+                                  {connectingCategory === category.id ? "Bezig..." : "Opnieuw inloggen"}
+                                </EntraCommand>
+                                <EntraCommand danger onClick={() => void disconnectGoogleCategory(category.id)}>
+                                  Ontkoppelen
+                                </EntraCommand>
+                              </EntraCommands>
+                            </>
+                          ) : (
+                            <EntraCommands>
+                              <EntraCommand
+                                active
+                                onClick={() => void connectGoogleMail(category.id)}
+                                disabled={!settings?.mailRelay.googleOAuthConfigured || connectingCategory === category.id}
+                              >
+                                {connectingCategory === category.id
+                                  ? "Bezig..."
+                                  : `Inloggen met Google (${mailForm.notifications[category.id] || category.placeholder})`}
+                              </EntraCommand>
+                            </EntraCommands>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
-              ) : (
-                <div className="ta-grid">
-                  <label className="ta-field">
-                    <span>SMTP host</span>
-                    <input
-                      name="host"
-                      value={mailForm.host}
-                      onChange={handleMailTextChange}
-                      placeholder={mailForm.provider === "outlook" ? "smtp.office365.com" : "smtp.provider.nl"}
-                    />
-                  </label>
-                  <label className="ta-field">
-                    <span>Poort</span>
-                    <input name="port" value={mailForm.port} onChange={handleMailTextChange} inputMode="numeric" placeholder="587" />
-                  </label>
-                  <label className="ta-check" style={{ alignSelf: "end" }}>
-                    <input type="checkbox" name="secure" checked={mailForm.secure} onChange={handleMailToggleChange} />
-                    <span>SSL direct gebruiken</span>
-                  </label>
-                  <label className="ta-field">
-                    <span>Gebruiker / e-mailadres</span>
-                    <input name="username" value={mailForm.username} onChange={handleMailTextChange} autoComplete="off" />
-                  </label>
-                  <label className="ta-field">
-                    <span>Wachtwoord / app password</span>
-                    <input
-                      type="password"
-                      name="password"
-                      value={mailForm.password}
-                      onChange={handleMailTextChange}
-                      autoComplete="new-password"
-                      placeholder={settings?.mailRelay.passwordSet ? "•••••••• (blijft behouden)" : ""}
-                    />
-                  </label>
-                  <label className="ta-field">
-                    <span>Afzender e-mail</span>
-                    <input name="fromEmail" value={mailForm.fromEmail} onChange={handleMailTextChange} placeholder="no-reply@tresamigos.nl" />
-                  </label>
-                </div>
-              )}
-
-              <h4 className="ta-section-title" style={{ marginTop: 8 }}>
-                Automatische e-mails — inbox per categorie
-              </h4>
-              <p className="ta-seo-hint">
-                Nieuwe sollicitaties, cateringorders, franchise-aanvragen en overige berichten gaan naar deze adressen.
-              </p>
+              </>
+            ) : (
               <div className="ta-grid">
                 <label className="ta-field">
-                  <span>Sollicitaties</span>
+                  <span>SMTP host</span>
                   <input
-                    type="email"
-                    value={mailForm.notifications.applications}
-                    onChange={(event) =>
-                      setMailForm((current) =>
-                        current
-                          ? { ...current, notifications: { ...current.notifications, applications: event.target.value } }
-                          : current
-                      )
-                    }
-                    placeholder="work@tresamigos.nl"
+                    value={mailForm.host}
+                    onChange={(event) => setMailForm((current) => (current ? { ...current, host: event.target.value } : current))}
+                    placeholder={mailForm.provider === "outlook" ? "smtp.office365.com" : "smtp.provider.nl"}
                   />
                 </label>
                 <label className="ta-field">
-                  <span>Catering</span>
+                  <span>Poort</span>
                   <input
-                    type="email"
-                    value={mailForm.notifications.catering}
+                    value={mailForm.port}
+                    onChange={(event) => setMailForm((current) => (current ? { ...current, port: event.target.value } : current))}
+                    inputMode="numeric"
+                    placeholder="587"
+                  />
+                </label>
+                <label className="ta-check" style={{ alignSelf: "end" }}>
+                  <input
+                    type="checkbox"
+                    checked={mailForm.secure}
                     onChange={(event) =>
-                      setMailForm((current) =>
-                        current
-                          ? { ...current, notifications: { ...current.notifications, catering: event.target.value } }
-                          : current
-                      )
+                      setMailForm((current) => (current ? { ...current, secure: event.target.checked } : current))
                     }
-                    placeholder="catering@tresamigos.nl"
+                  />
+                  <span>SSL direct</span>
+                </label>
+                <label className="ta-field">
+                  <span>Gebruiker</span>
+                  <input
+                    value={mailForm.username}
+                    onChange={(event) =>
+                      setMailForm((current) => (current ? { ...current, username: event.target.value } : current))
+                    }
+                    autoComplete="off"
                   />
                 </label>
                 <label className="ta-field">
-                  <span>Franchise-aanvragen</span>
+                  <span>Wachtwoord</span>
                   <input
-                    type="email"
-                    value={mailForm.notifications.franchise}
+                    type="password"
+                    value={mailForm.password}
                     onChange={(event) =>
-                      setMailForm((current) =>
-                        current
-                          ? { ...current, notifications: { ...current.notifications, franchise: event.target.value } }
-                          : current
-                      )
+                      setMailForm((current) => (current ? { ...current, password: event.target.value } : current))
                     }
-                    placeholder="Vilmon@tresamigos.nl"
+                    autoComplete="new-password"
+                    placeholder={settings?.mailRelay.passwordSet ? "•••••••• (blijft behouden)" : ""}
                   />
                 </label>
                 <label className="ta-field">
-                  <span>Overig (contact e.d.)</span>
+                  <span>Afzender e-mail</span>
                   <input
-                    type="email"
-                    value={mailForm.notifications.other}
+                    value={mailForm.fromEmail}
                     onChange={(event) =>
-                      setMailForm((current) =>
-                        current
-                          ? { ...current, notifications: { ...current.notifications, other: event.target.value } }
-                          : current
-                      )
+                      setMailForm((current) => (current ? { ...current, fromEmail: event.target.value } : current))
                     }
                     placeholder="no-reply@tresamigos.nl"
                   />
                 </label>
+                {CATEGORY_META.map((category) => (
+                  <label className="ta-field" key={category.id}>
+                    <span>{category.label}</span>
+                    <input
+                      type="email"
+                      value={mailForm.notifications[category.id]}
+                      placeholder={category.placeholder}
+                      onChange={(event) =>
+                        setMailForm((current) =>
+                          current
+                            ? {
+                                ...current,
+                                notifications: { ...current.notifications, [category.id]: event.target.value }
+                              }
+                            : current
+                        )
+                      }
+                    />
+                  </label>
+                ))}
               </div>
+            )}
 
-              {settings?.mailRelay.envFallbackConfigured ? (
-                <p className="ta-seo-hint">
-                  Fallback: SMTP uit .env is beschikbaar als mailrelay uitstaat of incompleet is.
-                </p>
-              ) : null}
+            {settings?.mailRelay.envFallbackConfigured ? (
+              <p className="ta-seo-hint">Fallback: SMTP uit .env is beschikbaar als mailrelay uitstaat of incompleet is.</p>
+            ) : null}
 
-              <div className="ta-toolbar" style={{ gap: 10, flexWrap: "wrap" }}>
-                <button type="submit" className="ta-btn ta-btn-primary" disabled={savingKey === "mail"}>
-                  {savingKey === "mail" ? "Opslaan..." : "Mail & notificaties opslaan"}
-                </button>
-              </div>
+            <EntraCommands>
+              <EntraCommand active disabled={savingKey === "mail"} onClick={() => void saveMailRelay()}>
+                {savingKey === "mail" ? "Opslaan..." : "Opslaan"}
+              </EntraCommand>
+            </EntraCommands>
 
-              <div className="ta-integration-monitor">
-                <strong>Monitor</strong>
-                <span>
-                  Laatste test:{" "}
-                  {settings?.mailRelay.lastTestAt
-                    ? new Date(settings.mailRelay.lastTestAt).toLocaleString("nl-NL")
-                    : "nog niet getest"}
-                </span>
-                <span>
-                  Status:{" "}
-                  {settings?.mailRelay.lastStatus === "success"
-                    ? "Werkend"
-                    : settings?.mailRelay.lastStatus === "error"
-                      ? "Fout"
-                      : "Onbekend"}
-                </span>
-                {settings?.mailRelay.lastMessage ? <span>{settings.mailRelay.lastMessage}</span> : null}
-              </div>
-
-              <div className="ta-grid">
+            <div className="ta-integration-monitor">
+              <strong>Test</strong>
+              <span>
+                Laatste:{" "}
+                {settings?.mailRelay.lastTestAt
+                  ? new Date(settings.mailRelay.lastTestAt).toLocaleString("nl-NL")
+                  : "nog niet getest"}
+                {settings?.mailRelay.lastMessage ? ` — ${settings.mailRelay.lastMessage}` : ""}
+              </span>
+              <div className="ta-grid" style={{ marginTop: 8 }}>
                 <label className="ta-field">
                   <span>Testontvanger</span>
                   <input
                     value={testRecipient}
                     onChange={(event) => setTestRecipient(event.target.value)}
-                    placeholder={mailForm.fromEmail || mailForm.username || "test@email.nl"}
+                    placeholder={mailForm.notifications.other || "test@email.nl"}
                   />
                 </label>
                 <div style={{ alignSelf: "end" }}>
-                  <button type="button" className="ta-btn ta-btn-accent" disabled={testing} onClick={() => void sendTestMail()}>
-                    {testing ? "Testen..." : "Testmail verzenden"}
-                  </button>
+                  <EntraCommand onClick={() => void sendTestMail()} disabled={testing}>
+                    {testing ? "Testen..." : "Testmail"}
+                  </EntraCommand>
                 </div>
               </div>
-            </form>
-          ) : null}
-        </div>
-      ) : null}
-
-      {availableVisible.length ? (
-        <div className="ta-integration-available-block">
-          {!query ? (
-            <div className="ta-integration-available-intro">
-              <strong>Op aanvraag</strong>
-              <p>Extra koppelingen. Vraag aan en we nemen contact op.</p>
             </div>
-          ) : null}
+          </div>
+        ) : null}
 
+        {view === "googleAds" && googleForm ? (
+          <div>
+            <label className="ta-check">
+              <input
+                type="checkbox"
+                checked={googleForm.enabled}
+                onChange={(event) => setGoogleForm((current) => (current ? { ...current, enabled: event.target.checked } : current))}
+              />
+              <span>Google Ads-tag actief op de website</span>
+            </label>
+            <label className="ta-field">
+              <span>Conversie-ID</span>
+              <input
+                value={googleForm.conversionId}
+                onChange={(event) =>
+                  setGoogleForm((current) => (current ? { ...current, conversionId: event.target.value } : current))
+                }
+                placeholder="AW-16851426878"
+              />
+            </label>
+            <div className="ta-integration-monitor">
+              <strong>Status</strong>
+              <span>
+                {settings?.googleAds.enabled
+                  ? `Live via gtag.js (${settings.googleAds.conversionId})`
+                  : "Uitgeschakeld — niet geladen op de site"}
+              </span>
+            </div>
+            <EntraCommands>
+              <EntraCommand active disabled={savingKey === "google"} onClick={() => void saveGoogleAds()}>
+                {savingKey === "google" ? "Opslaan..." : "Opslaan"}
+              </EntraCommand>
+            </EntraCommands>
+          </div>
+        ) : null}
+
+        {view === "newsletter" && newsletterForm ? (
+          <div>
+            <label className="ta-check">
+              <input
+                type="checkbox"
+                checked={newsletterForm.enabled}
+                onChange={(event) =>
+                  setNewsletterForm((current) => (current ? { ...current, enabled: event.target.checked } : current))
+                }
+              />
+              <span>Nieuwsbrief-verzamelaar actief</span>
+            </label>
+            <div className="ta-grid">
+              <label className="ta-check">
+                <input
+                  type="checkbox"
+                  checked={newsletterForm.showHome}
+                  disabled={!newsletterForm.enabled}
+                  onChange={(event) =>
+                    setNewsletterForm((current) => (current ? { ...current, showHome: event.target.checked } : current))
+                  }
+                />
+                <span>Homepage</span>
+              </label>
+              <label className="ta-check">
+                <input
+                  type="checkbox"
+                  checked={newsletterForm.showPages}
+                  disabled={!newsletterForm.enabled}
+                  onChange={(event) =>
+                    setNewsletterForm((current) => (current ? { ...current, showPages: event.target.checked } : current))
+                  }
+                />
+                <span>Andere pagina&apos;s</span>
+              </label>
+              <label className="ta-check">
+                <input
+                  type="checkbox"
+                  checked={newsletterForm.showFooter}
+                  disabled={!newsletterForm.enabled}
+                  onChange={(event) =>
+                    setNewsletterForm((current) => (current ? { ...current, showFooter: event.target.checked } : current))
+                  }
+                />
+                <span>Boven de footer</span>
+              </label>
+            </div>
+            <EntraCommands>
+              <EntraCommand active disabled={savingKey === "newsletter"} onClick={() => void saveNewsletter()}>
+                {savingKey === "newsletter" ? "Opslaan..." : "Opslaan"}
+              </EntraCommand>
+            </EntraCommands>
+          </div>
+        ) : null}
+
+        {view === "extra" ? (
           <div className="ta-integration-available-grid">
-            {availableVisible.map((item) => {
+            {AVAILABLE_INTEGRATIONS.map((item) => {
               const requested = requestedIds.includes(item.id);
               return (
                 <article key={item.id} className={`ta-integration-card ta-integration-available${requested ? " is-requested" : ""}`}>
@@ -878,22 +827,16 @@ export function IntegrationsPanel() {
                       {requested ? "Aangevraagd" : "Op aanvraag"}
                     </span>
                   </div>
-
-                  <div className="ta-integration-body ta-integration-available-body">
-                    <button
-                      type="button"
-                      className={`ta-btn ${requested ? "ta-btn-accent" : "ta-btn-primary"}`}
-                      onClick={() => handleRequestIntegration(item)}
-                    >
+                  <div className="ta-integration-body">
+                    <EntraCommand active={!requested} onClick={() => handleRequestIntegration(item)}>
                       {requested ? "Opnieuw aanvragen" : "Aanvragen"}
-                    </button>
+                    </EntraCommand>
                   </div>
                 </article>
               );
             })}
           </div>
-        </div>
-      ) : null}
+        ) : null}
     </div>
   );
 }

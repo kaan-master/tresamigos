@@ -42,7 +42,7 @@ const TITLES: Record<SiteSettingsView, { title: string; subtitle: string }> = {
   pageMedia: { title: "Pagina-foto's", subtitle: "De enige plek voor pagina-afbeeldingen en het focuspunt." },
   navigation: { title: "Menu", subtitle: "Welke links in de navbar staan en in welke volgorde" },
   footer: { title: "Footer", subtitle: "Onderaan de site, promo-mail en contactformulier" },
-  integrations: { title: "Koppelingen", subtitle: "Google Ads, nieuwsbrief en mailrelay" },
+  integrations: { title: "Koppelingen", subtitle: "E-mail (Google), Google Ads, nieuwsbrief en meer" },
   users: { title: "Gebruikers", subtitle: "Subaccounts met rechten per onderdeel" }
 };
 

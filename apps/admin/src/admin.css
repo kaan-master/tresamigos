@@ -3769,8 +3769,12 @@ body.admin-tablet-mode .ta-action-dock {
   gap: 8px;
   padding: 14px 16px;
   border: 1px solid var(--ta-line);
-  border-radius: 16px;
+  border-radius: var(--ta-radius);
   background: #fff;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  width: 100%;
 }
 
 .ta-integration-chip.is-active {
@@ -4044,6 +4048,66 @@ body.admin-tablet-mode .ta-action-dock {
 .ta-integration-request .ta-btn {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+.ta-integrations-hub {
+  display: grid;
+  gap: 14px;
+}
+
+.ta-integrations-view-head h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.ta-integrations-view-head p {
+  margin: 4px 0 0;
+  color: var(--ta-muted);
+  font-size: 13px;
+}
+
+.ta-integrations-mail {
+  display: grid;
+  gap: 14px;
+}
+
+.ta-integrations-categories {
+  display: grid;
+  gap: 12px;
+}
+
+.ta-integrations-category {
+  border: 1px solid var(--ta-line);
+  border-radius: var(--ta-radius);
+  background: #fff;
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.ta-integrations-category header {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.ta-integrations-category header strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.ta-integrations-category header small {
+  display: block;
+  color: var(--ta-muted);
+  font-size: 12px;
+}
+
+.ta-integrations-category-actions {
+  display: grid;
+  gap: 8px;
 }
 
 @media (max-width: 900px) {
