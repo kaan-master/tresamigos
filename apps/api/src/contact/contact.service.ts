@@ -29,7 +29,8 @@ export class ContactService {
       throw new BadRequestException({ message: "Het contactformulier is momenteel niet beschikbaar." });
     }
 
-    const inbox = content.site.footer.email || mail.replyTo;
+    const inbox =
+      (await this.mailService.getNotifyEmail("other")) || content.site.footer.email || mail.replyTo;
     const emailed =
       (await this.mailService.isReady()) &&
       (await this.mailService.sendContactEmail({

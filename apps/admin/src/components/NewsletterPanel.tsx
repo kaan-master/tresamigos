@@ -84,7 +84,7 @@ export function NewsletterPanel() {
   }
 
   return (
-    <div className="ta-stack" style={{ gap: 20 }}>
+    <div className="ta-stack" style={{ gap: 20 }} data-quiet-skip="">
       <div className="ta-kpis">
         <div className="ta-kpi">
           <span>Abonnees totaal</span>

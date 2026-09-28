@@ -20,6 +20,7 @@ interface Props {
   isActive: boolean;
   newOrderCount: number;
   onSave: () => void | Promise<void>;
+  onSaveQuiet?: (next?: SiteContent) => Promise<SiteContent | null>;
   saving: boolean;
   navigateToView?: CateringView | null;
   openOrderId?: string | null;
@@ -33,6 +34,7 @@ export function CateringPanel({
   isActive,
   newOrderCount,
   onSave,
+  onSaveQuiet,
   saving,
   navigateToView = null,
   openOrderId = null
@@ -70,6 +72,7 @@ export function CateringPanel({
     settings: content.site.catering,
     onSettingsChange: updateSettings,
     onSave,
+    onSaveQuiet,
     saving
   };
 

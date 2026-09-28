@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import type {
+  IntegrationMailNotifications,
   IntegrationSettingsPublic,
+  MailRelayProvider,
   UpdateIntegrationGoogleAdsInput,
   UpdateIntegrationMailRelayInput,
   UpdateIntegrationNewsletterInput
@@ -10,7 +12,7 @@ import { api } from "../lib/api";
 
 type MailForm = {
   enabled: boolean;
-  provider: "smtp" | "outlook";
+  provider: MailRelayProvider;
   host: string;
   port: string;
   secure: boolean;
@@ -18,6 +20,7 @@ type MailForm = {
   password: string;
   fromEmail: string;
   fromName: string;
+  notifications: IntegrationMailNotifications;
 };
 
 type GoogleAdsForm = {
@@ -35,12 +38,14 @@ type NewsletterForm = {
 const REQUEST_EMAIL = "info@tresamigos.nl";
 const REQUESTED_STORAGE_KEY = "ta-integration-requests";
 
+const DEFAULT_NOTIFICATIONS: IntegrationMailNotifications = {
+  applications: "work@tresamigos.nl",
+  catering: "catering@tresamigos.nl",
+  franchise: "Vilmon@tresamigos.nl",
+  other: "no-reply@tresamigos.nl"
+};
+
 const AVAILABLE_INTEGRATIONS = [
-  {
-    id: "google-login",
-    title: "Google Login",
-    description: "Inloggen met Google OAuth."
-  },
   {
     id: "mollie",
     title: "Mollie",
@@ -65,7 +70,8 @@ function toMailForm(settings: IntegrationSettingsPublic["mailRelay"]): MailForm 
     username: settings.username,
     password: "",
     fromEmail: settings.fromEmail,
-    fromName: settings.fromName
+    fromName: settings.fromName,
+    notifications: { ...DEFAULT_NOTIFICATIONS, ...settings.notifications }
   };
 }
 
@@ -121,7 +127,7 @@ export function IntegrationsPanel() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [openMail, setOpenMail] = useState(false);
+  const [openMail, setOpenMail] = useState(true);
   const [openGoogle, setOpenGoogle] = useState(true);
   const [openNewsletter, setOpenNewsletter] = useState(true);
   const [requestedIds, setRequestedIds] = useState<string[]>(() =>
@@ -155,10 +161,35 @@ export function IntegrationsPanel() {
     };
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const googleMail = params.get("googleMail");
+    if (!googleMail) return;
+    if (googleMail === "connected") {
+      setOpenMail(true);
+      setMessage(`Google Gmail gekoppeld${params.get("email") ? `: ${params.get("email")}` : ""}.`);
+      void api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations").then((result) => {
+        setSettings(result.integrations);
+        setMailForm(toMailForm(result.integrations.mailRelay));
+      });
+    }
+    if (googleMail === "error") {
+      setOpenMail(true);
+      setError(params.get("message") || "Google login mislukt.");
+    }
+    params.delete("googleMail");
+    params.delete("email");
+    params.delete("message");
+    const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
+    window.history.replaceState({}, "", next);
+  }, []);
+
   const query = search.trim().toLowerCase();
   const showMail =
     !query ||
-    "mail mailrelay smtp outlook e-mail email".split(" ").some((part) => query.includes(part) || part.includes(query));
+    "mail mailrelay smtp outlook google gmail e-mail email notificatie sollicitatie catering franchise"
+      .split(" ")
+      .some((part) => query.includes(part) || part.includes(query));
   const showGoogle =
     !query ||
     "google ads gtag aw conversie advertising tracking".split(" ").some((part) => query.includes(part) || part.includes(query));
@@ -205,7 +236,11 @@ export function IntegrationsPanel() {
         id: "mail",
         label: "Mailrelay",
         active: settings.mailRelay.enabled,
-        detail: settings.mailRelay.enabled ? settings.mailRelay.host || "SMTP actief" : "Uitgeschakeld"
+        detail: settings.mailRelay.googleConnected
+          ? `Google · ${settings.mailRelay.googleEmail}`
+          : settings.mailRelay.enabled
+            ? settings.mailRelay.host || "SMTP actief"
+            : "Uitgeschakeld"
       }
     ];
   }, [settings]);
@@ -242,7 +277,8 @@ export function IntegrationsPanel() {
       secure: mailForm.secure,
       username: mailForm.username.trim(),
       fromEmail: mailForm.fromEmail.trim(),
-      fromName: mailForm.fromName.trim()
+      fromName: mailForm.fromName.trim(),
+      notifications: mailForm.notifications
     };
     if (mailForm.password.trim()) {
       payload.password = mailForm.password.trim();
@@ -258,12 +294,44 @@ export function IntegrationsPanel() {
           applySettings(result.integrations);
           return result;
         },
-        { successMessage: "Mailrelay opgeslagen en vernieuwd." }
+        { successMessage: "Mailrelay en notificatie-adressen opgeslagen." }
       );
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Opslaan mislukt.");
     } finally {
       setSavingKey(null);
+    }
+  }
+
+  async function connectGoogleMail() {
+    setError("");
+    setMessage("");
+    try {
+      const result = await api<{ url: string }>("/api/admin/integrations/mailrelay/google/start");
+      if (!result.url) throw new Error("Geen Google-login URL ontvangen.");
+      window.location.href = result.url;
+    } catch (connectError) {
+      setError(connectError instanceof Error ? connectError.message : "Google login starten mislukt.");
+    }
+  }
+
+  async function disconnectGoogleMail() {
+    setError("");
+    setMessage("");
+    try {
+      await runSave(
+        async () => {
+          const result = await api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations/mailrelay", {
+            method: "PUT",
+            body: JSON.stringify({ disconnectGoogle: true } satisfies UpdateIntegrationMailRelayInput)
+          });
+          applySettings(result.integrations);
+          return result;
+        },
+        { successMessage: "Google Gmail ontkoppeld." }
+      );
+    } catch (disconnectError) {
+      setError(disconnectError instanceof Error ? disconnectError.message : "Ontkoppelen mislukt.");
     }
   }
 
@@ -358,7 +426,7 @@ export function IntegrationsPanel() {
   }
 
   return (
-    <div className="ta-stack" style={{ gap: 20 }}>
+    <div className="ta-stack" style={{ gap: 20 }} data-quiet-skip="">
       <label className="ta-field" style={{ maxWidth: 420 }}>
         <span>Zoeken</span>
         <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="google, nieuwsbrief, mail..." />
@@ -528,8 +596,8 @@ export function IntegrationsPanel() {
         <div className="ta-integration-card">
           <button type="button" className="ta-integration-head" onClick={() => setOpenMail((value) => !value)}>
             <div>
-              <strong>Mailrelay</strong>
-              <p>SMTP of Outlook koppelen voor contact, promo en cateringmails.</p>
+              <strong>Mailrelay & automatische e-mails</strong>
+              <p>Verstuur vanuit Google Gmail of SMTP. Stel per categorie een inbox in.</p>
             </div>
             <div className="ta-integration-head-meta">
               <StatusBadge active={settings?.mailRelay.enabled ?? false} />
@@ -551,61 +619,188 @@ export function IntegrationsPanel() {
                     name="provider"
                     value={mailForm.provider}
                     onChange={(event) => {
-                      const provider = event.target.value as "smtp" | "outlook";
+                      const provider = event.target.value as MailRelayProvider;
                       setMailForm((current) =>
                         current
                           ? {
                               ...current,
                               provider,
-                              host: provider === "outlook" && !current.host ? "smtp.office365.com" : current.host
+                              host:
+                                provider === "outlook"
+                                  ? current.host || "smtp.office365.com"
+                                  : provider === "google"
+                                    ? "smtp.gmail.com"
+                                    : current.host,
+                              port: provider === "google" ? "465" : current.port,
+                              secure: provider === "google" ? true : current.secure
                             }
                           : current
                       );
                     }}
                   >
+                    <option value="google">Google Gmail (inloggen)</option>
                     <option value="smtp">SMTP / IMAP provider</option>
                     <option value="outlook">Outlook / Microsoft 365</option>
                   </select>
                 </label>
                 <label className="ta-field">
-                  <span>SMTP host</span>
-                  <input
-                    name="host"
-                    value={mailForm.host}
-                    onChange={handleMailTextChange}
-                    placeholder={mailForm.provider === "outlook" ? "smtp.office365.com" : "smtp.provider.nl"}
-                  />
-                </label>
-                <label className="ta-field">
-                  <span>Poort</span>
-                  <input name="port" value={mailForm.port} onChange={handleMailTextChange} inputMode="numeric" placeholder="587" />
-                </label>
-                <label className="ta-check" style={{ alignSelf: "end" }}>
-                  <input type="checkbox" name="secure" checked={mailForm.secure} onChange={handleMailToggleChange} />
-                  <span>SSL direct gebruiken</span>
-                </label>
-                <label className="ta-field">
-                  <span>Gebruiker / e-mailadres</span>
-                  <input name="username" value={mailForm.username} onChange={handleMailTextChange} autoComplete="off" />
-                </label>
-                <label className="ta-field">
-                  <span>Wachtwoord / app password</span>
-                  <input
-                    type="password"
-                    name="password"
-                    value={mailForm.password}
-                    onChange={handleMailTextChange}
-                    autoComplete="new-password"
-                    placeholder={settings?.mailRelay.passwordSet ? "•••••••• (blijft behouden)" : ""}
-                  />
-                </label>
-                <label className="ta-field">
-                  <span>Afzender e-mail</span>
-                  <input name="fromEmail" value={mailForm.fromEmail} onChange={handleMailTextChange} placeholder="info@tresamigos.nl" />
-                </label>
-                <label className="ta-field">
                   <span>Afzender naam</span>
                   <input name="fromName" value={mailForm.fromName} onChange={handleMailTextChange} placeholder="Tres Amigos" />
+                </label>
+              </div>
+
+              {mailForm.provider === "google" ? (
+                <div className="ta-integration-monitor" style={{ marginBottom: 16 }}>
+                  <strong>Google Gmail</strong>
+                  {settings?.mailRelay.googleConnected ? (
+                    <>
+                      <span>Gekoppeld als {settings.mailRelay.googleEmail}</span>
+                      <span>Mails worden verstuurd vanuit dit Google-account.</span>
+                      <div className="ta-toolbar" style={{ gap: 10, marginTop: 8 }}>
+                        <button type="button" className="ta-btn ta-btn-accent" onClick={() => void connectGoogleMail()}>
+                          Opnieuw koppelen
+                        </button>
+                        <button type="button" className="ta-btn ta-btn-ghost" onClick={() => void disconnectGoogleMail()}>
+                          Ontkoppelen
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span>
+                        {settings?.mailRelay.googleOAuthConfigured
+                          ? "Nog niet gekoppeld. Log in met het Google-account dat mag versturen."
+                          : "Zet GOOGLE_MAIL_CLIENT_ID en GOOGLE_MAIL_CLIENT_SECRET in .env om te koppelen."}
+                      </span>
+                      <div className="ta-toolbar" style={{ marginTop: 8 }}>
+                        <button
+                          type="button"
+                          className="ta-btn ta-btn-primary"
+                          disabled={!settings?.mailRelay.googleOAuthConfigured}
+                          onClick={() => void connectGoogleMail()}
+                        >
+                          Inloggen met Google
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  <label className="ta-field" style={{ marginTop: 12 }}>
+                    <span>Afzender e-mail (optioneel override)</span>
+                    <input
+                      name="fromEmail"
+                      value={mailForm.fromEmail}
+                      onChange={handleMailTextChange}
+                      placeholder={settings?.mailRelay.googleEmail || "gmail@tresamigos.nl"}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <div className="ta-grid">
+                  <label className="ta-field">
+                    <span>SMTP host</span>
+                    <input
+                      name="host"
+                      value={mailForm.host}
+                      onChange={handleMailTextChange}
+                      placeholder={mailForm.provider === "outlook" ? "smtp.office365.com" : "smtp.provider.nl"}
+                    />
+                  </label>
+                  <label className="ta-field">
+                    <span>Poort</span>
+                    <input name="port" value={mailForm.port} onChange={handleMailTextChange} inputMode="numeric" placeholder="587" />
+                  </label>
+                  <label className="ta-check" style={{ alignSelf: "end" }}>
+                    <input type="checkbox" name="secure" checked={mailForm.secure} onChange={handleMailToggleChange} />
+                    <span>SSL direct gebruiken</span>
+                  </label>
+                  <label className="ta-field">
+                    <span>Gebruiker / e-mailadres</span>
+                    <input name="username" value={mailForm.username} onChange={handleMailTextChange} autoComplete="off" />
+                  </label>
+                  <label className="ta-field">
+                    <span>Wachtwoord / app password</span>
+                    <input
+                      type="password"
+                      name="password"
+                      value={mailForm.password}
+                      onChange={handleMailTextChange}
+                      autoComplete="new-password"
+                      placeholder={settings?.mailRelay.passwordSet ? "•••••••• (blijft behouden)" : ""}
+                    />
+                  </label>
+                  <label className="ta-field">
+                    <span>Afzender e-mail</span>
+                    <input name="fromEmail" value={mailForm.fromEmail} onChange={handleMailTextChange} placeholder="no-reply@tresamigos.nl" />
+                  </label>
+                </div>
+              )}
+
+              <h4 className="ta-section-title" style={{ marginTop: 8 }}>
+                Automatische e-mails — inbox per categorie
+              </h4>
+              <p className="ta-seo-hint">
+                Nieuwe sollicitaties, cateringorders, franchise-aanvragen en overige berichten gaan naar deze adressen.
+              </p>
+              <div className="ta-grid">
+                <label className="ta-field">
+                  <span>Sollicitaties</span>
+                  <input
+                    type="email"
+                    value={mailForm.notifications.applications}
+                    onChange={(event) =>
+                      setMailForm((current) =>
+                        current
+                          ? { ...current, notifications: { ...current.notifications, applications: event.target.value } }
+                          : current
+                      )
+                    }
+                    placeholder="work@tresamigos.nl"
+                  />
+                </label>
+                <label className="ta-field">
+                  <span>Catering</span>
+                  <input
+                    type="email"
+                    value={mailForm.notifications.catering}
+                    onChange={(event) =>
+                      setMailForm((current) =>
+                        current
+                          ? { ...current, notifications: { ...current.notifications, catering: event.target.value } }
+                          : current
+                      )
+                    }
+                    placeholder="catering@tresamigos.nl"
+                  />
+                </label>
+                <label className="ta-field">
+                  <span>Franchise-aanvragen</span>
+                  <input
+                    type="email"
+                    value={mailForm.notifications.franchise}
+                    onChange={(event) =>
+                      setMailForm((current) =>
+                        current
+                          ? { ...current, notifications: { ...current.notifications, franchise: event.target.value } }
+                          : current
+                      )
+                    }
+                    placeholder="Vilmon@tresamigos.nl"
+                  />
+                </label>
+                <label className="ta-field">
+                  <span>Overig (contact e.d.)</span>
+                  <input
+                    type="email"
+                    value={mailForm.notifications.other}
+                    onChange={(event) =>
+                      setMailForm((current) =>
+                        current
+                          ? { ...current, notifications: { ...current.notifications, other: event.target.value } }
+                          : current
+                      )
+                    }
+                    placeholder="no-reply@tresamigos.nl"
+                  />
                 </label>
               </div>
 
@@ -617,7 +812,7 @@ export function IntegrationsPanel() {
 
               <div className="ta-toolbar" style={{ gap: 10, flexWrap: "wrap" }}>
                 <button type="submit" className="ta-btn ta-btn-primary" disabled={savingKey === "mail"}>
-                  {savingKey === "mail" ? "Opslaan..." : "Mailrelay opslaan"}
+                  {savingKey === "mail" ? "Opslaan..." : "Mail & notificaties opslaan"}
                 </button>
               </div>
 

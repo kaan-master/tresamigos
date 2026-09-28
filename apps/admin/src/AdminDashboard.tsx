@@ -1,7 +1,6 @@
-import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { Application, CateringOrder, FranchiseInquiry, SiteContent } from "@tresamigos/types";
 import { api } from "./lib/api";
-import { AdminBadge } from "./components/AdminBadge";
 import { IconLogout, IconMenu, tabIcons } from "./components/AdminIcons";
 import { AdminLoaderScreen } from "./components/AdminLoadingPopup";
 import { OverviewPanel } from "./components/OverviewPanel";
@@ -10,6 +9,7 @@ import { MediaLibraryPanel } from "./components/MediaLibraryPanel";
 import { ProductsPanel } from "./components/ProductsPanel";
 import { ApplicationsPanel, type ApplicationsView } from "./components/ApplicationsPanel";
 import { FranchisePanel } from "./components/FranchisePanel";
+import { FranchiseShopPanel } from "./components/FranchiseShopPanel";
 import { NewsletterPanel } from "./components/NewsletterPanel";
 import { CateringPanel } from "./components/CateringPanel";
 import type { CateringView } from "./components/catering/cateringNav";
@@ -24,6 +24,7 @@ import { AdminTabletBar } from "./components/tablet/AdminTabletBar";
 import { AdminTabletHub } from "./components/tablet/AdminTabletHub";
 import { AdminTabletToggle } from "./components/tablet/AdminTabletToggle";
 import { useAdminFeedback } from "./context/AdminFeedbackContext";
+import { QuietSaveCapture, QuietSaveProvider } from "./context/QuietSaveContext";
 import { useAdminTablet } from "./context/AdminTabletContext";
 import type { AdminSessionUser, AdminTabId } from "@tresamigos/types";
 
@@ -34,6 +35,7 @@ const tabs = [
   ["media", "Media"],
   ["applications", "Sollicitaties"],
   ["franchise", "Franchise"],
+  ["franchiseShop", "Franchise shop"],
   ["newsletter", "Nieuwsbrief"],
   ["catering", "Catering"],
   ["reviews", "Reviews"],
@@ -43,6 +45,13 @@ const tabs = [
 ] as const;
 
 type TabId = (typeof tabs)[number][0];
+
+const NAV_SECTIONS: Array<{ label: string; ids: TabId[] }> = [
+  { label: "Overzicht", ids: ["overview"] },
+  { label: "Inhoud", ids: ["locations", "products", "media", "seo", "siteSettings"] },
+  { label: "Aanvragen", ids: ["applications", "franchise", "franchiseShop", "newsletter", "catering", "reviews"] },
+  { label: "Beheer", ids: ["tellingen"] }
+];
 
 interface Props {
   user: AdminSessionUser | null;
@@ -59,11 +68,17 @@ export function AdminDashboard({ user, onLogout }: Props) {
   const [applicationsNavigateView, setApplicationsNavigateView] = useState<ApplicationsView | null>(null);
   const [siteSettingsNavigateView, setSiteSettingsNavigateView] = useState<SiteSettingsView | null>(null);
   const [content, setContent] = useState<SiteContent | null>(null);
+  const contentRef = useRef<SiteContent | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [franchiseInquiries, setFranchiseInquiries] = useState<FranchiseInquiry[]>([]);
   const [cateringOrders, setCateringOrders] = useState<CateringOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  function updateContent(next: SiteContent) {
+    contentRef.current = next;
+    setContent(next);
+  }
 
   async function loadCateringOrders() {
     try {
@@ -76,6 +91,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
 
   async function refreshContent() {
     const contentData = await api<SiteContent>("/api/admin/content");
+    contentRef.current = contentData;
     setContent(contentData);
     return contentData;
   }
@@ -89,6 +105,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
         api<{ applications: Application[] }>("/api/admin/applications").catch(() => ({ applications: [] })),
         api<{ inquiries: FranchiseInquiry[] }>("/api/admin/franchise").catch(() => ({ inquiries: [] }))
       ]);
+      contentRef.current = contentData;
       setContent(contentData);
       setApplications(applicationsData.applications);
       setFranchiseInquiries(franchiseData.inquiries);
@@ -151,14 +168,15 @@ export function AdminDashboard({ user, onLogout }: Props) {
   }, [content, applications.length, franchiseInquiries.length, incomingCateringCount]);
 
   async function saveContent() {
-    if (!content || saving) return;
+    const payload = contentRef.current || content;
+    if (!payload || saving) return;
     setSaving(true);
     try {
       await runSave(
         async () => {
           await api<SiteContent>("/api/admin/content", {
             method: "PUT",
-            body: JSON.stringify(content)
+            body: JSON.stringify(payload)
           });
         },
         {
@@ -170,6 +188,26 @@ export function AdminDashboard({ user, onLogout }: Props) {
       );
     } catch {
       /* feedback toont de fout */
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveContentQuiet(next?: SiteContent): Promise<SiteContent | null> {
+    const payload = next || contentRef.current || content;
+    if (!payload || saving) return null;
+    setSaving(true);
+    try {
+      const saved = await api<SiteContent>("/api/admin/content", {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+      contentRef.current = saved;
+      setContent(saved);
+      return saved;
+    } catch (error) {
+      notifyError(error instanceof Error ? error.message : "Opslaan mislukt.");
+      return null;
     } finally {
       setSaving(false);
     }
@@ -286,7 +324,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
             <h2>Vestigingen</h2>
             <p>Kies links een locatie. Rechts pas je gegevens en bestelknoppen aan, zonder geneste lijsten.</p>
           </header>
-          <LocationsPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+          <LocationsPanel content={content} onChange={updateContent} onSaveQuiet={saveContentQuiet} saving={saving} />
         </section>
       ) : null}
 
@@ -296,7 +334,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
             <h2>Producten</h2>
             <p>Kies een categorie, bewerk producten en afbeeldingen.</p>
           </header>
-          <ProductsPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+          <ProductsPanel content={content} onChange={updateContent} onSave={saveContent} onSaveQuiet={saveContentQuiet} saving={saving} />
         </section>
       ) : null}
 
@@ -306,7 +344,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
             <h2>Media plaza</h2>
             <p>Upload afbeeldingen en video&apos;s, beheer homepage-video&apos;s en sectieteksten.</p>
           </header>
-          <MediaLibraryPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+          <MediaLibraryPanel content={content} onChange={updateContent} onSave={saveContent} onSaveQuiet={saveContentQuiet} saving={saving} />
         </section>
       ) : null}
 
@@ -315,8 +353,9 @@ export function AdminDashboard({ user, onLogout }: Props) {
           <ApplicationsPanel
             content={content}
             applications={applications}
-            onChange={setContent}
+            onChange={updateContent}
             onSave={saveContent}
+            onSaveQuiet={saveContentQuiet}
             saving={saving}
             initialView={applicationsNavigateView}
           />
@@ -330,6 +369,16 @@ export function AdminDashboard({ user, onLogout }: Props) {
             <p>Inkomende franchise-aanvragen van de website bekijken.</p>
           </header>
           <FranchisePanel inquiries={franchiseInquiries} />
+        </section>
+      ) : null}
+
+      {activeTab === "franchiseShop" ? (
+        <section className="ta-panel ta-fade-in">
+          <header className="ta-panel-head">
+            <h2>Franchise shop</h2>
+            <p>Producten en prijzen per franchise, accounts, bestellingen met factuur en pakbon.</p>
+          </header>
+          <FranchiseShopPanel content={content} />
         </section>
       ) : null}
 
@@ -358,12 +407,13 @@ export function AdminDashboard({ user, onLogout }: Props) {
           </header>
           <CateringPanel
             content={content}
-            onContentChange={setContent}
+            onContentChange={updateContent}
             orders={cateringOrders}
             onOrdersChange={setCateringOrders}
             isActive={activeTab === "catering"}
             newOrderCount={newCateringOrderCount}
             onSave={saveContent}
+            onSaveQuiet={saveContentQuiet}
             saving={saving}
             navigateToView={cateringNavigateView}
             openOrderId={cateringOpenOrderId}
@@ -377,7 +427,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
             <h2>Reviews & Instagram</h2>
             <p>Modereer ingezonden reviews, beheer vaste reviews en stel de Instagram-slider in.</p>
           </header>
-          <ReviewsPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+          <ReviewsPanel content={content} onChange={updateContent} onSave={saveContent} onSaveQuiet={saveContentQuiet} saving={saving} />
         </section>
       ) : null}
 
@@ -387,7 +437,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
             <h2>SEO & Search Console</h2>
             <p>Site-brede instellingen, verificatiecodes en SEO per pagina.</p>
           </header>
-          <SeoPanel content={content} onChange={setContent} onSave={saveContent} saving={saving} />
+          <SeoPanel content={content} onChange={updateContent} onSave={saveContent} onSaveQuiet={saveContentQuiet} saving={saving} />
         </section>
       ) : null}
 
@@ -401,8 +451,9 @@ export function AdminDashboard({ user, onLogout }: Props) {
         <section className="ta-panel ta-fade-in ta-panel-entra">
           <SiteSettingsPanel
             content={content}
-            onChange={setContent}
+            onChange={updateContent}
             onSave={saveContent}
+            onSaveQuiet={saveContentQuiet}
             saving={saving}
             allowedViews={siteSettingViews}
             initialView={siteSettingsNavigateView}
@@ -410,6 +461,14 @@ export function AdminDashboard({ user, onLogout }: Props) {
         </section>
       ) : null}
     </>
+  );
+
+  const quietPanels = content ? (
+    <QuietSaveProvider content={content} onChange={updateContent} onSaveQuiet={saveContentQuiet} saving={saving}>
+      <QuietSaveCapture>{panels}</QuietSaveCapture>
+    </QuietSaveProvider>
+  ) : (
+    panels
   );
 
   return (
@@ -422,26 +481,35 @@ export function AdminDashboard({ user, onLogout }: Props) {
             <div className="ta-brand">
               <img src="/assets/site/tres-amigos-logo-new.png" alt="Tres Amigos logo" />
               <div>
-                <strong>Dashboard</strong>
-                <span>Content beheer</span>
+                <strong>Tres Amigos</strong>
+                <span>Admin</span>
               </div>
             </div>
 
             <nav className="ta-nav">
-              {visibleTabs.map(([id, label]) => {
-                const Icon = tabIcons[id];
-                const badge = id === "catering" && newCateringOrderCount > 0 ? newCateringOrderCount : null;
+              {NAV_SECTIONS.map((section) => {
+                const sectionTabs = visibleTabs.filter(([id]) => section.ids.includes(id));
+                if (!sectionTabs.length) return null;
                 return (
-                  <button
-                    key={id}
-                    type="button"
-                    className={`${activeTab === id ? "is-active" : ""}${id === "catering" && newCateringOrderCount > 0 ? " has-notification" : ""}`}
-                    onClick={() => selectTab(id)}
-                  >
-                    <Icon width={18} height={18} />
-                    <span>{label}</span>
-                    {badge ? <span className="ta-nav-badge">{badge}</span> : null}
-                  </button>
+                  <div className="ta-nav-group" key={section.label}>
+                    <p className="ta-nav-group-label">{section.label}</p>
+                    {sectionTabs.map(([id, label]) => {
+                      const Icon = tabIcons[id];
+                      const badge = id === "catering" && newCateringOrderCount > 0 ? newCateringOrderCount : null;
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          className={`${activeTab === id ? "is-active" : ""}${id === "catering" && newCateringOrderCount > 0 ? " has-notification" : ""}`}
+                          onClick={() => selectTab(id)}
+                        >
+                          <Icon width={18} height={18} />
+                          <span>{label}</span>
+                          {badge ? <span className="ta-nav-badge">{badge}</span> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
                 );
               })}
             </nav>
@@ -480,7 +548,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
                   searchItems={searchItems}
                   onSearchSelect={handleSearchSelect}
                 />
-                {panels}
+                {quietPanels}
               </>
             )
           ) : (
@@ -491,13 +559,13 @@ export function AdminDashboard({ user, onLogout }: Props) {
                     <IconMenu width={20} height={20} />
                   </button>
                   <div>
-                    <AdminBadge />
+                    <span className="ta-main-head-eyebrow">Tres Amigos Admin</span>
                     <h1>{activeLabel}</h1>
                   </div>
                 </div>
                 <AdminTabletToggle />
               </header>
-              {panels}
+              {quietPanels}
             </>
           )}
         </main>

@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import type {
+  IntegrationMailNotifications,
   IntegrationTestMailInput,
+  MailRelayProvider,
   PublicIntegrationsSettings,
   UpdateIntegrationGoogleAdsInput,
   UpdateIntegrationMailRelayInput,
@@ -13,6 +15,13 @@ import { PrismaService } from "../prisma/prisma.module";
 const PRIMARY_ID = "primary";
 const DEFAULT_GOOGLE_ADS_ID = "AW-16851426878";
 
+const DEFAULT_NOTIFICATIONS: IntegrationMailNotifications = {
+  applications: "work@tresamigos.nl",
+  catering: "catering@tresamigos.nl",
+  franchise: "Vilmon@tresamigos.nl",
+  other: "no-reply@tresamigos.nl"
+};
+
 @Injectable()
 export class IntegrationsService {
   constructor(
@@ -23,7 +32,15 @@ export class IntegrationsService {
   private async getOrCreate() {
     const existing = await this.prisma.integrationSettings.findUnique({ where: { id: PRIMARY_ID } });
     if (existing) return existing;
-    return this.prisma.integrationSettings.create({ data: { id: PRIMARY_ID } });
+    return this.prisma.integrationSettings.create({
+      data: {
+        id: PRIMARY_ID,
+        mailNotifyApplications: DEFAULT_NOTIFICATIONS.applications,
+        mailNotifyCatering: DEFAULT_NOTIFICATIONS.catering,
+        mailNotifyFranchise: DEFAULT_NOTIFICATIONS.franchise,
+        mailNotifyOther: DEFAULT_NOTIFICATIONS.other
+      }
+    });
   }
 
   private normalizeGoogleAdsId(value: string) {
@@ -35,12 +52,36 @@ export class IntegrationsService {
     return cleaned;
   }
 
+  private normalizeEmail(value: unknown, fallback: string) {
+    const email = cleanText(value, fallback, 180);
+    return email.includes("@") ? email : fallback;
+  }
+
+  private notificationsFromRow(row: {
+    mailNotifyApplications: string;
+    mailNotifyCatering: string;
+    mailNotifyFranchise: string;
+    mailNotifyOther: string;
+  }): IntegrationMailNotifications {
+    return {
+      applications: this.normalizeEmail(row.mailNotifyApplications, DEFAULT_NOTIFICATIONS.applications),
+      catering: this.normalizeEmail(row.mailNotifyCatering, DEFAULT_NOTIFICATIONS.catering),
+      franchise: this.normalizeEmail(row.mailNotifyFranchise, DEFAULT_NOTIFICATIONS.franchise),
+      other: this.normalizeEmail(row.mailNotifyOther, DEFAULT_NOTIFICATIONS.other)
+    };
+  }
+
+  private normalizeProvider(value: string | undefined): MailRelayProvider {
+    if (value === "outlook" || value === "google" || value === "smtp") return value;
+    return "smtp";
+  }
+
   async getSettings() {
     const row = await this.getOrCreate();
     return {
       mailRelay: {
         enabled: row.mailRelayEnabled,
-        provider: (row.mailRelayProvider === "outlook" ? "outlook" : "smtp") as "smtp" | "outlook",
+        provider: this.normalizeProvider(row.mailRelayProvider),
         host: row.mailRelayHost,
         port: row.mailRelayPort,
         secure: row.mailRelaySecure,
@@ -51,7 +92,11 @@ export class IntegrationsService {
         lastTestAt: row.mailRelayLastTestAt?.toISOString() ?? null,
         lastStatus: row.mailRelayLastStatus,
         lastMessage: row.mailRelayLastMessage,
-        envFallbackConfigured: this.mailService.isEnvConfigured()
+        envFallbackConfigured: this.mailService.isEnvConfigured(),
+        googleConnected: Boolean(row.mailRelayGoogleRefreshToken && row.mailRelayGoogleEmail),
+        googleEmail: row.mailRelayGoogleEmail,
+        googleOAuthConfigured: this.mailService.isGoogleOAuthConfigured(),
+        notifications: this.notificationsFromRow(row)
       },
       googleAds: {
         enabled: row.googleAdsEnabled,
@@ -76,10 +121,17 @@ export class IntegrationsService {
 
   async updateMailRelay(input: UpdateIntegrationMailRelayInput) {
     const current = await this.getOrCreate();
-    const provider = input.provider === "outlook" ? "outlook" : input.provider === "smtp" ? "smtp" : current.mailRelayProvider;
-    const hostDefault = provider === "outlook" ? "smtp.office365.com" : current.mailRelayHost;
+    const provider = input.provider
+      ? this.normalizeProvider(input.provider)
+      : this.normalizeProvider(current.mailRelayProvider);
+    const hostDefault = provider === "outlook" ? "smtp.office365.com" : provider === "google" ? "smtp.gmail.com" : current.mailRelayHost;
 
-    const data = {
+    if (input.disconnectGoogle) {
+      await this.mailService.disconnectGoogle();
+      return this.getSettings();
+    }
+
+    const data: Record<string, unknown> = {
       mailRelayEnabled: input.enabled ?? current.mailRelayEnabled,
       mailRelayProvider: provider,
       mailRelayHost: input.host !== undefined ? cleanText(input.host, "", 200) : hostDefault,
@@ -105,6 +157,30 @@ export class IntegrationsService {
 
     if (provider === "outlook" && !data.mailRelayHost) {
       data.mailRelayHost = "smtp.office365.com";
+    }
+    if (provider === "google") {
+      data.mailRelayHost = "smtp.gmail.com";
+      data.mailRelayPort = 465;
+      data.mailRelaySecure = true;
+    }
+
+    if (input.notifications) {
+      data.mailNotifyApplications = this.normalizeEmail(
+        input.notifications.applications,
+        current.mailNotifyApplications || DEFAULT_NOTIFICATIONS.applications
+      );
+      data.mailNotifyCatering = this.normalizeEmail(
+        input.notifications.catering,
+        current.mailNotifyCatering || DEFAULT_NOTIFICATIONS.catering
+      );
+      data.mailNotifyFranchise = this.normalizeEmail(
+        input.notifications.franchise,
+        current.mailNotifyFranchise || DEFAULT_NOTIFICATIONS.franchise
+      );
+      data.mailNotifyOther = this.normalizeEmail(
+        input.notifications.other,
+        current.mailNotifyOther || DEFAULT_NOTIFICATIONS.other
+      );
     }
 
     await this.prisma.integrationSettings.update({
@@ -150,6 +226,24 @@ export class IntegrationsService {
     return this.getSettings();
   }
 
+  async startGoogleOAuth(requestOrigin?: string) {
+    try {
+      const url = await this.mailService.createGoogleOAuthUrl(requestOrigin);
+      return { url };
+    } catch (error) {
+      throw new BadRequestException({
+        message: error instanceof Error ? error.message : "Google login starten mislukt."
+      });
+    }
+  }
+
+  async handleGoogleOAuthCallback(code: string, state: string, requestOrigin?: string) {
+    const result = await this.mailService.completeGoogleOAuth(code, state, requestOrigin);
+    const adminBase = this.mailService.adminRedirectBase();
+    const path = adminBase.includes("/admin") ? "" : "/admin/";
+    return `${adminBase}${path}?googleMail=connected&email=${encodeURIComponent(result.email)}`;
+  }
+
   async testMailRelay(input: IntegrationTestMailInput) {
     const to = cleanText(input?.to, "", 180).toLowerCase();
     if (!to || !to.includes("@")) {
@@ -160,7 +254,7 @@ export class IntegrationsService {
     const result = await this.mailService.sendTestEmail({
       to,
       fromName: settings.mailRelayFromName || "Tres Amigos",
-      fromEmail: settings.mailRelayFromEmail || settings.mailRelayUsername
+      fromEmail: settings.mailRelayFromEmail || settings.mailRelayGoogleEmail || settings.mailRelayUsername
     });
 
     await this.prisma.integrationSettings.update({

@@ -97,6 +97,7 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive, initialS
         order.email,
         order.phone,
         order.company,
+        order.vatId,
         order.locationName,
         order.address,
         order.status,
@@ -165,7 +166,7 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive, initialS
   }
 
   return (
-    <div className="ta-master-detail catering-admin-layout">
+    <div className="ta-master-detail catering-admin-layout" data-quiet-skip="">
       <div className="ta-list-pane">
         <div className="catering-orders-toolbar">
           <div>
@@ -313,6 +314,12 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive, initialS
               </strong>
               <span>Bedrijf</span>
               <strong>{selected.company || "—"}</strong>
+              {selected.company ? (
+                <>
+                  <span>BTW-id</span>
+                  <strong>{selected.vatId || "—"}</strong>
+                </>
+              ) : null}
             </div>
           </section>
 

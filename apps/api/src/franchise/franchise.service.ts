@@ -1,11 +1,17 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import type { CreateFranchiseInquiryInput, FranchiseInquiry } from "@tresamigos/types";
 import { sanitizeFranchiseInquiry } from "@tresamigos/utils";
+import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.module";
 
 @Injectable()
 export class FranchiseService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(FranchiseService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService
+  ) {}
 
   private toDto(record: {
     id: string;
@@ -71,6 +77,8 @@ export class FranchiseService {
       }
     });
 
+    void this.notifyTeam(inquiry);
+
     const excess = await this.prisma.franchiseInquiry.findMany({
       orderBy: { createdAt: "desc" },
       skip: 500,
@@ -97,5 +105,32 @@ export class FranchiseService {
       take: 500
     });
     return { inquiries: records.map((record) => this.toDto(record)) };
+  }
+
+  private async notifyTeam(inquiry: FranchiseInquiry) {
+    try {
+      const to = await this.mailService.getNotifyEmail("franchise");
+      await this.mailService.sendNotificationEmail({
+        to,
+        replyTo: inquiry.email,
+        subject: `Nieuwe franchise-aanvraag — ${inquiry.name}`,
+        body: [
+          "Nieuwe franchise-aanvraag via tresamigos.nl",
+          "",
+          `Naam: ${inquiry.name}`,
+          `E-mail: ${inquiry.email}`,
+          `Telefoon: ${inquiry.phone || "-"}`,
+          `Adres: ${inquiry.address || "-"}`,
+          `Gewenste locatie: ${inquiry.desiredLocation || "-"}`,
+          `Huidige rol: ${inquiry.currentRole || "-"}`,
+          `Bedrijf: ${inquiry.company || "-"}`,
+          `Investering: ${inquiry.investment || "-"}`,
+          `Financiering: ${inquiry.financing || "-"}`,
+          `Bezochte vestiging: ${inquiry.visitedLocation || "-"}`
+        ].join("\n")
+      });
+    } catch (error) {
+      this.logger.warn(`Franchise-mail mislukt: ${error instanceof Error ? error.message : "onbekend"}`);
+    }
   }
 }

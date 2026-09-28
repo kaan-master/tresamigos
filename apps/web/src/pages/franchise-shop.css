@@ -1,0 +1,190 @@
+.fs-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+  background:
+    radial-gradient(circle at top left, rgba(196, 58, 37, 0.18), transparent 42%),
+    linear-gradient(160deg, #1a120f 0%, #2b1a14 45%, #12100e 100%);
+  color: #fff8f2;
+  font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+}
+
+.fs-card,
+.fs-product,
+.fs-cart {
+  background: rgba(255, 248, 242, 0.96);
+  color: #1c120e;
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+}
+
+.fs-card {
+  width: min(420px, 100%);
+  padding: 28px;
+  display: grid;
+  gap: 14px;
+}
+
+.fs-eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 12px;
+  font-weight: 800;
+  color: #c43a25;
+}
+
+.fs-card h1,
+.fs-shop-head h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+}
+
+.fs-lead {
+  margin: 0;
+  color: #6b5348;
+  line-height: 1.45;
+}
+
+.fs-card label,
+.fs-product label,
+.fs-cart label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.fs-card input,
+.fs-product input,
+.fs-cart textarea {
+  border: 1px solid #e4d5cb;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font: inherit;
+}
+
+.fs-card button,
+.fs-cart button,
+.fs-ghost {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.fs-card button,
+.fs-cart button {
+  background: #c43a25;
+  color: #fff;
+}
+
+.fs-card button:disabled,
+.fs-cart button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.fs-ghost {
+  background: rgba(255, 248, 242, 0.12);
+  color: #fff8f2;
+  border: 1px solid rgba(255, 248, 242, 0.25);
+}
+
+.fs-back {
+  color: #6b5348;
+  text-align: center;
+  font-size: 14px;
+}
+
+.fs-error {
+  margin: 0;
+  color: #a11;
+  font-weight: 700;
+}
+
+.fs-shop {
+  place-items: stretch;
+  align-content: start;
+  gap: 24px;
+  width: min(1100px, 100%);
+  margin: 0 auto;
+}
+
+.fs-shop-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+
+.fs-shop-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr;
+  gap: 20px;
+}
+
+.fs-products {
+  display: grid;
+  gap: 14px;
+}
+
+.fs-product {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+}
+
+.fs-product h2 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+}
+
+.fs-product p {
+  margin: 0 0 8px;
+  color: #6b5348;
+}
+
+.fs-cart {
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  position: sticky;
+  top: 16px;
+}
+
+.fs-cart ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.fs-cart li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.fs-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.05rem;
+}
+
+@media (max-width: 860px) {
+  .fs-shop-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fs-cart {
+    position: static;
+  }
+}

@@ -132,7 +132,7 @@ export function ProductsPanel({ content, onChange, onSave, saving }: Props) {
       <div className="ta-list-pane">
         <AdminSearchBar value={query} onChange={setQuery} placeholder="Zoek product, prijs of categorie..." />
 
-        <div className="ta-toolbar ta-toolbar-spread">
+        <div className="ta-toolbar ta-toolbar-spread entra-commands">
           <label className="ta-field" style={{ marginBottom: 0, minWidth: 180 }}>
             <span>Categorie</span>
             <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
@@ -144,7 +144,7 @@ export function ProductsPanel({ content, onChange, onSave, saving }: Props) {
               ))}
             </select>
           </label>
-          <div className="ta-toolbar">
+          <div className="ta-toolbar-actions">
             <button className="ta-btn ta-btn-ghost" type="button" onClick={addCategory}>
               + Categorie
             </button>

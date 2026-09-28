@@ -8,6 +8,7 @@ import { dismissSiteBoot } from "./lib/waitForPageImages";
 import { CateringPage } from "./pages/CateringPage";
 import { ContactPage } from "./pages/ContactPage";
 import { FranchisePage } from "./pages/FranchisePage";
+import { FranchiseLoginPage, FranchiseShopPage } from "./pages/FranchiseShopPages";
 import { HomePage } from "./pages/HomePage";
 import { LocationsPage, OrderPage } from "./pages/LocationsPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -64,6 +65,8 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginRoute />} />
       <Route path="/telling" element={<TellingPage />} />
+      <Route path="/franchise/login" element={<FranchiseLoginPage />} />
+      <Route path="/franchise/shop" element={<FranchiseShopPage />} />
       <Route path="/*" element={<ShellRoutes />} />
     </Routes>
   );

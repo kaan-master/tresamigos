@@ -95,6 +95,14 @@ model IntegrationSettings {
   mailRelayLastTestAt    DateTime?
   mailRelayLastStatus    String    @default("")
   mailRelayLastMessage   String    @default("")
+  mailRelayGoogleRefreshToken String @default("")
+  mailRelayGoogleAccessToken  String @default("")
+  mailRelayGoogleTokenExpiry  DateTime?
+  mailRelayGoogleEmail        String @default("")
+  mailNotifyApplications String    @default("work@tresamigos.nl")
+  mailNotifyCatering     String    @default("catering@tresamigos.nl")
+  mailNotifyFranchise    String    @default("Vilmon@tresamigos.nl")
+  mailNotifyOther        String    @default("no-reply@tresamigos.nl")
   googleAdsEnabled       Boolean   @default(true)
   googleAdsConversionId  String    @default("AW-16851426878")
   newsletterEnabled      Boolean   @default(true)
@@ -117,6 +125,8 @@ model Location {
   links         OrderLink[]
   countStaff    CountStaff[]
   countSessions CountSession[]
+  franchiseAccounts FranchiseAccount[]
+  franchisePrices   FranchiseProductPrice[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -233,6 +243,7 @@ model CateringOrder {
   email        String
   phone        String   @default("")
   company      String   @default("")
+  vatId        String   @default("")
   adminNotes   String   @default("")
   items        Json     @default("[]")
   subtotalCents Int     @default(0)
@@ -338,4 +349,81 @@ model CountLine {
   sortOrder    Int          @default(0)
 
   @@index([sessionId, sortOrder])
+}
+
+model FranchiseAccount {
+  id           String               @id @default(uuid())
+  email        String               @unique
+  name         String
+  passwordHash String
+  locationId   String
+  location     Location             @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  active       Boolean              @default(true)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  orders       FranchiseShopOrder[]
+
+  @@index([locationId])
+}
+
+model FranchiseShopProduct {
+  id          String                  @id @default(uuid())
+  name        String
+  description String                  @default("")
+  image       String                  @default("")
+  sku         String                  @default("")
+  active      Boolean                 @default(true)
+  sortOrder   Int                     @default(0)
+  prices      FranchiseProductPrice[]
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+}
+
+model FranchiseProductPrice {
+  id         String               @id @default(uuid())
+  productId  String
+  product    FranchiseShopProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  locationId String
+  location   Location             @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  priceCents Int
+  updatedAt  DateTime             @updatedAt
+
+  @@unique([productId, locationId])
+  @@index([locationId])
+}
+
+model FranchiseShopOrder {
+  id             String                   @id @default(uuid())
+  orderNumber    String                   @unique
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  status         String                   @default("nieuw")
+  accountId      String
+  account        FranchiseAccount         @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  locationId     String
+  locationName   String
+  locationCode   String                   @default("")
+  notes          String                   @default("")
+  adminNotes     String                   @default("")
+  subtotalCents  Int                      @default(0)
+  invoiceNumber  String                   @default("")
+  items          FranchiseShopOrderItem[]
+
+  @@index([accountId])
+  @@index([locationId])
+  @@index([createdAt])
+}
+
+model FranchiseShopOrderItem {
+  id             String             @id @default(uuid())
+  orderId        String
+  order          FranchiseShopOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String
+  productName    String
+  quantity       Int
+  unitPriceCents Int
+  lineTotalCents Int
+  sortOrder      Int                @default(0)
+
+  @@index([orderId, sortOrder])
 }

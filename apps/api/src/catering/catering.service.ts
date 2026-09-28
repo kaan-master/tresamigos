@@ -54,6 +54,7 @@ export class CateringService {
     email: string;
     phone: string;
     company: string;
+    vatId: string;
     adminNotes: string;
   }): CateringOrder {
     return sanitizeCateringOrder({
@@ -81,6 +82,7 @@ export class CateringService {
       email: record.email,
       phone: record.phone,
       company: record.company,
+      vatId: record.vatId || "",
       adminNotes: record.adminNotes
     });
   }
@@ -102,6 +104,9 @@ export class CateringService {
 
     if (!order.name || !order.email || !order.email.includes("@")) {
       throw new BadRequestException({ message: "Vul alle verplichte velden in." });
+    }
+    if (order.company && !order.vatId) {
+      throw new BadRequestException({ message: "Vul een BTW-nummer in bij een bedrijfsbestelling." });
     }
     if (!order.eventDate || !order.eventTime) {
       throw new BadRequestException({ message: "Kies een datum en tijd." });
@@ -175,7 +180,8 @@ export class CateringService {
         name: order.name,
         email: order.email,
         phone: order.phone,
-        company: order.company
+        company: order.company,
+        vatId: order.vatId
       } as unknown as Parameters<typeof this.prisma.cateringOrder.create>[0]["data"]
     });
 
@@ -218,6 +224,7 @@ export class CateringService {
 
   private async notifyOwner(content: SiteContent, order: CateringOrder) {
     const inbox =
+      (await this.mailService.getNotifyEmail("catering")) ||
       content.site.catering?.notifications?.recipientEmail ||
       content.site.footer.email ||
       content.site.mailRelay.replyTo;
@@ -255,6 +262,7 @@ export class CateringService {
         `E-mail: ${order.email}`,
         `Telefoon: ${order.phone || "-"}`,
         order.company ? `Bedrijf: ${order.company}` : "",
+        order.company && order.vatId ? `BTW-id: ${order.vatId}` : "",
         order.notes ? `Opmerkingen: ${order.notes}` : ""
       ]
         .filter(Boolean)

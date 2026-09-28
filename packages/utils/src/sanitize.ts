@@ -951,6 +951,7 @@ export function sanitizeCateringOrder(input: Partial<CateringOrder | CreateCater
     email: cleanText(input?.email, "", 180).toLowerCase(),
     phone: cleanText(input?.phone, "", 80),
     company: cleanText(input?.company, "", 160),
+    vatId: cleanText((input as Partial<CateringOrder | CreateCateringOrderInput>)?.vatId, "", 40).toUpperCase(),
     adminNotes: cleanText((input as Partial<CateringOrder>)?.adminNotes, "", 2000)
   };
 }
@@ -1104,8 +1105,12 @@ function sanitizeCateringFormField(value: unknown, index: number): CateringFormF
 
 function sanitizeCateringNotifications(value: unknown): CateringNotificationsSettings {
   const raw = value && typeof value === "object" ? (value as Partial<CateringNotificationsSettings>) : {};
+  const recipientEmail = cleanText(raw.recipientEmail, DEFAULT_CATERING_SETTINGS.notifications.recipientEmail, 180);
   return {
-    recipientEmail: cleanText(raw.recipientEmail, DEFAULT_CATERING_SETTINGS.notifications.recipientEmail, 180),
+    recipientEmail:
+      recipientEmail.toLowerCase() === "info@tresamigos.nl"
+        ? DEFAULT_CATERING_SETTINGS.notifications.recipientEmail
+        : recipientEmail,
     notifyOnNewOrder: raw.notifyOnNewOrder !== false,
     notifyOnStatusChange: raw.notifyOnStatusChange === true
   };
@@ -1142,7 +1147,11 @@ export function sanitizeCateringSettings(value: unknown): CateringSettings {
 
   return {
     maxOnlineServings: Math.min(500, Math.max(1, Number(raw.maxOnlineServings) || DEFAULT_CATERING_SETTINGS.maxOnlineServings)),
-    largeGroupEmail: cleanText(raw.largeGroupEmail, DEFAULT_CATERING_SETTINGS.largeGroupEmail, 180),
+    largeGroupEmail: (() => {
+      const email = cleanText(raw.largeGroupEmail, DEFAULT_CATERING_SETTINGS.largeGroupEmail, 180);
+      // Oude default info@ → catering@; toon altijd het juiste adres in de UI.
+      return email.toLowerCase() === "info@tresamigos.nl" ? DEFAULT_CATERING_SETTINGS.largeGroupEmail : email;
+    })(),
     categories: categories.length ? categories : DEFAULT_CATERING_SETTINGS.categories,
     products: products.length ? products : DEFAULT_CATERING_SETTINGS.products,
     ingredients,

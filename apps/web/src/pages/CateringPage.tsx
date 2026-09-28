@@ -33,6 +33,7 @@ interface CheckoutForm {
   email: string;
   phone: string;
   company: string;
+  vatId: string;
   notes: string;
   locationId: string;
   address: string;
@@ -45,6 +46,7 @@ const emptyCheckout = (): CheckoutForm => ({
   email: "",
   phone: "",
   company: "",
+  vatId: "",
   notes: "",
   locationId: "",
   address: "",
@@ -199,6 +201,10 @@ export function CateringPage({ content }: { content: SiteContent }) {
       setMessage(t("contact.errorEmail"));
       return false;
     }
+    if (checkout.company.trim() && !checkout.vatId.trim()) {
+      setMessage(t("catering.error.vatId"));
+      return false;
+    }
     return true;
   }
 
@@ -220,6 +226,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
         email: checkout.email,
         phone: checkout.phone,
         company: checkout.company,
+        vatId: checkout.vatId,
         notes: checkout.notes
       });
       setOrderNumber(response.order?.orderNumber || "");
@@ -439,6 +446,17 @@ export function CateringPage({ content }: { content: SiteContent }) {
                     <span>{t("catering.field.company")}</span>
                     <input value={checkout.company} onChange={(event) => setCheckout((current) => ({ ...current, company: event.target.value }))} />
                   </label>
+                  {checkout.company.trim() ? (
+                    <label className="form-field">
+                      <span>{t("catering.field.vatId")}</span>
+                      <input
+                        value={checkout.vatId}
+                        onChange={(event) => setCheckout((current) => ({ ...current, vatId: event.target.value.toUpperCase() }))}
+                        placeholder={t("catering.field.vatIdPlaceholder")}
+                        required
+                      />
+                    </label>
+                  ) : null}
                 </div>
 
                 <label className="form-field">

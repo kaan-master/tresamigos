@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
 import { formatStoreCode, type Location, type SiteContent } from "@tresamigos/types";
 import { AdminListRow, AdminSearchBar } from "./AdminListUi";
-import { FormSaveBar, type PanelSaveProps } from "./FormSaveBar";
+import { FormSaveBar } from "./FormSaveBar";
+import { useQuietSaveOptional } from "../context/QuietSaveContext";
 import { createSlugId } from "../lib/id";
 
-interface Props extends PanelSaveProps {
+interface Props {
   content: SiteContent;
   onChange: (content: SiteContent) => void;
+  onSaveQuiet: (next?: SiteContent) => Promise<SiteContent | null>;
+  saving?: boolean;
 }
 
 function emptyLocation(index: number): Location {
@@ -22,7 +25,8 @@ function emptyLocation(index: number): Location {
   };
 }
 
-export function LocationsPanel({ content, onChange, onSave, saving }: Props) {
+export function LocationsPanel({ content, onChange, onSaveQuiet, saving = false }: Props) {
+  const quiet = useQuietSaveOptional();
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(content.locations[0]?.id || null);
   const selectedIndex = content.locations.findIndex((location) => location.id === selectedId);
@@ -37,7 +41,9 @@ export function LocationsPanel({ content, onChange, onSave, saving }: Props) {
   }, [content.locations, query]);
 
   function setLocations(locations: Location[]) {
-    onChange({ ...content, locations });
+    const next = { ...content, locations };
+    onChange(next);
+    return next;
   }
 
   function updateLocation(next: Location) {
@@ -46,17 +52,29 @@ export function LocationsPanel({ content, onChange, onSave, saving }: Props) {
     setLocations(locations);
   }
 
+  async function persistNow(nextContent?: SiteContent) {
+    if (quiet) {
+      quiet.markDirty(["*"]);
+      if (nextContent) quiet.onContentChange(nextContent);
+      await quiet.persist("manual");
+      return;
+    }
+    await onSaveQuiet(nextContent);
+  }
+
   function addLocation() {
-    const next = emptyLocation(content.locations.length);
-    setLocations([...content.locations, next]);
-    setSelectedId(next.id);
+    const nextLoc = emptyLocation(content.locations.length);
+    const next = setLocations([...content.locations, nextLoc]);
+    setSelectedId(nextLoc.id);
+    void persistNow(next);
   }
 
   function removeLocation() {
     if (!location || content.locations.length <= 1) return;
     const locations = content.locations.filter((item) => item.id !== location.id);
-    setLocations(locations);
+    const next = setLocations(locations);
     setSelectedId(locations[0]?.id || null);
+    void persistNow(next);
   }
 
   function updateLink(linkIndex: number, field: "label" | "url", value: string) {
@@ -68,19 +86,29 @@ export function LocationsPanel({ content, onChange, onSave, saving }: Props) {
 
   function addLink() {
     if (!location) return;
-    updateLocation({ ...location, links: [...location.links, { label: "Nieuwe knop", url: "" }] });
+    const next = setLocations(
+      content.locations.map((item) =>
+        item.id === location.id ? { ...item, links: [...item.links, { label: "Nieuwe knop", url: "" }] } : item
+      )
+    );
+    void persistNow(next);
   }
 
   function removeLink(linkIndex: number) {
     if (!location || location.links.length <= 1) return;
-    updateLocation({ ...location, links: location.links.filter((_, index) => index !== linkIndex) });
+    const next = setLocations(
+      content.locations.map((item) =>
+        item.id === location.id ? { ...item, links: item.links.filter((_, index) => index !== linkIndex) } : item
+      )
+    );
+    void persistNow(next);
   }
 
   return (
     <div className="ta-master-detail">
       <div className="ta-list-pane">
         <AdminSearchBar value={query} onChange={setQuery} placeholder="Zoek vestiging, regio of adres..." />
-        <div className="ta-toolbar">
+        <div className="ta-toolbar entra-commands">
           <button className="ta-btn ta-btn-primary" type="button" onClick={addLocation}>
             + Vestiging
           </button>
@@ -104,7 +132,7 @@ export function LocationsPanel({ content, onChange, onSave, saving }: Props) {
       </div>
 
       {location ? (
-        <div className="ta-detail-pane ta-fade-in" key={location.id}>
+        <div className="ta-detail-pane" key={location.id}>
           <div className="ta-toolbar ta-toolbar-spread">
             <h3 className="ta-section-title">Vestiging bewerken</h3>
             <button className="ta-btn ta-btn-danger" type="button" onClick={removeLocation} disabled={content.locations.length <= 1}>
@@ -112,7 +140,7 @@ export function LocationsPanel({ content, onChange, onSave, saving }: Props) {
             </button>
           </div>
 
-          <label className="ta-toggle">
+          <label className="ta-toggle" data-save-line="" data-save-key={`${location.id}:active`}>
             <input
               type="checkbox"
               checked={location.active !== false}
@@ -170,14 +198,18 @@ export function LocationsPanel({ content, onChange, onSave, saving }: Props) {
           </div>
           <div className="ta-link-table">
             {location.links.map((link, linkIndex) => (
-              <div className="ta-link-row" key={`${location.id}-${linkIndex}`}>
+              <div className="ta-link-row" data-save-line="" data-save-key={`${location.id}:link:${linkIndex}`} key={`${location.id}-link-${linkIndex}`}>
                 <label className="ta-field">
                   <span>Knop</span>
                   <input value={link.label} onChange={(event) => updateLink(linkIndex, "label", event.target.value)} />
                 </label>
                 <label className="ta-field">
                   <span>URL</span>
-                  <input value={link.url} onChange={(event) => updateLink(linkIndex, "url", event.target.value)} />
+                  <input
+                    value={link.url}
+                    onChange={(event) => updateLink(linkIndex, "url", event.target.value)}
+                    placeholder="https://"
+                  />
                 </label>
                 <button className="ta-btn ta-btn-danger ta-btn-icon" type="button" onClick={() => removeLink(linkIndex)} disabled={location.links.length <= 1}>
                   ×
@@ -185,7 +217,7 @@ export function LocationsPanel({ content, onChange, onSave, saving }: Props) {
               </div>
             ))}
           </div>
-          <FormSaveBar onSave={onSave} saving={saving} />
+          <FormSaveBar onSave={() => void persistNow()} onSaveQuiet={onSaveQuiet} saving={saving} />
         </div>
       ) : (
         <div className="ta-detail-pane ta-empty">Selecteer een vestiging om te bewerken.</div>

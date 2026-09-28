@@ -127,7 +127,7 @@ export const DEFAULT_CATERING_FORM_FIELDS: CateringFormFieldConfig[] = [
 ];
 
 export const DEFAULT_CATERING_NOTIFICATIONS: CateringNotificationsSettings = {
-  recipientEmail: "info@tresamigos.nl",
+  recipientEmail: "catering@tresamigos.nl",
   notifyOnNewOrder: true,
   notifyOnStatusChange: false
 };

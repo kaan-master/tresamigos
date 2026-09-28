@@ -58,7 +58,7 @@ interface Props extends PanelSaveProps {
   initialView?: SiteSettingsView | null;
 }
 
-export function SiteSettingsPanel({ content, onChange, onSave, saving, allowedViews, initialView }: Props) {
+export function SiteSettingsPanel({ content, onChange, onSave, onSaveQuiet, saving, allowedViews, initialView }: Props) {
   const items = useMemo(() => NAV.filter((item) => allowedViews.includes(item.id)), [allowedViews]);
   const [view, setView] = useState<SiteSettingsView>(
     initialView && allowedViews.includes(initialView) ? initialView : allowedViews[0] || "home"
@@ -73,6 +73,7 @@ export function SiteSettingsPanel({ content, onChange, onSave, saving, allowedVi
   }, [initialView, allowedViews]);
 
   const copy = TITLES[view];
+  const saveProps = { onSave, onSaveQuiet, saving };
 
   if (!items.length) {
     return <p className="entra-empty">Geen website-instellingen beschikbaar voor dit account.</p>;
@@ -81,10 +82,10 @@ export function SiteSettingsPanel({ content, onChange, onSave, saving, allowedVi
   return (
     <EntraShell brand="Website-instellingen" items={items} view={view} onChange={setView} title={copy.title} subtitle={copy.subtitle}>
       <div className="entra-embed">
-        {view === "home" ? <HomePanel content={content} onChange={onChange} onSave={onSave} saving={saving} /> : null}
-        {view === "pageMedia" ? <PageMediaPanel content={content} onChange={onChange} onSave={onSave} saving={saving} /> : null}
-        {view === "navigation" ? <NavbarPanel content={content} onChange={onChange} onSave={onSave} saving={saving} /> : null}
-        {view === "footer" ? <FooterPanel content={content} onChange={onChange} onSave={onSave} saving={saving} /> : null}
+        {view === "home" ? <HomePanel content={content} onChange={onChange} {...saveProps} /> : null}
+        {view === "pageMedia" ? <PageMediaPanel content={content} onChange={onChange} {...saveProps} /> : null}
+        {view === "navigation" ? <NavbarPanel content={content} onChange={onChange} {...saveProps} /> : null}
+        {view === "footer" ? <FooterPanel content={content} onChange={onChange} {...saveProps} /> : null}
         {view === "integrations" ? <IntegrationsPanel /> : null}
         {view === "users" ? <UsersPanel /> : null}
       </div>

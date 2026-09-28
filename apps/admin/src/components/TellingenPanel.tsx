@@ -55,7 +55,8 @@ export function TellingenPanel({ locations }: Props) {
   }
 
   return (
-    <EntraShell brand="Tellingen" items={NAV} view={view} onChange={setView} title={copy.title} subtitle={copy.subtitle}>
+    <div data-quiet-skip="">
+      <EntraShell brand="Tellingen" items={NAV} view={view} onChange={setView} title={copy.title} subtitle={copy.subtitle}>
       {view === "overview" ? (
         <TellingenOverviewPanel locations={stores} filters={overviewFilters} onFiltersChange={setOverviewFilters} />
       ) : null}
@@ -66,5 +67,6 @@ export function TellingenPanel({ locations }: Props) {
       {view === "products" ? <TellingenProductsPanel /> : null}
       {view === "export" ? <TellingenExportPanel locations={stores} /> : null}
     </EntraShell>
+    </div>
   );
 }

@@ -44,7 +44,7 @@ export function FranchisePanel({ inquiries }: Props) {
     null;
 
   return (
-    <div className="ta-master-detail">
+    <div className="ta-master-detail" data-quiet-skip="">
       <div className="ta-list-pane">
         <AdminSearchBar
           value={query}

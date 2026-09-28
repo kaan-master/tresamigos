@@ -192,7 +192,7 @@ export function UsersPanel() {
   }
 
   return (
-    <>
+    <div data-quiet-skip="">
       <EntraCommands>
         <EntraCommand onClick={openCreate}>Nieuwe medewerker</EntraCommand>
         <EntraCommand disabled={!selected} onClick={() => selected && openEdit(selected)}>
@@ -326,6 +326,6 @@ export function UsersPanel() {
           </AdminButton>
         </EntraBlade>
       ) : null}
-    </>
+    </div>
   );
 }

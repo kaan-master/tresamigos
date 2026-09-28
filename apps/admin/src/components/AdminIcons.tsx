@@ -320,6 +320,16 @@ export function IconMinimize(props: IconProps) {
   );
 }
 
+export function IconFranchiseShop(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 7h16l-1.2 12.2a2 2 0 0 1-2 1.8H7.2a2 2 0 0 1-2-1.8L4 7Z" />
+      <path d="M8 7V5a4 4 0 0 1 8 0v2" />
+      <path d="M9 12h6" />
+    </Icon>
+  );
+}
+
 export const tabIcons = {
   overview: IconOverview,
   home: IconHome,
@@ -329,6 +339,7 @@ export const tabIcons = {
   pageMedia: IconPageMedia,
   applications: IconApplications,
   franchise: IconFranchise,
+  franchiseShop: IconFranchiseShop,
   newsletter: IconNewsletter,
   catering: IconCatering,
   reviews: IconReviews,

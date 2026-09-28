@@ -158,6 +158,7 @@ export const ADMIN_TAB_IDS = [
   "pageMedia",
   "applications",
   "franchise",
+  "franchiseShop",
   "newsletter",
   "catering",
   "reviews",
@@ -180,6 +181,7 @@ export const ADMIN_TAB_LABELS: Record<AdminTabId, string> = {
   pageMedia: "Pagina media",
   applications: "Sollicitaties",
   franchise: "Franchise",
+  franchiseShop: "Franchise shop",
   newsletter: "Nieuwsbrief",
   catering: "Catering",
   reviews: "Reviews",
@@ -706,9 +708,20 @@ export interface CreateNewsletterSubscribeResponse extends ApiMessage {
   alreadySubscribed?: boolean;
 }
 
+export type MailRelayProvider = "smtp" | "outlook" | "google";
+
+export type MailNotifyCategory = "applications" | "catering" | "franchise" | "other";
+
+export interface IntegrationMailNotifications {
+  applications: string;
+  catering: string;
+  franchise: string;
+  other: string;
+}
+
 export interface IntegrationMailRelaySettings {
   enabled: boolean;
-  provider: "smtp" | "outlook";
+  provider: MailRelayProvider;
   host: string;
   port: number;
   secure: boolean;
@@ -720,6 +733,10 @@ export interface IntegrationMailRelaySettings {
   lastStatus: string;
   lastMessage: string;
   envFallbackConfigured: boolean;
+  googleConnected: boolean;
+  googleEmail: string;
+  googleOAuthConfigured: boolean;
+  notifications: IntegrationMailNotifications;
 }
 
 export interface IntegrationGoogleAdsSettings {
@@ -748,7 +765,7 @@ export interface PublicIntegrationsSettings {
 
 export interface UpdateIntegrationMailRelayInput {
   enabled?: boolean;
-  provider?: "smtp" | "outlook";
+  provider?: MailRelayProvider;
   host?: string;
   port?: number;
   secure?: boolean;
@@ -757,6 +774,8 @@ export interface UpdateIntegrationMailRelayInput {
   fromEmail?: string;
   fromName?: string;
   clearPassword?: boolean;
+  notifications?: Partial<IntegrationMailNotifications>;
+  disconnectGoogle?: boolean;
 }
 
 export interface UpdateIntegrationGoogleAdsInput {
@@ -946,6 +965,7 @@ export interface CateringOrder {
   email: string;
   phone: string;
   company: string;
+  vatId: string;
   adminNotes: string;
 }
 
@@ -961,6 +981,7 @@ export interface CreateCateringOrderInput {
   email: string;
   phone?: string;
   company?: string;
+  vatId?: string;
   notes?: string;
   /** @deprecated legacy single-box flow */
   boxId?: CateringBoxId;
@@ -1202,3 +1223,130 @@ export interface CountCategoryStat {
   quantity: number;
   sessionCount: number;
 }
+
+/** Franchise shop — producten, prijzen per vestiging, bestellingen */
+export const FRANCHISE_SHOP_ORDER_STATUSES = ["nieuw", "bevestigd", "verzonden", "afgerond", "geannuleerd"] as const;
+export type FranchiseShopOrderStatus = (typeof FRANCHISE_SHOP_ORDER_STATUSES)[number];
+
+export interface FranchiseAccount {
+  id: string;
+  email: string;
+  name: string;
+  locationId: string;
+  locationName: string;
+  locationCode: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFranchiseAccountInput {
+  email: string;
+  name: string;
+  password: string;
+  locationId: string;
+  active?: boolean;
+}
+
+export interface UpdateFranchiseAccountInput {
+  email?: string;
+  name?: string;
+  password?: string;
+  locationId?: string;
+  active?: boolean;
+}
+
+export interface FranchiseShopProduct {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  sku: string;
+  active: boolean;
+  sortOrder: number;
+  /** priceCents per locationId */
+  prices: Record<string, number>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFranchiseShopProductInput {
+  name: string;
+  description?: string;
+  image?: string;
+  sku?: string;
+  active?: boolean;
+  prices?: Record<string, number>;
+}
+
+export interface UpdateFranchiseShopProductInput {
+  name?: string;
+  description?: string;
+  image?: string;
+  sku?: string;
+  active?: boolean;
+  sortOrder?: number;
+  prices?: Record<string, number>;
+}
+
+export interface FranchiseShopOrderItem {
+  id: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPriceCents: number;
+  lineTotalCents: number;
+}
+
+export interface FranchiseShopOrder {
+  id: string;
+  orderNumber: string;
+  invoiceNumber: string;
+  createdAt: string;
+  updatedAt: string;
+  status: FranchiseShopOrderStatus;
+  accountId: string;
+  accountName: string;
+  accountEmail: string;
+  locationId: string;
+  locationName: string;
+  locationCode: string;
+  notes: string;
+  adminNotes: string;
+  subtotalCents: number;
+  items: FranchiseShopOrderItem[];
+}
+
+export interface CreateFranchiseShopOrderInput {
+  items: Array<{ productId: string; quantity: number }>;
+  notes?: string;
+}
+
+export interface UpdateFranchiseShopOrderInput {
+  status?: FranchiseShopOrderStatus;
+  adminNotes?: string;
+}
+
+export interface FranchiseShopCatalogProduct {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  sku: string;
+  priceCents: number;
+}
+
+export interface FranchiseShopSessionUser {
+  id: string;
+  name: string;
+  email: string;
+  locationId: string;
+  locationName: string;
+  locationCode: string;
+}
+
+export interface FranchiseShopLoginResponse {
+  token: string;
+  user: FranchiseShopSessionUser;
+}
+

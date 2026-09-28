@@ -1,11 +1,17 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import type { Application, CreateApplicationInput, SiteContent } from "@tresamigos/types";
 import { sanitizeApplication, sanitizeContent } from "@tresamigos/utils";
+import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.module";
 
 @Injectable()
 export class ApplicationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ApplicationsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService
+  ) {}
 
   private toDto(record: {
     id: string;
@@ -91,6 +97,17 @@ export class ApplicationsService {
       }
     });
 
+    void this.notifyTeam({
+      role: job.title,
+      name: application.name,
+      email: application.email,
+      phone: application.phone,
+      days: application.days,
+      availabilityNote: application.availabilityNote,
+      experience: application.experience,
+      motivation: application.motivation
+    });
+
     const excess = await this.prisma.application.findMany({
       orderBy: { createdAt: "desc" },
       skip: 500,
@@ -120,5 +137,39 @@ export class ApplicationsService {
     return {
       applications: records.map((record) => this.toDto(record))
     };
+  }
+
+  private async notifyTeam(input: {
+    role: string;
+    name: string;
+    email: string;
+    phone: string;
+    days: string[];
+    availabilityNote: string;
+    experience: string;
+    motivation: string;
+  }) {
+    try {
+      const to = await this.mailService.getNotifyEmail("applications");
+      await this.mailService.sendNotificationEmail({
+        to,
+        replyTo: input.email,
+        subject: `Nieuwe sollicitatie: ${input.role} — ${input.name}`,
+        body: [
+          "Nieuwe sollicitatie via tresamigos.nl",
+          "",
+          `Functie: ${input.role}`,
+          `Naam: ${input.name}`,
+          `E-mail: ${input.email}`,
+          `Telefoon: ${input.phone || "-"}`,
+          `Beschikbare dagen: ${input.days.join(", ") || "-"}`,
+          `Beschikbaarheid: ${input.availabilityNote || "-"}`,
+          `Ervaring: ${input.experience || "-"}`,
+          `Motivatie: ${input.motivation || "-"}`
+        ].join("\n")
+      });
+    } catch (error) {
+      this.logger.warn(`Sollicitatie-mail mislukt: ${error instanceof Error ? error.message : "onbekend"}`);
+    }
   }
 }

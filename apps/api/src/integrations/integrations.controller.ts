@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Post, Put, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Put, Query, Req, Res, UseGuards } from "@nestjs/common";
+import type { Response } from "express";
 import type {
   IntegrationTestMailInput,
   UpdateIntegrationGoogleAdsInput,
@@ -45,15 +46,51 @@ export class AdminIntegrationsController {
   testMailRelay(@Body() body: IntegrationTestMailInput) {
     return this.integrationsService.testMailRelay(body);
   }
+
+  @Get("integrations/mailrelay/google/start")
+  @RequirePermissions("integrations")
+  startGoogle(
+    @Req() req: { headers: Record<string, string | string[] | undefined>; protocol?: string }
+  ) {
+    const proto = String(req.headers["x-forwarded-proto"] || req.protocol || "http");
+    const host = String(req.headers["x-forwarded-host"] || req.headers.host || "");
+    const origin = host ? `${proto}://${host}` : undefined;
+    return this.integrationsService.startGoogleOAuth(origin);
+  }
 }
 
 @Controller("api")
-@UseGuards(PublicContentGuard)
 export class PublicIntegrationsController {
   constructor(private readonly integrationsService: IntegrationsService) {}
 
   @Get("integrations")
+  @UseGuards(PublicContentGuard)
   get() {
     return this.integrationsService.getPublicSettings().then((integrations) => ({ integrations }));
+  }
+
+  @Get("integrations/mailrelay/google/callback")
+  async googleCallback(
+    @Query("code") code: string,
+    @Query("state") state: string,
+    @Query("error") error: string | undefined,
+    @Req() req: { headers: Record<string, string | string[] | undefined>; protocol?: string },
+    @Res() res: Response
+  ) {
+    const proto = String(req.headers["x-forwarded-proto"] || req.protocol || "http");
+    const host = String(req.headers["x-forwarded-host"] || req.headers.host || "");
+    const origin = host ? `${proto}://${host}` : undefined;
+    try {
+      if (error) throw new Error(`Google login geannuleerd (${error}).`);
+      const redirect = await this.integrationsService.handleGoogleOAuthCallback(code || "", state || "", origin);
+      return res.redirect(redirect);
+    } catch (callbackError) {
+      const message = encodeURIComponent(
+        callbackError instanceof Error ? callbackError.message : "Google login mislukt."
+      );
+      const adminBase = (process.env.ADMIN_PUBLIC_URL || "http://localhost:5181").replace(/\/$/, "");
+      const path = adminBase.includes("/admin") ? "" : "/admin/";
+      return res.redirect(`${adminBase}${path}?googleMail=error&message=${message}`);
+    }
   }
 }
