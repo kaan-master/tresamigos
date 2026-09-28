@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type SVGProps } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   IntegrationGoogleByCategory,
   IntegrationMailNotifications,
@@ -34,6 +34,8 @@ type MailForm = {
   fromEmail: string;
   fromName: string;
   notifications: IntegrationMailNotifications;
+  googleClientId: string;
+  googleClientSecret: string;
 };
 
 type GoogleAdsForm = {
@@ -50,6 +52,9 @@ type NewsletterForm = {
 
 const REQUEST_EMAIL = "info@tresamigos.nl";
 const REQUESTED_STORAGE_KEY = "ta-integration-requests";
+const GOOGLE_ICON = "/assets/brand/platforms/google-g.png";
+const OUTLOOK_ICON = "/assets/brand/platforms/outlook.png";
+const CLEAR_CONFIRM_WORD = "bevestig";
 
 const DEFAULT_NOTIFICATIONS: IntegrationMailNotifications = {
   applications: "work@tresamigos.nl",
@@ -92,24 +97,15 @@ const TITLES: Record<IntegrationsView, { title: string; subtitle: string }> = {
   extra: { title: "Op aanvraag", subtitle: "Extra koppelingen aanvragen" }
 };
 
-function IconGoogle(props: SVGProps<SVGSVGElement>) {
+function ProviderIcon({ provider }: { provider: "google" | "outlook" }) {
   return (
-    <svg viewBox="0 0 24 24" width={18} height={18} aria-hidden="true" {...props}>
-      <path fill="#EA4335" d="M12 10.2v3.6h5.1c-.2 1.2-1.5 3.6-5.1 3.6-3.1 0-5.6-2.5-5.6-5.6S8.9 6.2 12 6.2c1.8 0 3 .7 3.7 1.4l2.5-2.4C16.7 3.7 14.6 2.8 12 2.8 6.9 2.8 2.8 6.9 2.8 12S6.9 21.2 12 21.2c5.3 0 8.8-3.7 8.8-8.9 0-.6-.1-1-.2-1.5H12z" />
-      <path fill="#34A853" d="M3.9 14.3 7 11.9c.8 2.2 2.7 3.5 5 3.5 1.2 0 2.3-.3 3.1-1l3.1 2.4c-1.9 1.8-4.4 2.4-6.2 2.4-3.8 0-7-2.5-8.1-5z" />
-      <path fill="#4A90E2" d="M20.8 12.3c0-.6-.1-1-.2-1.5H12v3.6h5.1c-.3 1.1-.9 2-1.9 2.6l3.1 2.4c1.8-1.7 2.5-4.2 2.5-7.1z" />
-      <path fill="#FBBC05" d="M7 11.9 3.9 9.5C5 7 7.5 5.2 10.5 4.7L13 7.3C10.5 7.7 8.3 9.3 7 11.9z" />
-    </svg>
-  );
-}
-
-function IconOutlook(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" width={18} height={18} aria-hidden="true" {...props}>
-      <path fill="#0078D4" d="M3 5.5A2.5 2.5 0 0 1 5.5 3h7A2.5 2.5 0 0 1 15 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 3 18.5v-13Z" />
-      <path fill="#28A8EA" d="M15 8h5.5A.5.5 0 0 1 21 8.5v11a.5.5 0 0 1-.5.5H15V8Z" />
-      <circle fill="#fff" cx="9" cy="12" r="3.2" />
-    </svg>
+    <img
+      className="ta-provider-icon"
+      src={provider === "google" ? GOOGLE_ICON : OUTLOOK_ICON}
+      alt=""
+      width={18}
+      height={18}
+    />
   );
 }
 
@@ -124,7 +120,9 @@ function toMailForm(settings: IntegrationSettingsPublic["mailRelay"]): MailForm 
     password: "",
     fromEmail: settings.fromEmail,
     fromName: settings.fromName,
-    notifications: { ...DEFAULT_NOTIFICATIONS, ...settings.notifications }
+    notifications: { ...DEFAULT_NOTIFICATIONS, ...settings.notifications },
+    googleClientId: settings.googleClientId || "",
+    googleClientSecret: ""
   };
 }
 
@@ -178,9 +176,25 @@ function setProviderDefaults(current: MailForm, provider: MailRelayProvider): Ma
   return { ...current, provider };
 }
 
-export function IntegrationsPanel() {
+export function IntegrationsPanel({
+  initialSubView = null,
+  onSubViewChange
+}: {
+  initialSubView?: string | null;
+  onSubViewChange?: (sub: string | null) => void;
+} = {}) {
   const { runSave } = useAdminFeedback();
-  const [view, setView] = useState<IntegrationsView>("overview");
+  const [view, setView] = useState<IntegrationsView>(() => {
+    if (
+      initialSubView === "mail" ||
+      initialSubView === "googleAds" ||
+      initialSubView === "newsletter" ||
+      initialSubView === "extra"
+    ) {
+      return initialSubView;
+    }
+    return "overview";
+  });
   const [settings, setSettings] = useState<IntegrationSettingsPublic | null>(null);
   const [mailForm, setMailForm] = useState<MailForm | null>(null);
   const [googleForm, setGoogleForm] = useState<GoogleAdsForm | null>(null);
@@ -194,6 +208,14 @@ export function IntegrationsPanel() {
   const [requestedIds, setRequestedIds] = useState<string[]>(() => readRequestedIds());
   const [connectingCategory, setConnectingCategory] = useState<MailNotifyCategory | null>(null);
   const [providerMenuOpen, setProviderMenuOpen] = useState(false);
+  const [clearSecretStep, setClearSecretStep] = useState(0);
+  const [clearSecretConfirm, setClearSecretConfirm] = useState("");
+  const [clearingSecret, setClearingSecret] = useState(false);
+
+  function changeView(next: IntegrationsView) {
+    setView(next);
+    onSubViewChange?.(next === "overview" ? null : next);
+  }
 
   const copy = TITLES[view];
   const googleByCategory = settings?.mailRelay.googleByCategory || EMPTY_GOOGLE_BY_CATEGORY;
@@ -236,12 +258,12 @@ export function IntegrationsPanel() {
     const googleMail = params.get("googleMail");
     if (!googleMail) return;
     if (googleMail === "connected") {
-      setView("mail");
+      changeView("mail");
       setMessage(`Google gekoppeld${params.get("email") ? `: ${params.get("email")}` : ""}.`);
       void loadSettings();
     }
     if (googleMail === "error") {
-      setView("mail");
+      changeView("mail");
       setError(params.get("message") || "Google login mislukt.");
     }
     params.delete("googleMail");
@@ -324,7 +346,12 @@ export function IntegrationsPanel() {
       password: mailForm.password || undefined,
       fromEmail: mailForm.fromEmail,
       fromName: mailForm.fromName,
-      notifications: mailForm.notifications
+      notifications: mailForm.notifications,
+      googleClientId: mailForm.googleClientId,
+      // Alleen meesturen als er echt een nieuwe secret is getypt — leeg wist nooit.
+      ...(mailForm.googleClientSecret.trim()
+        ? { googleClientSecret: mailForm.googleClientSecret.trim() }
+        : {})
     };
     try {
       await runSave(
@@ -376,6 +403,35 @@ export function IntegrationsPanel() {
       setMessage("Google-account ontkoppeld.");
     } catch (disconnectError) {
       setError(disconnectError instanceof Error ? disconnectError.message : "Ontkoppelen mislukt.");
+    }
+  }
+
+  async function clearGoogleSecret() {
+    if (clearSecretStep < 3 || clearSecretConfirm !== CLEAR_CONFIRM_WORD || clearingSecret) return;
+    setClearingSecret(true);
+    setError("");
+    try {
+      await runSave(
+        async () => {
+          const result = await api<{ integrations: IntegrationSettingsPublic }>(
+            "/api/admin/integrations/mailrelay/google/clear-secret",
+            {
+              method: "POST",
+              body: JSON.stringify({ confirmation: CLEAR_CONFIRM_WORD })
+            }
+          );
+          applySettings(result.integrations);
+          setMailForm((current) => (current ? { ...current, googleClientSecret: "" } : current));
+        },
+        { successMessage: "Google client secret gewist." }
+      );
+      setMessage("Google client secret gewist.");
+      setClearSecretStep(0);
+      setClearSecretConfirm("");
+    } catch (clearError) {
+      setError(clearError instanceof Error ? clearError.message : "Secret wissen mislukt.");
+    } finally {
+      setClearingSecret(false);
     }
   }
 
@@ -469,7 +525,7 @@ export function IntegrationsPanel() {
     <div data-quiet-skip="" className="ta-integrations-hub">
       {view !== "overview" ? (
         <EntraCommands>
-          <EntraCommand onClick={() => setView("overview")}>← Alle koppelingen</EntraCommand>
+          <EntraCommand onClick={() => changeView("overview")}>← Alle koppelingen</EntraCommand>
         </EntraCommands>
       ) : null}
 
@@ -484,7 +540,7 @@ export function IntegrationsPanel() {
       {view === "overview" ? (
         <div className="ta-integrations-list">
           {listItems.map((item) => (
-            <button key={item.id} type="button" className="ta-integrations-row" onClick={() => setView(item.id)}>
+            <button key={item.id} type="button" className="ta-integrations-row" onClick={() => changeView(item.id)}>
               <span className="ta-integrations-row-copy">
                 <strong>{item.label}</strong>
                 <small>{item.hint}</small>
@@ -519,8 +575,8 @@ export function IntegrationsPanel() {
                 aria-expanded={providerMenuOpen}
                 onClick={() => setProviderMenuOpen((open) => !open)}
               >
-                {mailForm.provider === "google" ? <IconGoogle /> : null}
-                {mailForm.provider === "outlook" ? <IconOutlook /> : null}
+                {mailForm.provider === "google" ? <ProviderIcon provider="google" /> : null}
+                {mailForm.provider === "outlook" ? <ProviderIcon provider="outlook" /> : null}
                 {mailForm.provider === "smtp" ? <IconIntegrations width={18} height={18} /> : null}
                 <span>
                   {mailForm.provider === "google"
@@ -534,14 +590,14 @@ export function IntegrationsPanel() {
               {providerMenuOpen ? (
                 <div className="ta-provider-menu" role="listbox">
                   <button type="button" className={mailForm.provider === "google" ? "is-active" : ""} onClick={() => chooseProvider("google")}>
-                    <IconGoogle />
+                    <ProviderIcon provider="google" />
                     <span>
                       <strong>Google</strong>
                       <small>Workspace / Gmail — aanbevolen voor @tresamigos.nl</small>
                     </span>
                   </button>
                   <button type="button" className={mailForm.provider === "outlook" ? "is-active" : ""} onClick={() => chooseProvider("outlook")}>
-                    <IconOutlook />
+                    <ProviderIcon provider="outlook" />
                     <span>
                       <strong>Outlook</strong>
                       <small>Microsoft 365 SMTP</small>
@@ -570,25 +626,121 @@ export function IntegrationsPanel() {
 
           {mailForm.provider === "google" ? (
             <>
-              {!settings?.mailRelay.googleOAuthConfigured ? (
-                <div className="ta-integration-help">
-                  <strong>Google Client ID &amp; Secret</strong>
-                  <p>
-                    Die haal je uit de <em>Google Cloud Console</em> van Tres Amigos (niet uit Gmail zelf): APIs &amp; Services →
-                    Credentials → OAuth 2.0 Client ID (type Web application).
-                  </p>
-                  <ol>
-                    <li>Maak of open het OAuth-clientproject</li>
-                    <li>
-                      Zet redirect URI: <code>https://tresamigos.nl/api/integrations/mailrelay/google/callback</code>
-                    </li>
-                    <li>
-                      Zet in de server <code>.env</code>: <code>GOOGLE_MAIL_CLIENT_ID</code> en{" "}
-                      <code>GOOGLE_MAIL_CLIENT_SECRET</code>
-                    </li>
-                    <li>Herstart de API, daarna kun je hier per categorie inloggen</li>
-                  </ol>
+              <div className="ta-oauth-creds">
+                <div className="ta-oauth-creds-head">
+                  <strong>Google OAuth Client</strong>
+                  <span className="ta-seo-hint">
+                    {settings?.mailRelay.googleOAuthConfigured
+                      ? `Actief (${settings.mailRelay.googleOAuthSource === "db" ? "opgeslagen hier" : "via .env fallback"})`
+                      : "Nog niet compleet — vul ID + secret in"}
+                  </span>
                 </div>
+                <p className="ta-seo-hint" style={{ margin: 0 }}>
+                  Haal Client ID en Secret uit Google Cloud Console → APIs &amp; Services → Credentials → OAuth 2.0 Client
+                  (Web). Redirect URI:{" "}
+                  <code>https://tresamigos.nl/api/integrations/mailrelay/google/callback</code>
+                </p>
+                <label className="ta-field">
+                  <span>Client ID</span>
+                  <input
+                    value={mailForm.googleClientId}
+                    onChange={(event) =>
+                      setMailForm((current) => (current ? { ...current, googleClientId: event.target.value } : current))
+                    }
+                    autoComplete="off"
+                    placeholder="xxxxx.apps.googleusercontent.com"
+                  />
+                </label>
+                <div className="ta-oauth-secret-box">
+                  <label className="ta-field">
+                    <span>Client Secret</span>
+                    {settings?.mailRelay.googleClientSecretSet ? (
+                      <p className="ta-oauth-secret-masked">
+                        Opgeslagen: {settings.mailRelay.googleClientSecretMasked || "••••••••"} — blijft behouden tenzij je
+                        hieronder een nieuwe invult.
+                      </p>
+                    ) : (
+                      <p className="ta-seo-hint" style={{ margin: "0 0 6px" }}>
+                        Nog geen secret opgeslagen.
+                      </p>
+                    )}
+                    <input
+                      type="password"
+                      value={mailForm.googleClientSecret}
+                      onChange={(event) =>
+                        setMailForm((current) =>
+                          current ? { ...current, googleClientSecret: event.target.value } : current
+                        )
+                      }
+                      autoComplete="new-password"
+                      placeholder={
+                        settings?.mailRelay.googleClientSecretSet
+                          ? "Nieuwe secret (leeg laten = ongewijzigd)"
+                          : "Plak hier de client secret"
+                      }
+                    />
+                  </label>
+                  {settings?.mailRelay.googleClientSecretSet && settings.mailRelay.googleOAuthSource !== "env" ? (
+                    <div className="ta-oauth-clear">
+                      <strong>Secret wissen</strong>
+                      <p className="ta-seo-hint" style={{ margin: 0 }}>
+                        Mag nooit per ongeluk. Drie keer bevestigen, daarna exact <code>{CLEAR_CONFIRM_WORD}</code> typen.
+                        Andere tekst wordt niet geaccepteerd.
+                      </p>
+                      <div className="ta-oauth-clear-steps">
+                        {[1, 2, 3].map((step) => (
+                          <button
+                            key={step}
+                            type="button"
+                            className={`ta-btn ta-btn-ghost${clearSecretStep >= step ? " is-done" : ""}`}
+                            disabled={clearSecretStep !== step - 1 || clearingSecret}
+                            onClick={() => setClearSecretStep(step)}
+                          >
+                            Bevestig {step}/3
+                          </button>
+                        ))}
+                      </div>
+                      {clearSecretStep >= 3 ? (
+                        <label className="ta-field">
+                          <span>
+                            Typ <code>{CLEAR_CONFIRM_WORD}</code>
+                          </span>
+                          <input
+                            value={clearSecretConfirm}
+                            onChange={(event) => setClearSecretConfirm(event.target.value)}
+                            autoComplete="off"
+                            placeholder={CLEAR_CONFIRM_WORD}
+                          />
+                          <button
+                            type="button"
+                            className="ta-btn"
+                            style={{ marginTop: 8 }}
+                            disabled={clearSecretConfirm !== CLEAR_CONFIRM_WORD || clearingSecret}
+                            onClick={() => void clearGoogleSecret()}
+                          >
+                            {clearingSecret ? "Wissen..." : "Secret definitief verwijderen"}
+                          </button>
+                        </label>
+                      ) : null}
+                      {clearSecretStep > 0 ? (
+                        <button
+                          type="button"
+                          className="ta-btn ta-btn-ghost"
+                          onClick={() => {
+                            setClearSecretStep(0);
+                            setClearSecretConfirm("");
+                          }}
+                        >
+                          Annuleren
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              {!settings?.mailRelay.googleOAuthConfigured ? (
+                <p className="ta-seo-hint">Sla Client ID en Secret op, daarna kun je per categorie inloggen.</p>
               ) : (
                 <p className="ta-seo-hint">
                   Log per categorie één keer in met het juiste Google-account. De inbox-velden staan al klaar met de
@@ -658,7 +810,7 @@ export function IntegrationsPanel() {
                             disabled={!settings?.mailRelay.googleOAuthConfigured || connectingCategory === category.id}
                             onClick={() => void connectGoogleMail(category.id)}
                           >
-                            <IconGoogle />
+                            <ProviderIcon provider="google" />
                             <span>
                               {connectingCategory === category.id
                                 ? "Bezig..."

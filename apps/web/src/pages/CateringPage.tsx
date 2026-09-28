@@ -34,6 +34,7 @@ interface CheckoutForm {
   phone: string;
   company: string;
   vatId: string;
+  kvk: string;
   notes: string;
   locationId: string;
   address: string;
@@ -47,6 +48,7 @@ const emptyCheckout = (): CheckoutForm => ({
   phone: "",
   company: "",
   vatId: "",
+  kvk: "",
   notes: "",
   locationId: "",
   address: "",
@@ -205,6 +207,10 @@ export function CateringPage({ content }: { content: SiteContent }) {
       setMessage(t("catering.error.vatId"));
       return false;
     }
+    if (checkout.company.trim() && !checkout.kvk.trim()) {
+      setMessage(t("catering.error.kvk"));
+      return false;
+    }
     return true;
   }
 
@@ -227,6 +233,7 @@ export function CateringPage({ content }: { content: SiteContent }) {
         phone: checkout.phone,
         company: checkout.company,
         vatId: checkout.vatId,
+        kvk: checkout.kvk,
         notes: checkout.notes
       });
       setOrderNumber(response.order?.orderNumber || "");
@@ -447,15 +454,26 @@ export function CateringPage({ content }: { content: SiteContent }) {
                     <input value={checkout.company} onChange={(event) => setCheckout((current) => ({ ...current, company: event.target.value }))} />
                   </label>
                   {checkout.company.trim() ? (
-                    <label className="form-field">
-                      <span>{t("catering.field.vatId")}</span>
-                      <input
-                        value={checkout.vatId}
-                        onChange={(event) => setCheckout((current) => ({ ...current, vatId: event.target.value.toUpperCase() }))}
-                        placeholder={t("catering.field.vatIdPlaceholder")}
-                        required
-                      />
-                    </label>
+                    <>
+                      <label className="form-field">
+                        <span>{t("catering.field.vatId")}</span>
+                        <input
+                          value={checkout.vatId}
+                          onChange={(event) => setCheckout((current) => ({ ...current, vatId: event.target.value.toUpperCase() }))}
+                          placeholder={t("catering.field.vatIdPlaceholder")}
+                          required
+                        />
+                      </label>
+                      <label className="form-field">
+                        <span>{t("catering.field.kvk")}</span>
+                        <input
+                          value={checkout.kvk}
+                          onChange={(event) => setCheckout((current) => ({ ...current, kvk: event.target.value }))}
+                          placeholder={t("catering.field.kvkPlaceholder")}
+                          required
+                        />
+                      </label>
+                    </>
                   ) : null}
                 </div>
 

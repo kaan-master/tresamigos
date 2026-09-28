@@ -87,7 +87,19 @@ export async function apiBlob(path: string) {
   const blob = await response.blob();
   const disposition = response.headers.get("content-disposition") || "";
   const match = disposition.match(/filename="([^"]+)"/);
-  return { blob, filename: match?.[1] || "tellingen.csv" };
+  return { blob, filename: match?.[1] || "download.bin" };
+}
+
+export async function downloadPdf(path: string, fallbackName = "document.pdf") {
+  const { blob, filename } = await apiBlob(path);
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename || fallbackName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 export async function uploadMedia(file: File) {

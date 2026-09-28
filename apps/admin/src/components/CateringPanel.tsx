@@ -24,6 +24,7 @@ interface Props {
   saving: boolean;
   navigateToView?: CateringView | null;
   openOrderId?: string | null;
+  onViewChange?: (view: CateringView) => void;
 }
 
 export function CateringPanel({
@@ -37,7 +38,8 @@ export function CateringPanel({
   onSaveQuiet,
   saving,
   navigateToView = null,
-  openOrderId = null
+  openOrderId = null,
+  onViewChange
 }: Props) {
   const [view, setView] = useState<CateringView>("overview");
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
@@ -53,6 +55,11 @@ export function CateringPanel({
     setView("orders");
   }, [openOrderId]);
 
+  function changeView(next: CateringView) {
+    setView(next);
+    onViewChange?.(next);
+  }
+
   function updateSettings(settings: CateringSettings) {
     onContentChange({
       ...content,
@@ -65,7 +72,7 @@ export function CateringPanel({
 
   function openOrders(orderId?: string) {
     if (orderId) setPendingOrderId(orderId);
-    setView("orders");
+    changeView("orders");
   }
 
   const settingsProps = {
@@ -78,7 +85,7 @@ export function CateringPanel({
 
   return (
     <div className="catering-panel-shell">
-      <CateringSubmoduleNav view={view} newOrderCount={newOrderCount} onChange={setView} />
+      <CateringSubmoduleNav view={view} newOrderCount={newOrderCount} onChange={changeView} />
 
       <div className="catering-panel-content">
         {view === "overview" ? (

@@ -11,6 +11,7 @@ interface Props {
   inquiries: FranchiseInquiry[];
   content: SiteContent;
   initialView?: FranchiseView | null;
+  onViewChange?: (view: FranchiseView) => void;
 }
 
 const NAV: Array<EntraNavItem<FranchiseView>> = [
@@ -162,7 +163,7 @@ function FranchiseInquiriesPanel({ inquiries }: { inquiries: FranchiseInquiry[] 
   );
 }
 
-export function FranchisePanel({ inquiries, content, initialView }: Props) {
+export function FranchisePanel({ inquiries, content, initialView, onViewChange }: Props) {
   const [view, setView] = useState<FranchiseView>(initialView || "aanvragen");
   const copy = TITLES[view];
 
@@ -170,9 +171,14 @@ export function FranchisePanel({ inquiries, content, initialView }: Props) {
     if (initialView) setView(initialView);
   }, [initialView]);
 
+  function changeView(next: FranchiseView) {
+    setView(next);
+    onViewChange?.(next);
+  }
+
   return (
     <div data-quiet-skip="">
-      <EntraShell brand="Franchise" items={NAV} view={view} onChange={setView} title={copy.title} subtitle={copy.subtitle}>
+      <EntraShell brand="Franchise" items={NAV} view={view} onChange={changeView} title={copy.title} subtitle={copy.subtitle}>
         {view === "aanvragen" ? <FranchiseInquiriesPanel inquiries={inquiries} /> : null}
         {view !== "aanvragen" ? <FranchiseShopPanel content={content} view={SHOP_VIEW[view]} /> : null}
       </EntraShell>

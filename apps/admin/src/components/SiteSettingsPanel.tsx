@@ -56,9 +56,21 @@ interface Props extends PanelSaveProps {
   onChange: (content: SiteContent) => void;
   allowedViews: SiteSettingsView[];
   initialView?: SiteSettingsView | null;
+  integrationsSubView?: string | null;
+  onViewChange?: (view: SiteSettingsView, sub?: string | null) => void;
 }
 
-export function SiteSettingsPanel({ content, onChange, onSave, onSaveQuiet, saving, allowedViews, initialView }: Props) {
+export function SiteSettingsPanel({
+  content,
+  onChange,
+  onSave,
+  onSaveQuiet,
+  saving,
+  allowedViews,
+  initialView,
+  integrationsSubView = null,
+  onViewChange
+}: Props) {
   const items = useMemo(() => NAV.filter((item) => allowedViews.includes(item.id)), [allowedViews]);
   const [view, setView] = useState<SiteSettingsView>(
     initialView && allowedViews.includes(initialView) ? initialView : allowedViews[0] || "home"
@@ -72,6 +84,11 @@ export function SiteSettingsPanel({ content, onChange, onSave, onSaveQuiet, savi
     setView((current) => (allowedViews.includes(current) ? current : allowedViews[0] || "home"));
   }, [initialView, allowedViews]);
 
+  function changeView(next: SiteSettingsView) {
+    setView(next);
+    onViewChange?.(next, next === "integrations" ? integrationsSubView : null);
+  }
+
   const copy = TITLES[view];
   const saveProps = { onSave, onSaveQuiet, saving };
 
@@ -80,13 +97,18 @@ export function SiteSettingsPanel({ content, onChange, onSave, onSaveQuiet, savi
   }
 
   return (
-    <EntraShell brand="Website-instellingen" items={items} view={view} onChange={setView} title={copy.title} subtitle={copy.subtitle}>
+    <EntraShell brand="Website-instellingen" items={items} view={view} onChange={changeView} title={copy.title} subtitle={copy.subtitle}>
       <div className="entra-embed">
         {view === "home" ? <HomePanel content={content} onChange={onChange} {...saveProps} /> : null}
         {view === "pageMedia" ? <PageMediaPanel content={content} onChange={onChange} {...saveProps} /> : null}
         {view === "navigation" ? <NavbarPanel content={content} onChange={onChange} {...saveProps} /> : null}
         {view === "footer" ? <FooterPanel content={content} onChange={onChange} {...saveProps} /> : null}
-        {view === "integrations" ? <IntegrationsPanel /> : null}
+        {view === "integrations" ? (
+          <IntegrationsPanel
+            initialSubView={integrationsSubView}
+            onSubViewChange={(sub) => onViewChange?.("integrations", sub)}
+          />
+        ) : null}
         {view === "users" ? <UsersPanel /> : null}
       </div>
     </EntraShell>

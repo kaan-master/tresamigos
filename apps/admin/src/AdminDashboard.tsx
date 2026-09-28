@@ -1,6 +1,7 @@
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { Application, CateringOrder, FranchiseInquiry, SiteContent } from "@tresamigos/types";
 import { api } from "./lib/api";
+import { readAdminRoute, writeAdminRoute, type AdminRouteTab } from "./lib/adminRoute";
 import { IconLogout, IconMenu, tabIcons } from "./components/AdminIcons";
 import { AdminLoaderScreen } from "./components/AdminLoadingPopup";
 import { OverviewPanel } from "./components/OverviewPanel";
@@ -59,13 +60,28 @@ interface Props {
 export function AdminDashboard({ user, onLogout }: Props) {
   const { enabled: tabletMode, screen: tabletScreen, openPanel } = useAdminTablet();
   const { notifyLoading, notifyError, clear: clearFeedback, runSave } = useAdminFeedback();
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const initialRoute = useMemo(() => readAdminRoute(), []);
+  const [activeTab, setActiveTab] = useState<TabId>(initialRoute.tab);
   const [navOpen, setNavOpen] = useState(false);
-  const [cateringNavigateView, setCateringNavigateView] = useState<CateringView | null>(null);
+  const [cateringNavigateView, setCateringNavigateView] = useState<CateringView | null>(
+    initialRoute.tab === "catering" ? (initialRoute.view as CateringView | null) : null
+  );
   const [cateringOpenOrderId, setCateringOpenOrderId] = useState<string | null>(null);
-  const [applicationsNavigateView, setApplicationsNavigateView] = useState<ApplicationsView | null>(null);
-  const [siteSettingsNavigateView, setSiteSettingsNavigateView] = useState<SiteSettingsView | null>(null);
-  const [franchiseNavigateView, setFranchiseNavigateView] = useState<FranchiseView | null>(null);
+  const [applicationsNavigateView, setApplicationsNavigateView] = useState<ApplicationsView | null>(
+    initialRoute.tab === "applications" ? (initialRoute.view as ApplicationsView | null) : null
+  );
+  const [siteSettingsNavigateView, setSiteSettingsNavigateView] = useState<SiteSettingsView | null>(
+    initialRoute.tab === "siteSettings" ? (initialRoute.view as SiteSettingsView | null) : null
+  );
+  const [franchiseNavigateView, setFranchiseNavigateView] = useState<FranchiseView | null>(
+    initialRoute.tab === "franchise" ? (initialRoute.view as FranchiseView | null) : null
+  );
+  const [tellingenNavigateView, setTellingenNavigateView] = useState<string | null>(
+    initialRoute.tab === "tellingen" ? initialRoute.view : null
+  );
+  const [integrationsSubView, setIntegrationsSubView] = useState<string | null>(
+    initialRoute.tab === "siteSettings" && initialRoute.view === "integrations" ? initialRoute.sub : null
+  );
   const [content, setContent] = useState<SiteContent | null>(null);
   const contentRef = useRef<SiteContent | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -119,6 +135,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
 
   useEffect(() => {
     void loadAll();
+    if (initialRoute.tab !== "overview") openPanel();
   }, []);
 
   useEffect(() => {
@@ -172,6 +189,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
   async function saveContent() {
     const payload = contentRef.current || content;
     if (!payload || saving) return;
+    const routeBefore = readAdminRoute();
     setSaving(true);
     try {
       await runSave(
@@ -184,6 +202,8 @@ export function AdminDashboard({ user, onLogout }: Props) {
         {
           refresh: async () => {
             await refreshContent();
+            // Altijd terug op dezelfde pagina — geen navigatie-reset na opslaan.
+            writeAdminRoute(routeBefore);
           },
           successMessage: "Alle wijzigingen zijn opgeslagen en vernieuwd."
         }
@@ -251,8 +271,17 @@ export function AdminDashboard({ user, onLogout }: Props) {
       setCateringOpenOrderId(null);
     }
     if (id !== "applications") setApplicationsNavigateView(null);
-    if (id !== "siteSettings") setSiteSettingsNavigateView(null);
+    if (id !== "siteSettings") {
+      setSiteSettingsNavigateView(null);
+      setIntegrationsSubView(null);
+    }
     if (id !== "franchise") setFranchiseNavigateView(null);
+    if (id !== "tellingen") setTellingenNavigateView(null);
+    writeAdminRoute({ tab: id as AdminRouteTab, view: null, sub: null });
+  }
+
+  function syncNestedView(tab: TabId, view: string | null, sub: string | null = null) {
+    writeAdminRoute({ tab: tab as AdminRouteTab, view, sub });
   }
 
   function handleSearchSelect(item: AdminSearchItem) {
@@ -265,6 +294,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
       setApplicationsNavigateView(item.target.view);
       setNavOpen(false);
       openPanel();
+      writeAdminRoute({ tab: "applications", view: item.target.view, sub: null });
       return;
     }
     if (item.target.kind === "franchise") {
@@ -272,31 +302,37 @@ export function AdminDashboard({ user, onLogout }: Props) {
       setFranchiseNavigateView(item.target.view);
       setNavOpen(false);
       openPanel();
+      writeAdminRoute({ tab: "franchise", view: item.target.view, sub: null });
       return;
     }
     if (item.target.kind === "siteSettings") {
       setActiveTab("siteSettings");
       setSiteSettingsNavigateView(item.target.view);
+      setIntegrationsSubView(null);
       setNavOpen(false);
       openPanel();
+      writeAdminRoute({ tab: "siteSettings", view: item.target.view, sub: null });
       return;
     }
     setActiveTab("catering");
     setCateringNavigateView(item.target.view);
     setCateringOpenOrderId(null);
     openPanel();
+    writeAdminRoute({ tab: "catering", view: item.target.view, sub: null });
   }
 
   function handleOpenOrders() {
     setActiveTab("catering");
     setCateringNavigateView("orders");
     setCateringOpenOrderId(null);
+    writeAdminRoute({ tab: "catering", view: "orders", sub: null });
   }
 
   function handleOpenOrder(orderId: string) {
     setActiveTab("catering");
     setCateringNavigateView("orders");
     setCateringOpenOrderId(orderId);
+    writeAdminRoute({ tab: "catering", view: "orders", sub: null });
   }
 
   const panels = (
@@ -368,6 +404,10 @@ export function AdminDashboard({ user, onLogout }: Props) {
             onSaveQuiet={saveContentQuiet}
             saving={saving}
             initialView={applicationsNavigateView}
+            onViewChange={(view) => {
+              setApplicationsNavigateView(view);
+              syncNestedView("applications", view);
+            }}
           />
         </section>
       ) : null}
@@ -378,6 +418,10 @@ export function AdminDashboard({ user, onLogout }: Props) {
             inquiries={franchiseInquiries}
             content={content}
             initialView={franchiseNavigateView}
+            onViewChange={(view) => {
+              setFranchiseNavigateView(view);
+              syncNestedView("franchise", view);
+            }}
           />
         </section>
       ) : null}
@@ -417,6 +461,10 @@ export function AdminDashboard({ user, onLogout }: Props) {
             saving={saving}
             navigateToView={cateringNavigateView}
             openOrderId={cateringOpenOrderId}
+            onViewChange={(view) => {
+              setCateringNavigateView(view);
+              syncNestedView("catering", view);
+            }}
           />
         </section>
       ) : null}
@@ -443,7 +491,14 @@ export function AdminDashboard({ user, onLogout }: Props) {
 
       {activeTab === "tellingen" ? (
         <section className="ta-panel ta-fade-in ta-panel-entra">
-          <TellingenPanel locations={content.locations} />
+          <TellingenPanel
+            locations={content.locations}
+            initialView={tellingenNavigateView}
+            onViewChange={(view) => {
+              setTellingenNavigateView(view);
+              syncNestedView("tellingen", view);
+            }}
+          />
         </section>
       ) : null}
 
@@ -457,6 +512,12 @@ export function AdminDashboard({ user, onLogout }: Props) {
             saving={saving}
             allowedViews={siteSettingViews}
             initialView={siteSettingsNavigateView}
+            integrationsSubView={integrationsSubView}
+            onViewChange={(view, sub = null) => {
+              setSiteSettingsNavigateView(view);
+              setIntegrationsSubView(view === "integrations" ? sub : null);
+              syncNestedView("siteSettings", view, view === "integrations" ? sub : null);
+            }}
           />
         </section>
       ) : null}
@@ -559,7 +620,13 @@ export function AdminDashboard({ user, onLogout }: Props) {
                     <IconMenu width={20} height={20} />
                   </button>
                   <div>
-                    <span className="ta-main-head-eyebrow">Tres Amigos Admin</span>
+                    <nav className="ta-main-breadcrumbs" aria-label="Broodkruimels">
+                      <span>Admin</span>
+                      <span className="ta-crumb-sep" aria-hidden="true">
+                        /
+                      </span>
+                      <strong>{activeLabel}</strong>
+                    </nav>
                     <h1>{activeLabel}</h1>
                   </div>
                 </div>

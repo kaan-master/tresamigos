@@ -78,6 +78,8 @@ export class MailService {
   private readonly logger = new Logger(MailService.name);
   private cachedConfig: MailConfig | null | undefined;
   private cacheAt = 0;
+  private cachedOAuthCreds: { clientId: string; clientSecret: string; source: "db" | "env" | "none" } | null = null;
+  private oauthCredsAt = 0;
   private readonly oauthStateMemory = new Map<string, number>();
   private readonly oauthPayloadMemory = new Map<string, OAuthStatePayload>();
 
@@ -89,22 +91,52 @@ export class MailService {
   invalidateCache() {
     this.cachedConfig = undefined;
     this.cacheAt = 0;
+    this.cachedOAuthCreds = null;
+    this.oauthCredsAt = 0;
   }
 
   isEnvConfigured() {
     return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
   }
 
-  isGoogleOAuthConfigured() {
-    return Boolean(this.googleClientId() && this.googleClientSecret());
-  }
-
-  googleClientId() {
+  private envGoogleClientId() {
     return process.env.GOOGLE_MAIL_CLIENT_ID || process.env.GOOGLE_OAUTH_CLIENT_ID || "";
   }
 
-  googleClientSecret() {
+  private envGoogleClientSecret() {
     return process.env.GOOGLE_MAIL_CLIENT_SECRET || process.env.GOOGLE_OAUTH_CLIENT_SECRET || "";
+  }
+
+  async resolveGoogleOAuthCreds() {
+    const now = Date.now();
+    if (this.cachedOAuthCreds && now - this.oauthCredsAt < 15_000) {
+      return this.cachedOAuthCreds;
+    }
+    try {
+      const row = await this.prisma.integrationSettings.findUnique({ where: { id: "primary" } });
+      const dbId = String(row?.mailRelayGoogleClientId || "").trim();
+      const dbSecret = String(row?.mailRelayGoogleClientSecret || "").trim();
+      if (dbId && dbSecret) {
+        this.cachedOAuthCreds = { clientId: dbId, clientSecret: dbSecret, source: "db" };
+        this.oauthCredsAt = now;
+        return this.cachedOAuthCreds;
+      }
+    } catch {
+      /* fall through to env */
+    }
+    const envId = this.envGoogleClientId();
+    const envSecret = this.envGoogleClientSecret();
+    this.cachedOAuthCreds =
+      envId && envSecret
+        ? { clientId: envId, clientSecret: envSecret, source: "env" }
+        : { clientId: envId || "", clientSecret: envSecret || "", source: "none" };
+    this.oauthCredsAt = now;
+    return this.cachedOAuthCreds;
+  }
+
+  async isGoogleOAuthConfigured() {
+    const creds = await this.resolveGoogleOAuthCreds();
+    return Boolean(creds.clientId && creds.clientSecret);
   }
 
   googleRedirectUri(requestOrigin?: string) {
@@ -327,9 +359,10 @@ export class MailService {
   }
 
   private async refreshGoogleToken(refreshToken: string) {
+    const creds = await this.resolveGoogleOAuthCreds();
     const body = new URLSearchParams({
-      client_id: this.googleClientId(),
-      client_secret: this.googleClientSecret(),
+      client_id: creds.clientId,
+      client_secret: creds.clientSecret,
       refresh_token: refreshToken,
       grant_type: "refresh_token"
     });
@@ -366,14 +399,15 @@ export class MailService {
     return nodemailer.createTransport(options);
   }
 
-  private createGoogleTransport(config: GoogleConfig) {
+  private async createGoogleTransport(config: GoogleConfig) {
+    const creds = await this.resolveGoogleOAuthCreds();
     const options: SMTPTransport.Options = {
       service: "gmail",
       auth: {
         type: "OAuth2",
         user: config.email,
-        clientId: this.googleClientId(),
-        clientSecret: this.googleClientSecret(),
+        clientId: creds.clientId,
+        clientSecret: creds.clientSecret,
         refreshToken: config.refreshToken,
         accessToken: config.accessToken
       }
@@ -390,7 +424,8 @@ export class MailService {
       this.logger.warn("SMTP/Gmail niet geconfigureerd — mail niet verstuurd.");
       return null;
     }
-    const transport = config.kind === "google" ? this.createGoogleTransport(config) : this.createSmtpTransport(config);
+    const transport =
+      config.kind === "google" ? await this.createGoogleTransport(config) : this.createSmtpTransport(config);
     return fn(transport, config);
   }
 
@@ -537,11 +572,12 @@ export class MailService {
     requestOrigin?: string,
     options?: { category?: MailNotifyCategory; loginHint?: string }
   ) {
-    if (!this.isGoogleOAuthConfigured()) {
+    if (!(await this.isGoogleOAuthConfigured())) {
       throw new Error(
-        "Google OAuth ontbreekt. Zet GOOGLE_MAIL_CLIENT_ID en GOOGLE_MAIL_CLIENT_SECRET in .env."
+        "Google OAuth ontbreekt. Vul Client ID en Secret in bij Koppelingen → E-mail, of zet GOOGLE_MAIL_CLIENT_ID/SECRET in .env."
       );
     }
+    const creds = await this.resolveGoogleOAuthCreds();
     const state = createHash("sha256").update(randomBytes(32)).digest("hex");
     const key = this.oauthStateKey(state);
     const payload: OAuthStatePayload = {
@@ -556,7 +592,7 @@ export class MailService {
     }
 
     const params = new URLSearchParams({
-      client_id: this.googleClientId(),
+      client_id: creds.clientId,
       redirect_uri: this.googleRedirectUri(requestOrigin),
       response_type: "code",
       scope: `${GMAIL_SEND_SCOPE} ${USERINFO_SCOPE}`,
@@ -608,10 +644,11 @@ export class MailService {
     }
     if (!code) throw new Error("Google gaf geen autorisatiecode.");
 
+    const creds = await this.resolveGoogleOAuthCreds();
     const tokenBody = new URLSearchParams({
       code,
-      client_id: this.googleClientId(),
-      client_secret: this.googleClientSecret(),
+      client_id: creds.clientId,
+      client_secret: creds.clientSecret,
       redirect_uri: this.googleRedirectUri(requestOrigin),
       grant_type: "authorization_code"
     });

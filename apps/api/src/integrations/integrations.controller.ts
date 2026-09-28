@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, Put, Query, Req, Res, UseGuards } from "@nestjs/common";
 import type { Response } from "express";
 import type {
+  ClearGoogleOAuthSecretInput,
   IntegrationTestMailInput,
   UpdateIntegrationGoogleAdsInput,
   UpdateIntegrationMailRelayInput,
@@ -27,6 +28,12 @@ export class AdminIntegrationsController {
   @RequirePermissions("integrations")
   updateMailRelay(@Body() body: UpdateIntegrationMailRelayInput) {
     return this.integrationsService.updateMailRelay(body).then((integrations) => ({ integrations }));
+  }
+
+  @Post("integrations/mailrelay/google/clear-secret")
+  @RequirePermissions("integrations")
+  clearGoogleSecret(@Body() body: ClearGoogleOAuthSecretInput) {
+    return this.integrationsService.clearGoogleOAuthSecret(body).then((integrations) => ({ integrations }));
   }
 
   @Put("integrations/google-ads")
@@ -99,7 +106,9 @@ export class PublicIntegrationsController {
       );
       const adminBase = (process.env.ADMIN_PUBLIC_URL || "http://localhost:5181").replace(/\/$/, "");
       const path = adminBase.includes("/admin") ? "" : "/admin/";
-      return res.redirect(`${adminBase}${path}?googleMail=error&message=${message}`);
+      return res.redirect(
+        `${adminBase}${path}?tab=siteSettings&view=integrations&sub=mail&googleMail=error&message=${message}`
+      );
     }
   }
 }

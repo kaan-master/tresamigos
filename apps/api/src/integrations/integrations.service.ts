@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import type {
+  ClearGoogleOAuthSecretInput,
   IntegrationGoogleByCategory,
   IntegrationMailNotifications,
   IntegrationTestMailInput,
@@ -78,8 +79,18 @@ export class IntegrationsService {
     return "smtp";
   }
 
+  private maskSecret(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    if (trimmed.length <= 8) return "••••••••";
+    return `${trimmed.slice(0, 4)}••••${trimmed.slice(-4)}`;
+  }
+
   async getSettings() {
     const row = await this.getOrCreate();
+    const oauth = await this.mailService.resolveGoogleOAuthCreds();
+    const dbSecret = String(row.mailRelayGoogleClientSecret || "").trim();
+    const dbClientId = String(row.mailRelayGoogleClientId || "").trim();
     return {
       mailRelay: {
         enabled: row.mailRelayEnabled,
@@ -97,7 +108,15 @@ export class IntegrationsService {
         envFallbackConfigured: this.mailService.isEnvConfigured(),
         googleConnected: Boolean(row.mailRelayGoogleRefreshToken && row.mailRelayGoogleEmail),
         googleEmail: row.mailRelayGoogleEmail,
-        googleOAuthConfigured: this.mailService.isGoogleOAuthConfigured(),
+        googleOAuthConfigured: Boolean(oauth.clientId && oauth.clientSecret),
+        googleOAuthSource: oauth.source,
+        googleClientId: dbClientId || (oauth.source === "env" ? oauth.clientId : ""),
+        googleClientSecretSet: Boolean(dbSecret) || oauth.source === "env",
+        googleClientSecretMasked: dbSecret
+          ? this.maskSecret(dbSecret)
+          : oauth.source === "env"
+            ? "•••••••• (env)"
+            : "",
         googleByCategory: this.mailService.publicGoogleByCategory(row.mailRelayGoogleByCategory) as IntegrationGoogleByCategory,
         notifications: this.notificationsFromRow(row)
       },
@@ -191,11 +210,40 @@ export class IntegrationsService {
       );
     }
 
+    if (input.googleClientId !== undefined) {
+      data.mailRelayGoogleClientId = cleanText(input.googleClientId, "", 300);
+    }
+
+    // Secret mag hier ALLEEN gezet/overschreven worden met een niet-lege waarde.
+    // Leeg laten of clearen via PUT wordt bewust genegeerd — alleen clearGoogleOAuthSecret.
+    if (input.googleClientSecret !== undefined) {
+      const secret = String(input.googleClientSecret || "").trim();
+      if (secret) {
+        data.mailRelayGoogleClientSecret = secret;
+      }
+    }
+
     await this.prisma.integrationSettings.update({
       where: { id: PRIMARY_ID },
       data
     });
 
+    this.mailService.invalidateCache();
+    return this.getSettings();
+  }
+
+  async clearGoogleOAuthSecret(input: ClearGoogleOAuthSecretInput) {
+    const confirmation = String(input?.confirmation || "").trim();
+    if (confirmation !== "bevestig") {
+      throw new BadRequestException({
+        message: 'Secret wissen geweigerd. Typ exact "bevestig" — andere tekst wordt niet geaccepteerd.'
+      });
+    }
+
+    await this.prisma.integrationSettings.update({
+      where: { id: PRIMARY_ID },
+      data: { mailRelayGoogleClientSecret: "" }
+    });
     this.mailService.invalidateCache();
     return this.getSettings();
   }
@@ -253,7 +301,7 @@ export class IntegrationsService {
     const adminBase = this.mailService.adminRedirectBase();
     const path = adminBase.includes("/admin") ? "" : "/admin/";
     const category = result.category ? `&category=${encodeURIComponent(result.category)}` : "";
-    return `${adminBase}${path}?googleMail=connected&email=${encodeURIComponent(result.email)}${category}`;
+    return `${adminBase}${path}?tab=siteSettings&view=integrations&sub=mail&googleMail=connected&email=${encodeURIComponent(result.email)}${category}`;
   }
 
   async testMailRelay(input: IntegrationTestMailInput) {

@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Res, UnauthorizedException, UseGuards } from "@nestjs/common";
+import type { Response } from "express";
 import type {
   CreateFranchiseAccountInput,
   CreateFranchiseShopOrderInput,
@@ -127,5 +128,23 @@ export class AdminFranchiseShopController {
   @RequirePermissions("franchiseShop")
   updateOrder(@Param("id") id: string, @Body() body: UpdateFranchiseShopOrderInput) {
     return this.shop.updateOrder(id, body);
+  }
+
+  @Get("orders/:id/invoice.pdf")
+  @RequirePermissions("franchiseShop")
+  async invoicePdf(@Param("id") id: string, @Res() res: Response) {
+    const doc = await this.shop.getOrderDocument(id, "invoice");
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${doc.filename}"`);
+    res.send(doc.buffer);
+  }
+
+  @Get("orders/:id/packing-slip.pdf")
+  @RequirePermissions("franchiseShop")
+  async packingSlipPdf(@Param("id") id: string, @Res() res: Response) {
+    const doc = await this.shop.getOrderDocument(id, "packing-slip");
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${doc.filename}"`);
+    res.send(doc.buffer);
   }
 }

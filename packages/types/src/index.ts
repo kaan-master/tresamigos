@@ -743,6 +743,10 @@ export interface IntegrationMailRelaySettings {
   googleConnected: boolean;
   googleEmail: string;
   googleOAuthConfigured: boolean;
+  googleOAuthSource: "db" | "env" | "none";
+  googleClientId: string;
+  googleClientSecretSet: boolean;
+  googleClientSecretMasked: string;
   googleByCategory: IntegrationGoogleByCategory;
   notifications: IntegrationMailNotifications;
 }
@@ -785,6 +789,13 @@ export interface UpdateIntegrationMailRelayInput {
   notifications?: Partial<IntegrationMailNotifications>;
   disconnectGoogle?: boolean;
   disconnectGoogleCategory?: MailNotifyCategory;
+  googleClientId?: string;
+  googleClientSecret?: string;
+}
+
+export interface ClearGoogleOAuthSecretInput {
+  /** Exact "bevestig" — enige geaccepteerde bevestigingstekst. */
+  confirmation: string;
 }
 
 export interface UpdateIntegrationGoogleAdsInput {
@@ -952,6 +963,7 @@ export type CateringOrderStatus = (typeof CATERING_ORDER_STATUSES)[number];
 export interface CateringOrder {
   id: string;
   orderNumber: string;
+  invoiceNumber: string;
   createdAt: string;
   updatedAt: string;
   status: CateringOrderStatus;
@@ -975,6 +987,7 @@ export interface CateringOrder {
   phone: string;
   company: string;
   vatId: string;
+  kvk: string;
   adminNotes: string;
 }
 
@@ -991,6 +1004,7 @@ export interface CreateCateringOrderInput {
   phone?: string;
   company?: string;
   vatId?: string;
+  kvk?: string;
   notes?: string;
   /** @deprecated legacy single-box flow */
   boxId?: CateringBoxId;
@@ -1244,6 +1258,9 @@ export interface FranchiseAccount {
   locationId: string;
   locationName: string;
   locationCode: string;
+  company: string;
+  vatId: string;
+  kvk: string;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -1254,6 +1271,9 @@ export interface CreateFranchiseAccountInput {
   name: string;
   password: string;
   locationId: string;
+  company?: string;
+  vatId?: string;
+  kvk?: string;
   active?: boolean;
 }
 
@@ -1262,6 +1282,9 @@ export interface UpdateFranchiseAccountInput {
   name?: string;
   password?: string;
   locationId?: string;
+  company?: string;
+  vatId?: string;
+  kvk?: string;
   active?: boolean;
 }
 
@@ -1317,6 +1340,9 @@ export interface FranchiseShopOrder {
   accountId: string;
   accountName: string;
   accountEmail: string;
+  accountCompany: string;
+  accountVatId: string;
+  accountKvk: string;
   locationId: string;
   locationName: string;
   locationCode: string;

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type {
   CateringBoxId,
   CateringFulfillment,
@@ -18,6 +18,7 @@ import {
   sanitizeUpdateCateringOrderInput
 } from "@tresamigos/utils";
 import { ContentService } from "../content/content.service";
+import { buildOrderPdf, pdfFilename, type PdfDocKind } from "../documents/order-pdf";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.module";
 
@@ -32,6 +33,7 @@ export class CateringService {
   private toDto(record: {
     id: string;
     orderNumber: string;
+    invoiceNumber?: string;
     createdAt: Date;
     updatedAt: Date;
     status: string;
@@ -55,11 +57,13 @@ export class CateringService {
     phone: string;
     company: string;
     vatId: string;
+    kvk?: string;
     adminNotes: string;
   }): CateringOrder {
     return sanitizeCateringOrder({
       id: record.id,
       orderNumber: record.orderNumber,
+      invoiceNumber: record.invoiceNumber || "",
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
       status: record.status as CateringOrderStatus,
@@ -83,6 +87,7 @@ export class CateringService {
       phone: record.phone,
       company: record.company,
       vatId: record.vatId || "",
+      kvk: record.kvk || "",
       adminNotes: record.adminNotes
     });
   }
@@ -90,6 +95,12 @@ export class CateringService {
   private async nextOrderNumber() {
     const count = await this.prisma.cateringOrder.count();
     return `CAT-${String(count + 1).padStart(5, "0")}`;
+  }
+
+  private async nextInvoiceNumber() {
+    const count = await this.prisma.cateringOrder.count({ where: { invoiceNumber: { not: "" } } });
+    const year = new Date().getFullYear();
+    return `CAT-INV-${year}-${String(count + 1).padStart(4, "0")}`;
   }
 
   private resolveLocationName(content: SiteContent, locationId: string) {
@@ -107,6 +118,9 @@ export class CateringService {
     }
     if (order.company && !order.vatId) {
       throw new BadRequestException({ message: "Vul een BTW-nummer in bij een bedrijfsbestelling." });
+    }
+    if (order.company && !order.kvk) {
+      throw new BadRequestException({ message: "Vul een KvK-nummer in bij een bedrijfsbestelling." });
     }
     if (!order.eventDate || !order.eventTime) {
       throw new BadRequestException({ message: "Kies een datum en tijd." });
@@ -158,9 +172,13 @@ export class CateringService {
       ? order.items.reduce((sum, line) => sum + line.servings * line.quantity, 0)
       : order.quantity;
 
+    const orderNumber = await this.nextOrderNumber();
+    const invoiceNumber = await this.nextInvoiceNumber();
+
     const record = await this.prisma.cateringOrder.create({
       data: {
-        orderNumber: await this.nextOrderNumber(),
+        orderNumber,
+        invoiceNumber,
         status: "nieuw",
         items: JSON.parse(JSON.stringify(order.items)),
         subtotalCents: isCartOrder ? order.subtotalCents : 0,
@@ -181,7 +199,8 @@ export class CateringService {
         email: order.email,
         phone: order.phone,
         company: order.company,
-        vatId: order.vatId
+        vatId: order.vatId,
+        kvk: order.kvk
       } as unknown as Parameters<typeof this.prisma.cateringOrder.create>[0]["data"]
     });
 
@@ -263,6 +282,8 @@ export class CateringService {
         `Telefoon: ${order.phone || "-"}`,
         order.company ? `Bedrijf: ${order.company}` : "",
         order.company && order.vatId ? `BTW-id: ${order.vatId}` : "",
+        order.company && order.kvk ? `KvK: ${order.kvk}` : "",
+        order.invoiceNumber ? `Factuur: ${order.invoiceNumber}` : "",
         order.notes ? `Opmerkingen: ${order.notes}` : ""
       ]
         .filter(Boolean)
@@ -297,6 +318,83 @@ export class CateringService {
     });
 
     return this.toDto(record);
+  }
+
+  async getOrderDocument(id: string, kind: PdfDocKind) {
+    const record = await this.prisma.cateringOrder.findUnique({ where: { id } });
+    if (!record) throw new NotFoundException({ message: "Cateringbestelling niet gevonden." });
+
+    let invoiceNumber = record.invoiceNumber || "";
+    if (kind === "invoice" && !invoiceNumber) {
+      invoiceNumber = await this.nextInvoiceNumber();
+      await this.prisma.cateringOrder.update({ where: { id }, data: { invoiceNumber } });
+    }
+
+    const order = this.toDto({ ...record, invoiceNumber });
+    const lines =
+      order.items.length > 0
+        ? order.items.map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+            unitPriceCents: item.unitPriceCents,
+            lineTotalCents: item.lineTotalCents,
+            detail: Object.entries(item.configuration || {})
+              .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+              .join(" · ")
+          }))
+        : [
+            {
+              name: `Catering ${order.boxId}`,
+              quantity: order.quantity,
+              unitPriceCents: 0,
+              lineTotalCents: order.subtotalCents,
+              detail: [
+                order.proteins.length ? `Eiwitten: ${order.proteins.join(", ")}` : "",
+                order.toppings.length ? `Toppings: ${order.toppings.join(", ")}` : "",
+                order.salsas.length ? `Salsa's: ${order.salsas.join(", ")}` : ""
+              ]
+                .filter(Boolean)
+                .join(" · ")
+            }
+          ];
+
+    const buffer = await buildOrderPdf({
+      kind,
+      channel: "catering",
+      title: kind === "invoice" ? "Factuur" : "Pakbon",
+      orderNumber: order.orderNumber,
+      invoiceNumber: order.invoiceNumber || undefined,
+      createdAt: order.createdAt,
+      statusLabel: order.status,
+      notes: order.notes || order.adminNotes || undefined,
+      customer: {
+        name: order.name,
+        email: order.email,
+        phone: order.phone,
+        company: order.company,
+        vatId: order.vatId,
+        kvk: order.kvk,
+        address: order.fulfillment === "delivery" ? order.address : undefined,
+        locationLabel:
+          order.fulfillment === "pickup"
+            ? `Afhalen · ${order.locationName || order.locationId || "—"}`
+            : "Bezorgen"
+      },
+      lines,
+      subtotalCents: order.subtotalCents,
+      meta: [
+        { label: "Event", value: `${order.eventDate} ${order.eventTime}`.trim() },
+        {
+          label: "Afhandeling",
+          value: order.fulfillment === "pickup" ? "Afhalen" : "Bezorgen"
+        }
+      ]
+    });
+
+    return {
+      buffer,
+      filename: pdfFilename(kind, kind === "invoice" ? order.invoiceNumber || order.orderNumber : order.orderNumber)
+    };
   }
 
   async getSettings(): Promise<CateringSettings> {

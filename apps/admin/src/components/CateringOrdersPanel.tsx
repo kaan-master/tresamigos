@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CateringOrder, CateringOrderStatus } from "@tresamigos/types";
 import { useAdminFeedback } from "../context/AdminFeedbackContext";
-import { api } from "../lib/api";
+import { api, downloadPdf } from "../lib/api";
 import {
   DateFilterPreset,
   formatConfiguration,
@@ -41,7 +41,7 @@ function sortOrders(orders: CateringOrder[], sortMode: SortMode) {
 }
 
 export function CateringOrdersPanel({ orders, onOrdersChange, isActive, initialSelectedId = null }: Props) {
-  const { runSave } = useAdminFeedback();
+  const { runSave, notifyError } = useAdminFeedback();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("incoming");
   const [periodFilter, setPeriodFilter] = useState<DateFilterPreset>("upcoming");
@@ -163,6 +163,27 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive, initialS
 
   function printOrder() {
     window.print();
+  }
+
+  async function downloadInvoicePdf() {
+    if (!selected) return;
+    try {
+      await downloadPdf(
+        `/api/admin/catering-orders/${selected.id}/invoice.pdf`,
+        `factuur-${selected.invoiceNumber || selected.orderNumber}.pdf`
+      );
+    } catch (error) {
+      notifyError(error instanceof Error ? error.message : "Factuur downloaden mislukt.");
+    }
+  }
+
+  async function downloadPackingSlipPdf() {
+    if (!selected) return;
+    try {
+      await downloadPdf(`/api/admin/catering-orders/${selected.id}/packing-slip.pdf`, `pakbon-${selected.orderNumber}.pdf`);
+    } catch (error) {
+      notifyError(error instanceof Error ? error.message : "Pakbon downloaden mislukt.");
+    }
   }
 
   return (
@@ -294,6 +315,12 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive, initialS
                 Annuleren
               </button>
             ) : null}
+            <button className="ta-btn ta-btn-ghost" type="button" onClick={() => void downloadInvoicePdf()}>
+              Factuur PDF
+            </button>
+            <button className="ta-btn ta-btn-ghost" type="button" onClick={() => void downloadPackingSlipPdf()}>
+              Pakbon PDF
+            </button>
             <button className="ta-btn ta-btn-ghost" type="button" onClick={printOrder}>
               Print bon
             </button>
@@ -318,8 +345,12 @@ export function CateringOrdersPanel({ orders, onOrdersChange, isActive, initialS
                 <>
                   <span>BTW-id</span>
                   <strong>{selected.vatId || "—"}</strong>
+                  <span>KvK</span>
+                  <strong>{selected.kvk || "—"}</strong>
                 </>
               ) : null}
+              <span>Factuurnummer</span>
+              <strong>{selected.invoiceNumber || "—"}</strong>
             </div>
           </section>
 

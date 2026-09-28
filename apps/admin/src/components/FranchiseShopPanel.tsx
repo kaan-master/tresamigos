@@ -6,9 +6,11 @@ import type {
   FranchiseShopProduct,
   SiteContent
 } from "@tresamigos/types";
-import { api } from "../lib/api";
+import { api, downloadPdf } from "../lib/api";
+import { mediaAssetUrl } from "../lib/media";
 import { useAdminFeedback } from "../context/AdminFeedbackContext";
 import { AdminListRow, AdminSearchBar } from "./AdminListUi";
+import { MediaField } from "./MediaPickerModal";
 
 export type FranchiseShopView = "products" | "accounts" | "orders";
 
@@ -28,34 +30,6 @@ const STATUS_LABELS: Record<FranchiseShopOrderStatus, string> = {
 
 function formatEuro(cents: number) {
   return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(cents / 100);
-}
-
-function printDocument(title: string, bodyHtml: string) {
-  const popup = window.open("", "_blank", "noopener,noreferrer,width=900,height=1100");
-  if (!popup) return;
-  popup.document.write(`<!doctype html><html><head><title>${title}</title>
-<style>
-  body{font-family:Arial,sans-serif;color:#111;margin:32px;line-height:1.45}
-  h1{font-size:22px;margin:0 0 8px} h2{font-size:16px;margin:24px 0 8px}
-  table{width:100%;border-collapse:collapse;margin-top:12px}
-  th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left;font-size:13px}
-  th{background:#f5f5f5} .muted{color:#666;font-size:13px}
-  .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin-top:16px}
-  .meta div{font-size:13px} .total{font-weight:700;font-size:15px;margin-top:16px}
-  @media print{body{margin:12mm}}
-</style></head><body>${bodyHtml}<script>window.onload=()=>window.print()</script></body></html>`);
-  popup.document.close();
-}
-
-function orderLinesTable(order: FranchiseShopOrder) {
-  return `<table><thead><tr><th>Product</th><th>Aantal</th><th>Prijs</th><th>Totaal</th></tr></thead><tbody>
-    ${order.items
-      .map(
-        (item) =>
-          `<tr><td>${item.productName}</td><td>${item.quantity}</td><td>${formatEuro(item.unitPriceCents)}</td><td>${formatEuro(item.lineTotalCents)}</td></tr>`
-      )
-      .join("")}
-  </tbody></table>`;
 }
 
 export function FranchiseShopPanel({ content, view }: Props) {
@@ -82,6 +56,9 @@ export function FranchiseShopPanel({ content, view }: Props) {
     email: "",
     password: "",
     locationId: content.locations[0]?.id || "",
+    company: "",
+    vatId: "",
+    kvk: "",
     active: true
   });
   const [orderStatus, setOrderStatus] = useState<FranchiseShopOrderStatus>("nieuw");
@@ -151,6 +128,9 @@ export function FranchiseShopPanel({ content, view }: Props) {
         email: "",
         password: "",
         locationId: locations[0]?.id || "",
+        company: "",
+        vatId: "",
+        kvk: "",
         active: true
       });
       return;
@@ -160,6 +140,9 @@ export function FranchiseShopPanel({ content, view }: Props) {
       email: selectedAccount.email,
       password: "",
       locationId: selectedAccount.locationId,
+      company: selectedAccount.company || "",
+      vatId: selectedAccount.vatId || "",
+      kvk: selectedAccount.kvk || "",
       active: selectedAccount.active
     });
   }, [selectedAccount, locations]);
@@ -250,6 +233,9 @@ export function FranchiseShopPanel({ content, view }: Props) {
             name: accountForm.name,
             email: accountForm.email,
             locationId: accountForm.locationId,
+            company: accountForm.company,
+            vatId: accountForm.vatId,
+            kvk: accountForm.kvk,
             active: accountForm.active,
             ...(accountForm.password ? { password: accountForm.password } : {})
           })
@@ -277,41 +263,20 @@ export function FranchiseShopPanel({ content, view }: Props) {
     });
   }
 
-  function printInvoice(order: FranchiseShopOrder) {
-    printDocument(
-      `Factuur ${order.invoiceNumber || order.orderNumber}`,
-      `<h1>Factuur</h1>
-      <p class="muted">Tres Amigos Franchise Shop</p>
-      <div class="meta">
-        <div><strong>Factuurnummer</strong><br>${order.invoiceNumber || "—"}</div>
-        <div><strong>Order</strong><br>${order.orderNumber}</div>
-        <div><strong>Datum</strong><br>${new Date(order.createdAt).toLocaleString("nl-NL")}</div>
-        <div><strong>Status</strong><br>${STATUS_LABELS[order.status]}</div>
-        <div><strong>Franchise</strong><br>${order.locationCode} ${order.locationName}</div>
-        <div><strong>Contact</strong><br>${order.accountName}<br>${order.accountEmail}</div>
-      </div>
-      ${orderLinesTable(order)}
-      <p class="total">Totaal: ${formatEuro(order.subtotalCents)}</p>
-      ${order.notes ? `<p class="muted">Opmerking klant: ${order.notes}</p>` : ""}`
-    );
+  async function downloadInvoice(order: FranchiseShopOrder) {
+    try {
+      await downloadPdf(`/api/admin/franchise-shop/orders/${order.id}/invoice.pdf`, `factuur-${order.invoiceNumber || order.orderNumber}.pdf`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Factuur downloaden mislukt.");
+    }
   }
 
-  function printPackingSlip(order: FranchiseShopOrder) {
-    printDocument(
-      `Pakbon ${order.orderNumber}`,
-      `<h1>Pakbon</h1>
-      <p class="muted">Tres Amigos Franchise Shop</p>
-      <div class="meta">
-        <div><strong>Order</strong><br>${order.orderNumber}</div>
-        <div><strong>Datum</strong><br>${new Date(order.createdAt).toLocaleString("nl-NL")}</div>
-        <div><strong>Bestemming</strong><br>${order.locationCode} ${order.locationName}</div>
-        <div><strong>Contact</strong><br>${order.accountName}<br>${order.accountEmail}</div>
-      </div>
-      <table><thead><tr><th>Product</th><th>Aantal</th><th>Geleverd</th></tr></thead><tbody>
-        ${order.items.map((item) => `<tr><td>${item.productName}</td><td>${item.quantity}</td><td>□</td></tr>`).join("")}
-      </tbody></table>
-      ${order.notes ? `<p class="muted">Opmerking: ${order.notes}</p>` : ""}`
-    );
+  async function downloadPackingSlip(order: FranchiseShopOrder) {
+    try {
+      await downloadPdf(`/api/admin/franchise-shop/orders/${order.id}/packing-slip.pdf`, `pakbon-${order.orderNumber}.pdf`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Pakbon downloaden mislukt.");
+    }
   }
 
   return (
@@ -334,6 +299,7 @@ export function FranchiseShopPanel({ content, view }: Props) {
                   title={item.name}
                   meta={`${item.sku || "geen SKU"} · ${Object.keys(item.prices).length} prijzen`}
                   badge={item.active ? "Actief" : "Uit"}
+                  thumb={item.image ? mediaAssetUrl(item.image) : undefined}
                   active={item.id === selectedProductId}
                   onClick={() => setSelectedProductId(item.id)}
                 />
@@ -344,6 +310,12 @@ export function FranchiseShopPanel({ content, view }: Props) {
             <h3 className="ta-section-title">{selectedProduct ? "Product bewerken" : "Nieuw product"}</h3>
             <form onSubmit={(event) => void saveProduct(event)}>
               <div className="ta-grid">
+                <MediaField
+                  label="Afbeelding"
+                  value={productForm.image}
+                  placeholder="Kies of upload via media library"
+                  onChange={(image) => setProductForm((c) => ({ ...c, image }))}
+                />
                 <label className="ta-field">
                   <span>Naam</span>
                   <input required value={productForm.name} onChange={(e) => setProductForm((c) => ({ ...c, name: e.target.value }))} />
@@ -409,7 +381,7 @@ export function FranchiseShopPanel({ content, view }: Props) {
                 <AdminListRow
                   key={item.id}
                   title={item.name}
-                  meta={`${item.email} · ${item.locationCode} ${item.locationName}`}
+                  meta={`${item.email} · ${item.locationCode} ${item.locationName}${item.company ? ` · ${item.company}` : ""}`}
                   badge={item.active ? "Actief" : "Uit"}
                   active={item.id === selectedAccountId}
                   onClick={() => setSelectedAccountId(item.id)}
@@ -449,6 +421,30 @@ export function FranchiseShopPanel({ content, view }: Props) {
                     ))}
                   </select>
                 </label>
+                <label className="ta-field">
+                  <span>Bedrijfsnaam</span>
+                  <input
+                    value={accountForm.company}
+                    onChange={(e) => setAccountForm((c) => ({ ...c, company: e.target.value }))}
+                    placeholder="Optioneel / voor facturen"
+                  />
+                </label>
+                <label className="ta-field">
+                  <span>BTW-id</span>
+                  <input
+                    value={accountForm.vatId}
+                    onChange={(e) => setAccountForm((c) => ({ ...c, vatId: e.target.value.toUpperCase() }))}
+                    placeholder="NL000000000B01"
+                  />
+                </label>
+                <label className="ta-field">
+                  <span>KvK-nummer</span>
+                  <input
+                    value={accountForm.kvk}
+                    onChange={(e) => setAccountForm((c) => ({ ...c, kvk: e.target.value }))}
+                    placeholder="12345678"
+                  />
+                </label>
               </div>
               <label className="ta-toggle">
                 <input type="checkbox" checked={accountForm.active} onChange={(e) => setAccountForm((c) => ({ ...c, active: e.target.checked }))} />
@@ -486,11 +482,11 @@ export function FranchiseShopPanel({ content, view }: Props) {
               <div className="ta-toolbar ta-toolbar-spread">
                 <h3 className="ta-section-title">{selectedOrder.orderNumber}</h3>
                 <div className="ta-toolbar">
-                  <button className="ta-btn ta-btn-ghost" type="button" onClick={() => printInvoice(selectedOrder)}>
-                    Factuur
+                  <button className="ta-btn ta-btn-ghost" type="button" onClick={() => void downloadInvoice(selectedOrder)}>
+                    Factuur PDF
                   </button>
-                  <button className="ta-btn ta-btn-ghost" type="button" onClick={() => printPackingSlip(selectedOrder)}>
-                    Pakbon
+                  <button className="ta-btn ta-btn-ghost" type="button" onClick={() => void downloadPackingSlip(selectedOrder)}>
+                    Pakbon PDF
                   </button>
                 </div>
               </div>
@@ -506,6 +502,19 @@ export function FranchiseShopPanel({ content, view }: Props) {
                 <label className="ta-field">
                   <span>Contact</span>
                   <input readOnly value={`${selectedOrder.accountName} · ${selectedOrder.accountEmail}`} />
+                </label>
+                <label className="ta-field">
+                  <span>Bedrijf</span>
+                  <input readOnly value={selectedOrder.accountCompany || "—"} />
+                </label>
+                <label className="ta-field">
+                  <span>BTW / KvK</span>
+                  <input
+                    readOnly
+                    value={[selectedOrder.accountVatId || null, selectedOrder.accountKvk ? `KvK ${selectedOrder.accountKvk}` : null]
+                      .filter(Boolean)
+                      .join(" · ") || "—"}
+                  />
                 </label>
                 <label className="ta-field">
                   <span>Status</span>

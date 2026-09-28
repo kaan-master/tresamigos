@@ -12,6 +12,7 @@ interface Props extends PanelSaveProps {
   applications: Application[];
   onChange: (content: SiteContent) => void;
   initialView?: ApplicationsView | null;
+  onViewChange?: (view: ApplicationsView) => void;
 }
 
 export type ApplicationsView = "incoming" | "jobs" | "page";
@@ -513,17 +514,22 @@ function PageView({
   );
 }
 
-export function ApplicationsPanel({ content, applications, onChange, onSave, saving, initialView }: Props) {
+export function ApplicationsPanel({ content, applications, onChange, onSave, saving, initialView, onViewChange }: Props) {
   const [view, setView] = useState<ApplicationsView>(initialView || "incoming");
 
   useEffect(() => {
     if (initialView) setView(initialView);
   }, [initialView]);
 
+  function changeView(next: ApplicationsView) {
+    setView(next);
+    onViewChange?.(next);
+  }
+
   const copy = TITLES[view];
 
   return (
-    <EntraShell brand="Sollicitaties" items={NAV} view={view} onChange={setView} title={copy.title} subtitle={copy.subtitle}>
+    <EntraShell brand="Sollicitaties" items={NAV} view={view} onChange={changeView} title={copy.title} subtitle={copy.subtitle}>
       {view === "incoming" ? <IncomingView content={content} applications={applications} /> : null}
       {view === "jobs" ? <JobsView content={content} onChange={onChange} onSave={onSave} saving={saving} /> : null}
       {view === "page" ? <PageView content={content} onChange={onChange} onSave={onSave} saving={saving} /> : null}

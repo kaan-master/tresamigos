@@ -13,6 +13,7 @@ import {
   type UpdateFranchiseShopOrderInput,
   type UpdateFranchiseShopProductInput
 } from "@tresamigos/types";
+import { buildOrderPdf, pdfFilename, type PdfDocKind } from "../documents/order-pdf";
 import { FranchiseShopAuthService, type FranchiseShopSessionPayload } from "./franchise-shop-auth.service";
 import { PrismaService } from "../prisma/prisma.module";
 
@@ -39,6 +40,9 @@ export class FranchiseShopService {
     email: string;
     name: string;
     locationId: string;
+    company: string;
+    vatId: string;
+    kvk: string;
     active: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -51,6 +55,9 @@ export class FranchiseShopService {
       locationId: record.locationId,
       locationName: record.location.name,
       locationCode: record.location.code,
+      company: record.company || "",
+      vatId: record.vatId || "",
+      kvk: record.kvk || "",
       active: record.active,
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString()
@@ -97,7 +104,7 @@ export class FranchiseShopService {
     notes: string;
     adminNotes: string;
     subtotalCents: number;
-    account: { name: string; email: string };
+    account: { name: string; email: string; company?: string; vatId?: string; kvk?: string };
     items: Array<{
       id: string;
       productId: string;
@@ -121,6 +128,9 @@ export class FranchiseShopService {
       accountId: record.accountId,
       accountName: record.account.name,
       accountEmail: record.account.email,
+      accountCompany: record.account.company || "",
+      accountVatId: record.account.vatId || "",
+      accountKvk: record.account.kvk || "",
       locationId: record.locationId,
       locationName: record.locationName,
       locationCode: record.locationCode,
@@ -165,6 +175,9 @@ export class FranchiseShopService {
         name,
         passwordHash: this.auth.hash(password),
         locationId,
+        company: cleanText(input?.company, "", 160),
+        vatId: cleanText(input?.vatId, "", 40).toUpperCase(),
+        kvk: cleanText(input?.kvk, "", 40),
         active: input.active !== false
       },
       include: { location: true }
@@ -181,6 +194,9 @@ export class FranchiseShopService {
       name?: string;
       passwordHash?: string;
       locationId?: string;
+      company?: string;
+      vatId?: string;
+      kvk?: string;
       active?: boolean;
     } = {};
 
@@ -199,6 +215,9 @@ export class FranchiseShopService {
       if (!location) throw new BadRequestException({ message: "Vestiging niet gevonden." });
       data.locationId = input.locationId;
     }
+    if (input.company !== undefined) data.company = cleanText(input.company, "", 160);
+    if (input.vatId !== undefined) data.vatId = cleanText(input.vatId, "", 40).toUpperCase();
+    if (input.kvk !== undefined) data.kvk = cleanText(input.kvk, "", 40);
     if (input.active !== undefined) data.active = input.active;
 
     const record = await this.prisma.franchiseAccount.update({
@@ -411,5 +430,56 @@ export class FranchiseShopService {
       include: { account: true, items: true }
     });
     return { order: this.toOrderDto(record) };
+  }
+
+  async getOrderDocument(id: string, kind: PdfDocKind) {
+    const record = await this.prisma.franchiseShopOrder.findUnique({
+      where: { id },
+      include: { account: true, items: true }
+    });
+    if (!record) throw new NotFoundException({ message: "Bestelling niet gevonden." });
+
+    let invoiceNumber = record.invoiceNumber;
+    if (kind === "invoice" && !invoiceNumber) {
+      invoiceNumber = await this.nextInvoiceNumber();
+      await this.prisma.franchiseShopOrder.update({
+        where: { id },
+        data: { invoiceNumber }
+      });
+    }
+
+    const order = this.toOrderDto({ ...record, invoiceNumber });
+    const statusLabel = order.status;
+    const buffer = await buildOrderPdf({
+      kind,
+      channel: "franchise",
+      title: kind === "invoice" ? "Factuur" : "Pakbon",
+      orderNumber: order.orderNumber,
+      invoiceNumber: order.invoiceNumber || undefined,
+      createdAt: order.createdAt,
+      statusLabel,
+      notes: order.notes || order.adminNotes || undefined,
+      customer: {
+        name: order.accountName,
+        email: order.accountEmail,
+        company: order.accountCompany,
+        vatId: order.accountVatId,
+        kvk: order.accountKvk,
+        locationLabel: `${order.locationCode} ${order.locationName}`.trim()
+      },
+      lines: order.items.map((item) => ({
+        name: item.productName,
+        quantity: item.quantity,
+        unitPriceCents: item.unitPriceCents,
+        lineTotalCents: item.lineTotalCents
+      })),
+      subtotalCents: order.subtotalCents,
+      meta: [{ label: "Franchise", value: `${order.locationCode} ${order.locationName}`.trim() }]
+    });
+
+    return {
+      buffer,
+      filename: pdfFilename(kind, kind === "invoice" ? order.invoiceNumber || order.orderNumber : order.orderNumber)
+    };
   }
 }

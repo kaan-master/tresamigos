@@ -30,6 +30,7 @@ export function EntraShell<T extends string>({
   onChange,
   title,
   subtitle,
+  onBrandClick,
   children
 }: {
   brand: string;
@@ -39,8 +40,11 @@ export function EntraShell<T extends string>({
   onChange: (view: T) => void;
   title: string;
   subtitle?: string;
+  onBrandClick?: () => void;
   children: ReactNode;
 }) {
+  const active = items.find((item) => item.id === view);
+
   return (
     <div className="entra-shell">
       <aside className="entra-nav">
@@ -66,7 +70,23 @@ export function EntraShell<T extends string>({
       </aside>
       <div className="entra-main">
         <header className="entra-head">
-          <span>{brand}</span>
+          <nav className="entra-breadcrumbs" aria-label="Broodkruimels">
+            <span>Admin</span>
+            <span className="entra-crumb-sep" aria-hidden="true">
+              /
+            </span>
+            {onBrandClick ? (
+              <button type="button" className="entra-crumb-link" onClick={onBrandClick}>
+                {brand}
+              </button>
+            ) : (
+              <span>{brand}</span>
+            )}
+            <span className="entra-crumb-sep" aria-hidden="true">
+              /
+            </span>
+            <strong>{active?.label || title}</strong>
+          </nav>
           <h2>{title}</h2>
           {subtitle ? <p>{subtitle}</p> : null}
         </header>

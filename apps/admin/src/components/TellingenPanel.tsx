@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatStoreCode, type Location } from "@tresamigos/types";
 import { IconChart, IconDownload, IconList, IconProductChart, IconProducts, IconTellingen, IconUsers } from "./AdminIcons";
 import { EMPTY_TELLING_FILTERS, mergeTellingFilters, type TellingenOverviewFilters } from "../lib/tellingFilters";
@@ -35,10 +35,14 @@ const TITLES: Record<TellingenView, { title: string; subtitle: string }> = {
 
 interface Props {
   locations: Location[];
+  initialView?: string | null;
+  onViewChange?: (view: TellingenView) => void;
 }
 
-export function TellingenPanel({ locations }: Props) {
-  const [view, setView] = useState<TellingenView>("overview");
+export function TellingenPanel({ locations, initialView, onViewChange }: Props) {
+  const [view, setView] = useState<TellingenView>(
+    initialView && NAV.some((item) => item.id === initialView) ? (initialView as TellingenView) : "overview"
+  );
   const [overviewFilters, setOverviewFilters] = useState<TellingenOverviewFilters>(EMPTY_TELLING_FILTERS);
   const copy = TITLES[view];
   const stores = useMemo(
@@ -49,14 +53,25 @@ export function TellingenPanel({ locations }: Props) {
     [locations]
   );
 
+  useEffect(() => {
+    if (initialView && NAV.some((item) => item.id === initialView)) {
+      setView(initialView as TellingenView);
+    }
+  }, [initialView]);
+
+  function changeView(next: TellingenView) {
+    setView(next);
+    onViewChange?.(next);
+  }
+
   function openOverview(patch: Partial<TellingenOverviewFilters>) {
     setOverviewFilters(mergeTellingFilters(patch));
-    setView("overview");
+    changeView("overview");
   }
 
   return (
     <div data-quiet-skip="">
-      <EntraShell brand="Tellingen" items={NAV} view={view} onChange={setView} title={copy.title} subtitle={copy.subtitle}>
+      <EntraShell brand="Tellingen" items={NAV} view={view} onChange={changeView} title={copy.title} subtitle={copy.subtitle}>
       {view === "overview" ? (
         <TellingenOverviewPanel locations={stores} filters={overviewFilters} onFiltersChange={setOverviewFilters} />
       ) : null}

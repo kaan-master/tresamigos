@@ -100,6 +100,8 @@ model IntegrationSettings {
   mailRelayGoogleTokenExpiry  DateTime?
   mailRelayGoogleEmail        String @default("")
   mailRelayGoogleByCategory   Json     @default("{}")
+  mailRelayGoogleClientId     String   @default("")
+  mailRelayGoogleClientSecret String   @default("")
   mailNotifyApplications String    @default("work@tresamigos.nl")
   mailNotifyCatering     String    @default("catering@tresamigos.nl")
   mailNotifyFranchise    String    @default("Vilmon@tresamigos.nl")
@@ -222,32 +224,34 @@ model FranchiseInquiry {
 }
 
 model CateringOrder {
-  id           String   @id @default(uuid())
-  orderNumber  String   @unique
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  status       String   @default("nieuw")
-  boxId        String
-  quantity     Int
-  proteins     String[]
-  toppings     String[]
-  salsas       String[]
-  diet         String[]
-  notes        String   @default("")
-  fulfillment  String
-  locationId   String   @default("")
-  locationName String   @default("")
-  address      String   @default("")
-  eventDate    String
-  eventTime    String
-  name         String
-  email        String
-  phone        String   @default("")
-  company      String   @default("")
-  vatId        String   @default("")
-  adminNotes   String   @default("")
-  items        Json     @default("[]")
-  subtotalCents Int     @default(0)
+  id            String   @id @default(uuid())
+  orderNumber   String   @unique
+  invoiceNumber String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  status        String   @default("nieuw")
+  boxId         String
+  quantity      Int
+  proteins      String[]
+  toppings      String[]
+  salsas        String[]
+  diet          String[]
+  notes         String   @default("")
+  fulfillment   String
+  locationId    String   @default("")
+  locationName  String   @default("")
+  address       String   @default("")
+  eventDate     String
+  eventTime     String
+  name          String
+  email         String
+  phone         String   @default("")
+  company       String   @default("")
+  vatId         String   @default("")
+  kvk           String   @default("")
+  adminNotes    String   @default("")
+  items         Json     @default("[]")
+  subtotalCents Int      @default(0)
 }
 
 model CountList {
@@ -359,6 +363,9 @@ model FranchiseAccount {
   passwordHash String
   locationId   String
   location     Location             @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  company      String               @default("")
+  vatId        String               @default("")
+  kvk          String               @default("")
   active       Boolean              @default(true)
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt

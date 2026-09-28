@@ -929,6 +929,7 @@ export function sanitizeCateringOrder(input: Partial<CateringOrder | CreateCater
   return {
     id: cleanText((input as Partial<CateringOrder>)?.id, newId(), 80),
     orderNumber: cleanText((input as Partial<CateringOrder>)?.orderNumber, "", 40),
+    invoiceNumber: cleanText((input as Partial<CateringOrder>)?.invoiceNumber, "", 40),
     createdAt: cleanText((input as Partial<CateringOrder>)?.createdAt, new Date().toISOString(), 80),
     updatedAt: cleanText((input as Partial<CateringOrder>)?.updatedAt, new Date().toISOString(), 80),
     status: CATERING_STATUSES.has(status) ? (status as CateringOrderStatus) : "nieuw",
@@ -952,6 +953,7 @@ export function sanitizeCateringOrder(input: Partial<CateringOrder | CreateCater
     phone: cleanText(input?.phone, "", 80),
     company: cleanText(input?.company, "", 160),
     vatId: cleanText((input as Partial<CateringOrder | CreateCateringOrderInput>)?.vatId, "", 40).toUpperCase(),
+    kvk: cleanText((input as Partial<CateringOrder | CreateCateringOrderInput>)?.kvk, "", 40),
     adminNotes: cleanText((input as Partial<CateringOrder>)?.adminNotes, "", 2000)
   };
 }
