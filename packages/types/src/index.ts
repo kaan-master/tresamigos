@@ -719,6 +719,13 @@ export interface IntegrationMailNotifications {
   other: string;
 }
 
+export interface IntegrationGoogleCategoryAccount {
+  connected: boolean;
+  email: string;
+}
+
+export type IntegrationGoogleByCategory = Record<MailNotifyCategory, IntegrationGoogleCategoryAccount>;
+
 export interface IntegrationMailRelaySettings {
   enabled: boolean;
   provider: MailRelayProvider;
@@ -736,6 +743,7 @@ export interface IntegrationMailRelaySettings {
   googleConnected: boolean;
   googleEmail: string;
   googleOAuthConfigured: boolean;
+  googleByCategory: IntegrationGoogleByCategory;
   notifications: IntegrationMailNotifications;
 }
 
@@ -776,6 +784,7 @@ export interface UpdateIntegrationMailRelayInput {
   clearPassword?: boolean;
   notifications?: Partial<IntegrationMailNotifications>;
   disconnectGoogle?: boolean;
+  disconnectGoogleCategory?: MailNotifyCategory;
 }
 
 export interface UpdateIntegrationGoogleAdsInput {

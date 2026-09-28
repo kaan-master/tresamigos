@@ -1,12 +1,14 @@
 import { CATERING_NAV_SECTIONS } from "../components/catering/cateringNav";
 import type { CateringView } from "../components/catering/cateringNav";
 import type { ApplicationsView } from "../components/ApplicationsPanel";
+import type { FranchiseView } from "../components/FranchisePanel";
 import type { SiteSettingsView } from "../components/SiteSettingsPanel";
 
 export type AdminSearchTarget =
   | { kind: "tab"; tabId: string }
   | { kind: "catering"; view: CateringView }
   | { kind: "applications"; view: ApplicationsView }
+  | { kind: "franchise"; view: FranchiseView }
   | { kind: "siteSettings"; view: SiteSettingsView };
 
 export interface AdminSearchItem {
@@ -84,6 +86,24 @@ export function buildAdminSearchItems(
         description,
         searchText: `${label} ${description} sollicitaties vacatures`,
         target: { kind: "applications", view: id }
+      });
+    }
+  }
+
+  if (visibleTabs.some(([id]) => id === "franchise")) {
+    for (const [id, label, description] of [
+      ["aanvragen", "Franchise-aanvragen", "Website-aanmeldingen"],
+      ["producten", "Franchise-producten", "Catalogus en prijzen"],
+      ["accounts", "Franchise-accounts", "Inlog voor houders"],
+      ["bestellingen", "Franchise-bestellingen", "Orders, factuur en pakbon"]
+    ] as const) {
+      items.push({
+        id: `franchise-${id}`,
+        label,
+        group: "Franchise",
+        description,
+        searchText: `${label} ${description} franchise shop pakbon`,
+        target: { kind: "franchise", view: id }
       });
     }
   }

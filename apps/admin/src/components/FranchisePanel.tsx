@@ -1,12 +1,39 @@
-import { useMemo, useState } from "react";
-import type { FranchiseInquiry } from "@tresamigos/types";
+import { useEffect, useMemo, useState } from "react";
+import type { FranchiseInquiry, SiteContent } from "@tresamigos/types";
+import { IconFranchise, IconFranchiseShop, IconProducts, IconUsers } from "./AdminIcons";
 import { AdminListRow, AdminSearchBar } from "./AdminListUi";
+import { FranchiseShopPanel, type FranchiseShopView } from "./FranchiseShopPanel";
+import { EntraShell, type EntraNavItem } from "./telling/entraUi";
+
+export type FranchiseView = "aanvragen" | "producten" | "accounts" | "bestellingen";
 
 interface Props {
   inquiries: FranchiseInquiry[];
+  content: SiteContent;
+  initialView?: FranchiseView | null;
 }
 
-export function FranchisePanel({ inquiries }: Props) {
+const NAV: Array<EntraNavItem<FranchiseView>> = [
+  { id: "aanvragen", label: "Aanvragen", hint: "Website-aanmeldingen", Icon: IconFranchise, section: "Aanmeldingen" },
+  { id: "producten", label: "Producten", hint: "Catalogus en prijzen", Icon: IconProducts, section: "Shop" },
+  { id: "accounts", label: "Accounts", hint: "Inlog voor houders", Icon: IconUsers, section: "Shop" },
+  { id: "bestellingen", label: "Bestellingen", hint: "Orders, factuur en pakbon", Icon: IconFranchiseShop, section: "Shop" }
+];
+
+const TITLES: Record<FranchiseView, { title: string; subtitle: string }> = {
+  aanvragen: { title: "Aanvragen", subtitle: "Inkomende franchise-aanvragen van de website" },
+  producten: { title: "Producten", subtitle: "Catalogus en prijzen per vestiging voor franchisehouders" },
+  accounts: { title: "Accounts", subtitle: "Inlogaccounts voor de franchise shop (/franchise/login)" },
+  bestellingen: { title: "Bestellingen", subtitle: "Orders beheren, factuur en pakbon printen" }
+};
+
+const SHOP_VIEW: Record<Exclude<FranchiseView, "aanvragen">, FranchiseShopView> = {
+  producten: "products",
+  accounts: "accounts",
+  bestellingen: "orders"
+};
+
+function FranchiseInquiriesPanel({ inquiries }: { inquiries: FranchiseInquiry[] }) {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -44,7 +71,7 @@ export function FranchisePanel({ inquiries }: Props) {
     null;
 
   return (
-    <div className="ta-master-detail" data-quiet-skip="">
+    <div className="ta-master-detail">
       <div className="ta-list-pane">
         <AdminSearchBar
           value={query}
@@ -131,6 +158,24 @@ export function FranchisePanel({ inquiries }: Props) {
           <div className="ta-empty">Selecteer een aanvraag om details te zien.</div>
         </div>
       )}
+    </div>
+  );
+}
+
+export function FranchisePanel({ inquiries, content, initialView }: Props) {
+  const [view, setView] = useState<FranchiseView>(initialView || "aanvragen");
+  const copy = TITLES[view];
+
+  useEffect(() => {
+    if (initialView) setView(initialView);
+  }, [initialView]);
+
+  return (
+    <div data-quiet-skip="">
+      <EntraShell brand="Franchise" items={NAV} view={view} onChange={setView} title={copy.title} subtitle={copy.subtitle}>
+        {view === "aanvragen" ? <FranchiseInquiriesPanel inquiries={inquiries} /> : null}
+        {view !== "aanvragen" ? <FranchiseShopPanel content={content} view={SHOP_VIEW[view]} /> : null}
+      </EntraShell>
     </div>
   );
 }

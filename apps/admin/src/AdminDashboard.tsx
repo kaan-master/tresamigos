@@ -8,8 +8,7 @@ import { LocationsPanel } from "./components/LocationsPanel";
 import { MediaLibraryPanel } from "./components/MediaLibraryPanel";
 import { ProductsPanel } from "./components/ProductsPanel";
 import { ApplicationsPanel, type ApplicationsView } from "./components/ApplicationsPanel";
-import { FranchisePanel } from "./components/FranchisePanel";
-import { FranchiseShopPanel } from "./components/FranchiseShopPanel";
+import { FranchisePanel, type FranchiseView } from "./components/FranchisePanel";
 import { NewsletterPanel } from "./components/NewsletterPanel";
 import { CateringPanel } from "./components/CateringPanel";
 import type { CateringView } from "./components/catering/cateringNav";
@@ -35,7 +34,6 @@ const tabs = [
   ["media", "Media"],
   ["applications", "Sollicitaties"],
   ["franchise", "Franchise"],
-  ["franchiseShop", "Franchise shop"],
   ["newsletter", "Nieuwsbrief"],
   ["catering", "Catering"],
   ["reviews", "Reviews"],
@@ -49,7 +47,7 @@ type TabId = (typeof tabs)[number][0];
 const NAV_SECTIONS: Array<{ label: string; ids: TabId[] }> = [
   { label: "Overzicht", ids: ["overview"] },
   { label: "Inhoud", ids: ["locations", "products", "media", "seo", "siteSettings"] },
-  { label: "Aanvragen", ids: ["applications", "franchise", "franchiseShop", "newsletter", "catering", "reviews"] },
+  { label: "Aanvragen", ids: ["applications", "franchise", "newsletter", "catering", "reviews"] },
   { label: "Beheer", ids: ["tellingen"] }
 ];
 
@@ -67,6 +65,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
   const [cateringOpenOrderId, setCateringOpenOrderId] = useState<string | null>(null);
   const [applicationsNavigateView, setApplicationsNavigateView] = useState<ApplicationsView | null>(null);
   const [siteSettingsNavigateView, setSiteSettingsNavigateView] = useState<SiteSettingsView | null>(null);
+  const [franchiseNavigateView, setFranchiseNavigateView] = useState<FranchiseView | null>(null);
   const [content, setContent] = useState<SiteContent | null>(null);
   const contentRef = useRef<SiteContent | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -133,6 +132,9 @@ export function AdminDashboard({ user, onLogout }: Props) {
     if (!user || user.role === "master") return tabs;
     return tabs.filter(([id]) => {
       if (id === "siteSettings") return siteSettingViews.length > 0;
+      if (id === "franchise") {
+        return user.permissions.includes("franchise") || user.permissions.includes("franchiseShop");
+      }
       return user.permissions.includes(id as AdminTabId);
     });
   }, [user, siteSettingViews]);
@@ -250,6 +252,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
     }
     if (id !== "applications") setApplicationsNavigateView(null);
     if (id !== "siteSettings") setSiteSettingsNavigateView(null);
+    if (id !== "franchise") setFranchiseNavigateView(null);
   }
 
   function handleSearchSelect(item: AdminSearchItem) {
@@ -260,6 +263,13 @@ export function AdminDashboard({ user, onLogout }: Props) {
     if (item.target.kind === "applications") {
       setActiveTab("applications");
       setApplicationsNavigateView(item.target.view);
+      setNavOpen(false);
+      openPanel();
+      return;
+    }
+    if (item.target.kind === "franchise") {
+      setActiveTab("franchise");
+      setFranchiseNavigateView(item.target.view);
       setNavOpen(false);
       openPanel();
       return;
@@ -363,22 +373,12 @@ export function AdminDashboard({ user, onLogout }: Props) {
       ) : null}
 
       {activeTab === "franchise" ? (
-        <section className="ta-panel ta-fade-in">
-          <header className="ta-panel-head">
-            <h2>Franchise</h2>
-            <p>Inkomende franchise-aanvragen van de website bekijken.</p>
-          </header>
-          <FranchisePanel inquiries={franchiseInquiries} />
-        </section>
-      ) : null}
-
-      {activeTab === "franchiseShop" ? (
-        <section className="ta-panel ta-fade-in">
-          <header className="ta-panel-head">
-            <h2>Franchise shop</h2>
-            <p>Producten en prijzen per franchise, accounts, bestellingen met factuur en pakbon.</p>
-          </header>
-          <FranchiseShopPanel content={content} />
+        <section className="ta-panel ta-panel-entra ta-fade-in">
+          <FranchisePanel
+            inquiries={franchiseInquiries}
+            content={content}
+            initialView={franchiseNavigateView}
+          />
         </section>
       ) : null}
 

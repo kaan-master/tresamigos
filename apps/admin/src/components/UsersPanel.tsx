@@ -5,7 +5,16 @@ import { createAdminUser, deleteAdminUser, listAdminUsers, updateAdminUser } fro
 import { EntraBlade, EntraCommand, EntraCommands, EntraSearch } from "./telling/entraUi";
 import { AdminButton } from "./AdminButton";
 
-const createTabs = ADMIN_TAB_IDS.filter((tab) => tab !== "users");
+const createTabs = ADMIN_TAB_IDS.filter((tab) => tab !== "users" && tab !== "franchiseShop");
+
+/** franchiseShop is an alias of franchise (merged hub). */
+function normalizePermissions(permissions: AdminTabId[]): AdminTabId[] {
+  const next = permissions.filter((tab) => tab !== "franchiseShop");
+  if (permissions.includes("franchiseShop") && !next.includes("franchise")) {
+    next.push("franchise");
+  }
+  return next;
+}
 
 function PermissionPicker({
   value,
@@ -103,7 +112,7 @@ export function UsersPanel() {
     setEditForm({
       name: user.name,
       password: "",
-      permissions: [...user.permissions]
+      permissions: normalizePermissions(user.permissions)
     });
     setMessage("");
     setBlade("edit");
@@ -118,7 +127,10 @@ export function UsersPanel() {
     try {
       await runSave(
         async () => {
-          await createAdminUser(form);
+          await createAdminUser({
+            ...form,
+            permissions: normalizePermissions(form.permissions)
+          });
           setForm(emptyForm);
           setBlade(null);
         },
@@ -139,7 +151,7 @@ export function UsersPanel() {
         async () => {
           await updateAdminUser(userId, {
             name: editForm.name.trim(),
-            permissions: editForm.permissions,
+            permissions: normalizePermissions(editForm.permissions),
             ...(editForm.password ? { password: editForm.password } : {})
           });
           setBlade(null);

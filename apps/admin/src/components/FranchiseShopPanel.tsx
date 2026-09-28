@@ -10,11 +10,13 @@ import { api } from "../lib/api";
 import { useAdminFeedback } from "../context/AdminFeedbackContext";
 import { AdminListRow, AdminSearchBar } from "./AdminListUi";
 
+export type FranchiseShopView = "products" | "accounts" | "orders";
+
 interface Props {
   content: SiteContent;
+  /** Controlled view when embedded in Franchise Entra hub */
+  view: FranchiseShopView;
 }
-
-type ShopView = "products" | "accounts" | "orders";
 
 const STATUS_LABELS: Record<FranchiseShopOrderStatus, string> = {
   nieuw: "Nieuw",
@@ -56,9 +58,8 @@ function orderLinesTable(order: FranchiseShopOrder) {
   </tbody></table>`;
 }
 
-export function FranchiseShopPanel({ content }: Props) {
+export function FranchiseShopPanel({ content, view }: Props) {
   const { runSave } = useAdminFeedback();
-  const [view, setView] = useState<ShopView>("products");
   const [products, setProducts] = useState<FranchiseShopProduct[]>([]);
   const [accounts, setAccounts] = useState<FranchiseAccount[]>([]);
   const [orders, setOrders] = useState<FranchiseShopOrder[]>([]);
@@ -107,6 +108,10 @@ export function FranchiseShopPanel({ content }: Props) {
   useEffect(() => {
     void loadAll();
   }, []);
+
+  useEffect(() => {
+    setQuery("");
+  }, [view]);
 
   const selectedProduct = products.find((item) => item.id === selectedProductId) || null;
   const selectedAccount = accounts.find((item) => item.id === selectedAccountId) || null;
@@ -310,29 +315,7 @@ export function FranchiseShopPanel({ content }: Props) {
   }
 
   return (
-    <div data-quiet-skip="">
-      <div className="ta-toolbar" style={{ marginBottom: 16 }}>
-        {(
-          [
-            ["products", "Producten & prijzen"],
-            ["accounts", "Franchise accounts"],
-            ["orders", "Bestellingen"]
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            className={`ta-btn ${view === id ? "ta-btn-primary" : "ta-btn-ghost"}`}
-            onClick={() => {
-              setView(id);
-              setQuery("");
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
+    <div>
       {message ? <p className="ta-seo-hint">{message}</p> : null}
 
       {view === "products" ? (

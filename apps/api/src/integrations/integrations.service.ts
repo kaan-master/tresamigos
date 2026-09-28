@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import type {
+  IntegrationGoogleByCategory,
   IntegrationMailNotifications,
   IntegrationTestMailInput,
+  MailNotifyCategory,
   MailRelayProvider,
   PublicIntegrationsSettings,
   UpdateIntegrationGoogleAdsInput,
@@ -96,6 +98,7 @@ export class IntegrationsService {
         googleConnected: Boolean(row.mailRelayGoogleRefreshToken && row.mailRelayGoogleEmail),
         googleEmail: row.mailRelayGoogleEmail,
         googleOAuthConfigured: this.mailService.isGoogleOAuthConfigured(),
+        googleByCategory: this.mailService.publicGoogleByCategory(row.mailRelayGoogleByCategory) as IntegrationGoogleByCategory,
         notifications: this.notificationsFromRow(row)
       },
       googleAds: {
@@ -128,6 +131,11 @@ export class IntegrationsService {
 
     if (input.disconnectGoogle) {
       await this.mailService.disconnectGoogle();
+      return this.getSettings();
+    }
+
+    if (input.disconnectGoogleCategory) {
+      await this.mailService.disconnectGoogleCategory(input.disconnectGoogleCategory);
       return this.getSettings();
     }
 
@@ -226,9 +234,12 @@ export class IntegrationsService {
     return this.getSettings();
   }
 
-  async startGoogleOAuth(requestOrigin?: string) {
+  async startGoogleOAuth(
+    requestOrigin?: string,
+    options?: { category?: MailNotifyCategory; loginHint?: string }
+  ) {
     try {
-      const url = await this.mailService.createGoogleOAuthUrl(requestOrigin);
+      const url = await this.mailService.createGoogleOAuthUrl(requestOrigin, options);
       return { url };
     } catch (error) {
       throw new BadRequestException({
@@ -241,7 +252,8 @@ export class IntegrationsService {
     const result = await this.mailService.completeGoogleOAuth(code, state, requestOrigin);
     const adminBase = this.mailService.adminRedirectBase();
     const path = adminBase.includes("/admin") ? "" : "/admin/";
-    return `${adminBase}${path}?googleMail=connected&email=${encodeURIComponent(result.email)}`;
+    const category = result.category ? `&category=${encodeURIComponent(result.category)}` : "";
+    return `${adminBase}${path}?googleMail=connected&email=${encodeURIComponent(result.email)}${category}`;
   }
 
   async testMailRelay(input: IntegrationTestMailInput) {

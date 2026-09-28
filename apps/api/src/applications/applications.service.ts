@@ -155,6 +155,7 @@ export class ApplicationsService {
         to,
         replyTo: input.email,
         subject: `Nieuwe sollicitatie: ${input.role} — ${input.name}`,
+        category: "applications",
         body: [
           "Nieuwe sollicitatie via tresamigos.nl",
           "",

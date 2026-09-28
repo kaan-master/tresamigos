@@ -114,6 +114,7 @@ export class FranchiseService {
         to,
         replyTo: inquiry.email,
         subject: `Nieuwe franchise-aanvraag — ${inquiry.name}`,
+        category: "franchise",
         body: [
           "Nieuwe franchise-aanvraag via tresamigos.nl",
           "",

@@ -41,6 +41,19 @@ interface GoogleConfig {
 
 type MailConfig = SmtpConfig | GoogleConfig;
 
+type StoredGoogleAccount = {
+  email: string;
+  refreshToken: string;
+  accessToken: string;
+  expiry: string | null;
+};
+
+type GoogleByCategoryStore = Partial<Record<MailNotifyCategory, StoredGoogleAccount>>;
+
+type OAuthStatePayload = {
+  category?: MailNotifyCategory;
+};
+
 const DEFAULT_NOTIFY: Record<MailNotifyCategory, string> = {
   applications: "work@tresamigos.nl",
   catering: "catering@tresamigos.nl",
@@ -48,11 +61,17 @@ const DEFAULT_NOTIFY: Record<MailNotifyCategory, string> = {
   other: "no-reply@tresamigos.nl"
 };
 
+const MAIL_NOTIFY_CATEGORIES: MailNotifyCategory[] = ["applications", "catering", "franchise", "other"];
+
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 const GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
 const USERINFO_SCOPE = "https://www.googleapis.com/auth/userinfo.email";
+
+function isMailNotifyCategory(value: unknown): value is MailNotifyCategory {
+  return typeof value === "string" && MAIL_NOTIFY_CATEGORIES.includes(value as MailNotifyCategory);
+}
 
 @Injectable()
 export class MailService {
@@ -60,6 +79,7 @@ export class MailService {
   private cachedConfig: MailConfig | null | undefined;
   private cacheAt = 0;
   private readonly oauthStateMemory = new Map<string, number>();
+  private readonly oauthPayloadMemory = new Map<string, OAuthStatePayload>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -130,6 +150,48 @@ export class MailService {
     return DEFAULT_NOTIFY[category];
   }
 
+  parseGoogleByCategory(raw: unknown): GoogleByCategoryStore {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+    const result: GoogleByCategoryStore = {};
+    for (const category of MAIL_NOTIFY_CATEGORIES) {
+      const entry = (raw as Record<string, unknown>)[category];
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+      const record = entry as Record<string, unknown>;
+      const email = String(record.email || "").trim().toLowerCase();
+      const refreshToken = String(record.refreshToken || "").trim();
+      if (!email || !refreshToken) continue;
+      result[category] = {
+        email,
+        refreshToken,
+        accessToken: String(record.accessToken || "").trim(),
+        expiry: record.expiry ? String(record.expiry) : null
+      };
+    }
+    return result;
+  }
+
+  publicGoogleByCategory(raw: unknown): Record<MailNotifyCategory, { connected: boolean; email: string }> {
+    const store = this.parseGoogleByCategory(raw);
+    return {
+      applications: {
+        connected: Boolean(store.applications?.refreshToken),
+        email: store.applications?.email || ""
+      },
+      catering: {
+        connected: Boolean(store.catering?.refreshToken),
+        email: store.catering?.email || ""
+      },
+      franchise: {
+        connected: Boolean(store.franchise?.refreshToken),
+        email: store.franchise?.email || ""
+      },
+      other: {
+        connected: Boolean(store.other?.refreshToken),
+        email: store.other?.email || ""
+      }
+    };
+  }
+
   private envConfig(): SmtpConfig | null {
     if (!this.isEnvConfigured()) return null;
     const port = Number(process.env.SMTP_PORT || 587);
@@ -146,14 +208,31 @@ export class MailService {
     };
   }
 
-  private async resolveConfig(): Promise<MailConfig | null> {
+  private async resolveConfig(category?: MailNotifyCategory): Promise<MailConfig | null> {
     const now = Date.now();
-    if (this.cachedConfig !== undefined && now - this.cacheAt < 15_000) {
+    if (!category && this.cachedConfig !== undefined && now - this.cacheAt < 15_000) {
       return this.cachedConfig;
     }
 
     try {
       const row = await this.prisma.integrationSettings.findUnique({ where: { id: "primary" } });
+      if (row?.mailRelayEnabled && category) {
+        const byCategory = this.parseGoogleByCategory(row.mailRelayGoogleByCategory);
+        const account = byCategory[category];
+        if (account?.refreshToken) {
+          const accessToken = await this.ensureStoredGoogleAccessToken(category, account, byCategory, row.mailRelayFromName);
+          return {
+            kind: "google",
+            email: account.email,
+            accessToken,
+            refreshToken: account.refreshToken,
+            fromEmail: account.email,
+            fromName: row.mailRelayFromName || "Tres Amigos",
+            source: "db"
+          };
+        }
+      }
+
       if (row?.mailRelayEnabled && row.mailRelayProvider === "google" && row.mailRelayGoogleRefreshToken) {
         const accessToken = await this.ensureGoogleAccessToken(row);
         this.cachedConfig = {
@@ -188,9 +267,41 @@ export class MailService {
       this.logger.warn(`Integratie-SMTP laden mislukt: ${error instanceof Error ? error.message : "onbekend"}`);
     }
 
-    this.cachedConfig = this.envConfig();
-    this.cacheAt = now;
-    return this.cachedConfig;
+    if (!category) {
+      this.cachedConfig = this.envConfig();
+      this.cacheAt = now;
+      return this.cachedConfig;
+    }
+    return this.resolveConfig();
+  }
+
+  private async ensureStoredGoogleAccessToken(
+    category: MailNotifyCategory,
+    account: StoredGoogleAccount,
+    store: GoogleByCategoryStore,
+    fromName: string
+  ) {
+    const expiry = account.expiry ? new Date(account.expiry).getTime() : 0;
+    if (account.accessToken && expiry > Date.now() + 60_000) {
+      return account.accessToken;
+    }
+
+    const refreshed = await this.refreshGoogleToken(account.refreshToken);
+    const next: StoredGoogleAccount = {
+      ...account,
+      accessToken: refreshed.accessToken,
+      expiry: refreshed.expiry.toISOString()
+    };
+    store[category] = next;
+    await this.prisma.integrationSettings.update({
+      where: { id: "primary" },
+      data: {
+        mailRelayGoogleByCategory: store,
+        mailRelayFromName: fromName || "Tres Amigos"
+      }
+    });
+    this.invalidateCache();
+    return refreshed.accessToken;
   }
 
   private async ensureGoogleAccessToken(row: {
@@ -271,9 +382,10 @@ export class MailService {
   }
 
   private async withTransport<T>(
-    fn: (transport: nodemailer.Transporter, config: MailConfig) => Promise<T>
+    fn: (transport: nodemailer.Transporter, config: MailConfig) => Promise<T>,
+    category?: MailNotifyCategory
   ) {
-    const config = await this.resolveConfig();
+    const config = await this.resolveConfig(category);
     if (!config) {
       this.logger.warn("SMTP/Gmail niet geconfigureerd — mail niet verstuurd.");
       return null;
@@ -289,6 +401,7 @@ export class MailService {
     replyTo?: string;
     subject: string;
     text: string;
+    category?: MailNotifyCategory;
   }) {
     return this.withTransport(async (transport, config) => {
       const fromAddress = input.fromEmail || config.fromEmail;
@@ -300,7 +413,7 @@ export class MailService {
         text: input.text
       });
       return true;
-    });
+    }, input.category);
   }
 
   async sendPromoEmail(input: PromoMailInput) {
@@ -346,7 +459,8 @@ export class MailService {
         fromName: input.fromName,
         replyTo: input.email || input.replyTo,
         subject: input.subject,
-        text: body
+        text: body,
+        category: "other"
       })
     );
   }
@@ -357,6 +471,7 @@ export class MailService {
     replyTo?: string;
     subject: string;
     body: string;
+    category?: MailNotifyCategory;
   }) {
     return Boolean(
       await this.sendRaw({
@@ -364,7 +479,8 @@ export class MailService {
         fromName: input.fromName || "Tres Amigos",
         replyTo: input.replyTo,
         subject: input.subject,
-        text: input.body
+        text: input.body,
+        category: input.category
       })
     );
   }
@@ -376,7 +492,7 @@ export class MailService {
     subject: string;
     body: string;
   }) {
-    return this.sendNotificationEmail(input);
+    return this.sendNotificationEmail({ ...input, category: "catering" });
   }
 
   async sendTestEmail(input: { to: string; fromName: string; fromEmail?: string }) {
@@ -417,7 +533,10 @@ export class MailService {
     return `google-mail-oauth:${state}`;
   }
 
-  async createGoogleOAuthUrl(requestOrigin?: string) {
+  async createGoogleOAuthUrl(
+    requestOrigin?: string,
+    options?: { category?: MailNotifyCategory; loginHint?: string }
+  ) {
     if (!this.isGoogleOAuthConfigured()) {
       throw new Error(
         "Google OAuth ontbreekt. Zet GOOGLE_MAIL_CLIENT_ID en GOOGLE_MAIL_CLIENT_SECRET in .env."
@@ -425,10 +544,15 @@ export class MailService {
     }
     const state = createHash("sha256").update(randomBytes(32)).digest("hex");
     const key = this.oauthStateKey(state);
+    const payload: OAuthStatePayload = {
+      category: options?.category && isMailNotifyCategory(options.category) ? options.category : undefined
+    };
+    const payloadJson = JSON.stringify(payload);
     try {
-      await this.redis.client.set(key, "1", "EX", 600);
+      await this.redis.client.set(key, payloadJson, "EX", 600);
     } catch {
       this.oauthStateMemory.set(state, Date.now() + 600_000);
+      this.oauthPayloadMemory.set(state, payload);
     }
 
     const params = new URLSearchParams({
@@ -441,29 +565,45 @@ export class MailService {
       include_granted_scopes: "true",
       state
     });
+    const hint = String(options?.loginHint || "").trim();
+    if (hint.includes("@")) {
+      params.set("login_hint", hint);
+    }
     return `${GOOGLE_AUTH_URL}?${params.toString()}`;
   }
 
-  private async consumeOAuthState(state: string) {
-    if (!state) return false;
+  private async consumeOAuthState(state: string): Promise<OAuthStatePayload | null> {
+    if (!state) return null;
     const key = this.oauthStateKey(state);
     try {
       const value = await this.redis.client.get(key);
       if (value) {
         await this.redis.client.del(key);
-        return true;
+        try {
+          const parsed = JSON.parse(value) as OAuthStatePayload;
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch {
+          return {};
+        }
       }
     } catch {
       /* memory fallback */
     }
     const expires = this.oauthStateMemory.get(state);
-    if (!expires) return false;
+    if (!expires || expires <= Date.now()) {
+      this.oauthStateMemory.delete(state);
+      this.oauthPayloadMemory.delete(state);
+      return null;
+    }
     this.oauthStateMemory.delete(state);
-    return expires > Date.now();
+    const payload = this.oauthPayloadMemory.get(state) || {};
+    this.oauthPayloadMemory.delete(state);
+    return payload;
   }
 
   async completeGoogleOAuth(code: string, state: string, requestOrigin?: string) {
-    if (!(await this.consumeOAuthState(state))) {
+    const statePayload = await this.consumeOAuthState(state);
+    if (!statePayload) {
       throw new Error("Ongeldige of verlopen Google-login. Probeer opnieuw.");
     }
     if (!code) throw new Error("Google gaf geen autorisatiecode.");
@@ -499,11 +639,38 @@ export class MailService {
     if (!email) throw new Error("Kon Google e-mailadres niet ophalen.");
 
     const existing = await this.prisma.integrationSettings.findUnique({ where: { id: "primary" } });
-    const refreshToken = tokens.refresh_token || existing?.mailRelayGoogleRefreshToken || "";
+    const category = statePayload.category;
+    const byCategory = this.parseGoogleByCategory(existing?.mailRelayGoogleByCategory);
+    const existingCategoryRefresh = category ? byCategory[category]?.refreshToken || "" : "";
+    const refreshToken =
+      tokens.refresh_token ||
+      existingCategoryRefresh ||
+      existing?.mailRelayGoogleRefreshToken ||
+      "";
     if (!refreshToken) {
       throw new Error(
         "Geen refresh token ontvangen. Disconnect de app in Google Account → Beveiliging → Apps en probeer opnieuw."
       );
+    }
+
+    const expiry = new Date(Date.now() + (tokens.expires_in || 3600) * 1000);
+    const notifyPatch: Record<string, string> = {};
+    if (category) {
+      byCategory[category] = {
+        email,
+        refreshToken,
+        accessToken: tokens.access_token,
+        expiry: expiry.toISOString()
+      };
+      const notifyField =
+        category === "applications"
+          ? "mailNotifyApplications"
+          : category === "catering"
+            ? "mailNotifyCatering"
+            : category === "franchise"
+              ? "mailNotifyFranchise"
+              : "mailNotifyOther";
+      notifyPatch[notifyField] = email;
     }
 
     await this.prisma.integrationSettings.upsert({
@@ -515,12 +682,19 @@ export class MailService {
         mailRelayGoogleEmail: email,
         mailRelayGoogleAccessToken: tokens.access_token,
         mailRelayGoogleRefreshToken: refreshToken,
-        mailRelayGoogleTokenExpiry: new Date(Date.now() + (tokens.expires_in || 3600) * 1000),
+        mailRelayGoogleTokenExpiry: expiry,
+        mailRelayGoogleByCategory: byCategory,
         mailRelayFromEmail: email,
         mailRelayFromName: "Tres Amigos",
         mailRelayLastStatus: "success",
-        mailRelayLastMessage: `Google gekoppeld: ${email}`,
-        mailRelayLastTestAt: new Date()
+        mailRelayLastMessage: category
+          ? `Google gekoppeld voor ${category}: ${email}`
+          : `Google gekoppeld: ${email}`,
+        mailRelayLastTestAt: new Date(),
+        mailNotifyApplications: notifyPatch.mailNotifyApplications || DEFAULT_NOTIFY.applications,
+        mailNotifyCatering: notifyPatch.mailNotifyCatering || DEFAULT_NOTIFY.catering,
+        mailNotifyFranchise: notifyPatch.mailNotifyFranchise || DEFAULT_NOTIFY.franchise,
+        mailNotifyOther: notifyPatch.mailNotifyOther || DEFAULT_NOTIFY.other
       },
       update: {
         mailRelayEnabled: true,
@@ -528,16 +702,20 @@ export class MailService {
         mailRelayGoogleEmail: email,
         mailRelayGoogleAccessToken: tokens.access_token,
         mailRelayGoogleRefreshToken: refreshToken,
-        mailRelayGoogleTokenExpiry: new Date(Date.now() + (tokens.expires_in || 3600) * 1000),
+        mailRelayGoogleTokenExpiry: expiry,
+        mailRelayGoogleByCategory: byCategory,
         mailRelayFromEmail: email,
         mailRelayLastStatus: "success",
-        mailRelayLastMessage: `Google gekoppeld: ${email}`,
-        mailRelayLastTestAt: new Date()
+        mailRelayLastMessage: category
+          ? `Google gekoppeld voor ${category}: ${email}`
+          : `Google gekoppeld: ${email}`,
+        mailRelayLastTestAt: new Date(),
+        ...notifyPatch
       }
     });
 
     this.invalidateCache();
-    return { email };
+    return { email, category };
   }
 
   async disconnectGoogle() {
@@ -548,9 +726,25 @@ export class MailService {
         mailRelayGoogleAccessToken: "",
         mailRelayGoogleTokenExpiry: null,
         mailRelayGoogleEmail: "",
+        mailRelayGoogleByCategory: {},
         mailRelayProvider: "smtp",
         mailRelayLastStatus: "",
         mailRelayLastMessage: "Google ontkoppeld."
+      }
+    });
+    this.invalidateCache();
+  }
+
+  async disconnectGoogleCategory(category: MailNotifyCategory) {
+    const existing = await this.prisma.integrationSettings.findUnique({ where: { id: "primary" } });
+    if (!existing) return;
+    const byCategory = this.parseGoogleByCategory(existing.mailRelayGoogleByCategory);
+    delete byCategory[category];
+    await this.prisma.integrationSettings.update({
+      where: { id: "primary" },
+      data: {
+        mailRelayGoogleByCategory: byCategory,
+        mailRelayLastMessage: `Google ontkoppeld voor ${category}.`
       }
     });
     this.invalidateCache();

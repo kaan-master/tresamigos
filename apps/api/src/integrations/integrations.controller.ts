@@ -50,12 +50,21 @@ export class AdminIntegrationsController {
   @Get("integrations/mailrelay/google/start")
   @RequirePermissions("integrations")
   startGoogle(
+    @Query("category") category: string | undefined,
+    @Query("loginHint") loginHint: string | undefined,
     @Req() req: { headers: Record<string, string | string[] | undefined>; protocol?: string }
   ) {
     const proto = String(req.headers["x-forwarded-proto"] || req.protocol || "http");
     const host = String(req.headers["x-forwarded-host"] || req.headers.host || "");
     const origin = host ? `${proto}://${host}` : undefined;
-    return this.integrationsService.startGoogleOAuth(origin);
+    const normalizedCategory =
+      category === "applications" || category === "catering" || category === "franchise" || category === "other"
+        ? category
+        : undefined;
+    return this.integrationsService.startGoogleOAuth(origin, {
+      category: normalizedCategory,
+      loginHint
+    });
   }
 }
 

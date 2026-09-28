@@ -99,6 +99,7 @@ model IntegrationSettings {
   mailRelayGoogleAccessToken  String @default("")
   mailRelayGoogleTokenExpiry  DateTime?
   mailRelayGoogleEmail        String @default("")
+  mailRelayGoogleByCategory   Json     @default("{}")
   mailNotifyApplications String    @default("work@tresamigos.nl")
   mailNotifyCatering     String    @default("catering@tresamigos.nl")
   mailNotifyFranchise    String    @default("Vilmon@tresamigos.nl")
