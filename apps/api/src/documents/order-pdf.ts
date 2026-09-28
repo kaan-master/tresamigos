@@ -64,7 +64,11 @@ function formatDate(value: string | Date) {
   });
 }
 
-function sellerLines(seller: typeof DEFAULT_SELLER & Partial<PdfParty> & { legalName?: string }) {
+function nonEmpty(line: string | undefined | null | false): line is string {
+  return Boolean(line && String(line).trim());
+}
+
+function sellerLines(seller: typeof DEFAULT_SELLER & Partial<PdfParty> & { legalName?: string }): string[] {
   return [
     seller.legalName || seller.company || "Tres Amigos",
     seller.address,
@@ -72,10 +76,10 @@ function sellerLines(seller: typeof DEFAULT_SELLER & Partial<PdfParty> & { legal
     seller.phone,
     seller.vatId ? `BTW: ${seller.vatId}` : "",
     seller.kvk ? `KvK: ${seller.kvk}` : ""
-  ].filter((line) => Boolean(line && String(line).trim()));
+  ].filter(nonEmpty);
 }
 
-function customerLines(party: PdfParty) {
+function customerLines(party: PdfParty): string[] {
   return [
     party.company || party.name || "Klant",
     party.company && party.name && party.company !== party.name ? `t.a.v. ${party.name}` : "",
@@ -85,7 +89,7 @@ function customerLines(party: PdfParty) {
     party.phone,
     party.vatId ? `BTW: ${party.vatId}` : "",
     party.kvk ? `KvK: ${party.kvk}` : ""
-  ].filter((line) => Boolean(line && String(line).trim()));
+  ].filter(nonEmpty);
 }
 
 function drawCheckbox(doc: InstanceType<typeof PDFDocument>, x: number, y: number, size = 10) {
