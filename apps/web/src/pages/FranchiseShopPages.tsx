@@ -31,6 +31,42 @@ function productImage(path?: string) {
   return assetUrl(path.replace(/^\/+/, ""));
 }
 
+function formatEuro(cents: number) {
+  return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format((cents || 0) / 100);
+}
+
+function QtyControl({
+  value,
+  onChange,
+  ariaLabel
+}: {
+  value: number;
+  onChange: (next: number) => void;
+  ariaLabel?: string;
+}) {
+  return (
+    <div className="fs-qty" role="group" aria-label={ariaLabel || "Aantal"}>
+      <button type="button" aria-label="Minder" onClick={() => onChange(value - 1)}>
+        −
+      </button>
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={String(value)}
+        onChange={(e) => {
+          const digits = e.target.value.replace(/\D/g, "");
+          onChange(digits ? Number(digits) : 0);
+        }}
+        aria-label="Aantal"
+      />
+      <button type="button" aria-label="Meer" onClick={() => onChange(value + 1)}>
+        +
+      </button>
+    </div>
+  );
+}
+
 export function FranchiseLoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -148,6 +184,7 @@ export function FranchiseShopPage() {
   );
 
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
+  const cartTotalCents = cart.reduce((sum, line) => sum + line.product.priceCents * line.quantity, 0);
 
   function setLineQty(productId: string, next: number) {
     setQty((current) => ({
@@ -232,7 +269,9 @@ export function FranchiseShopPage() {
           <div className="fs-catalog-head">
             <div>
               <h2>Assortiment</h2>
-              <p className="fs-lead">Kies wat je nodig hebt voor de vestiging. Geen prijzen — alles gaat via Tres Amigos.</p>
+              <p className="fs-lead">
+                Prijzen voor {user.locationCode} {user.locationName}. Bestel wat je nodig hebt voor de vestiging.
+              </p>
             </div>
             <label className="fs-search">
               <span>Zoeken</span>
@@ -256,24 +295,13 @@ export function FranchiseShopPage() {
                         <img src={productImage(product.image)} alt={product.name} loading="lazy" />
                       </div>
                       <div className="fs-product-body">
-                        <h3>{product.name}</h3>
+                        <div className="fs-product-title-row">
+                          <h3>{product.name}</h3>
+                          <strong className="fs-price">{formatEuro(product.priceCents)}</strong>
+                        </div>
                         {product.description ? <p>{product.description}</p> : <p className="fs-muted">—</p>}
                         <div className="fs-product-foot">
-                          <div className="fs-qty">
-                            <button type="button" aria-label="Minder" onClick={() => setLineQty(product.id, quantity - 1)}>
-                              −
-                            </button>
-                            <input
-                              type="number"
-                              min={0}
-                              max={999}
-                              value={quantity}
-                              onChange={(e) => setLineQty(product.id, Number(e.target.value) || 0)}
-                            />
-                            <button type="button" aria-label="Meer" onClick={() => setLineQty(product.id, quantity + 1)}>
-                              +
-                            </button>
-                          </div>
+                          <QtyControl value={quantity} onChange={(next) => setLineQty(product.id, next)} />
                           <button
                             type="button"
                             className="fs-add"
@@ -320,23 +348,12 @@ export function FranchiseShopPage() {
                     <img src={productImage(line.product.image)} alt="" />
                     <div>
                       <strong>{line.product.name}</strong>
-                      <span>Aantal bijwerken</span>
+                      <span>
+                        {formatEuro(line.product.priceCents)} · regel{" "}
+                        {formatEuro(line.product.priceCents * line.quantity)}
+                      </span>
                     </div>
-                    <div className="fs-qty">
-                      <button type="button" onClick={() => setLineQty(line.product.id, line.quantity - 1)}>
-                        −
-                      </button>
-                      <input
-                        type="number"
-                        min={0}
-                        max={999}
-                        value={line.quantity}
-                        onChange={(e) => setLineQty(line.product.id, Number(e.target.value) || 0)}
-                      />
-                      <button type="button" onClick={() => setLineQty(line.product.id, line.quantity + 1)}>
-                        +
-                      </button>
-                    </div>
+                    <QtyControl value={line.quantity} onChange={(next) => setLineQty(line.product.id, next)} />
                   </li>
                 ))}
               </ul>
@@ -354,7 +371,9 @@ export function FranchiseShopPage() {
           <aside className="fs-checkout-aside">
             <img className="fs-aside-logo" src="/assets/site/tres-amigos-logo-new.png" alt="" />
             <h2>Bestelling afronden</h2>
-            <p className="fs-lead">Je bestelling gaat naar Tres Amigos. Afhandeling en facturatie regelen wij.</p>
+            <p className="fs-lead">
+              Prijzen gelden voor {user.locationCode} {user.locationName}. Facturatie via Tres Amigos.
+            </p>
             <label>
               <span>Opmerking</span>
               <textarea
@@ -365,8 +384,8 @@ export function FranchiseShopPage() {
               />
             </label>
             <div className="fs-total">
-              <span>Artikelen</span>
-              <strong>{cartCount}</strong>
+              <span>{cartCount} artikel{cartCount === 1 ? "" : "en"}</span>
+              <strong>{formatEuro(cartTotalCents)}</strong>
             </div>
             {message && tab === "checkout" ? (
               <p className={message.includes("geplaatst") ? "fs-success" : "fs-error"}>{message}</p>
@@ -404,9 +423,14 @@ export function FranchiseShopPage() {
                         <span>
                           {item.quantity}× {item.productName}
                         </span>
+                        <strong>{formatEuro(item.lineTotalCents)}</strong>
                       </li>
                     ))}
                   </ul>
+                  <div className="fs-total">
+                    <span>Totaal</span>
+                    <strong>{formatEuro(order.subtotalCents)}</strong>
+                  </div>
                 </article>
               ))}
             </div>
