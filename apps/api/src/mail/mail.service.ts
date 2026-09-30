@@ -570,7 +570,7 @@ export class MailService {
 
   async createGoogleOAuthUrl(
     requestOrigin?: string,
-    options?: { category?: MailNotifyCategory; loginHint?: string }
+    options?: { category?: MailNotifyCategory }
   ) {
     if (!(await this.isGoogleOAuthConfigured())) {
       throw new Error(
@@ -591,20 +591,17 @@ export class MailService {
       this.oauthPayloadMemory.set(state, payload);
     }
 
+    // select_account: altijd account kiezen op Google's pagina (geen vooraf geforceerd adres).
     const params = new URLSearchParams({
       client_id: creds.clientId,
       redirect_uri: this.googleRedirectUri(requestOrigin),
       response_type: "code",
       scope: `${GMAIL_SEND_SCOPE} ${USERINFO_SCOPE}`,
       access_type: "offline",
-      prompt: "consent",
+      prompt: "select_account consent",
       include_granted_scopes: "true",
       state
     });
-    const hint = String(options?.loginHint || "").trim();
-    if (hint.includes("@")) {
-      params.set("login_hint", hint);
-    }
     return `${GOOGLE_AUTH_URL}?${params.toString()}`;
   }
 

@@ -284,7 +284,7 @@ export class IntegrationsService {
 
   async startGoogleOAuth(
     requestOrigin?: string,
-    options?: { category?: MailNotifyCategory; loginHint?: string }
+    options?: { category?: MailNotifyCategory }
   ) {
     try {
       const url = await this.mailService.createGoogleOAuthUrl(requestOrigin, options);

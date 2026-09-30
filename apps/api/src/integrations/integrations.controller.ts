@@ -58,7 +58,6 @@ export class AdminIntegrationsController {
   @RequirePermissions("integrations")
   startGoogle(
     @Query("category") category: string | undefined,
-    @Query("loginHint") loginHint: string | undefined,
     @Req() req: { headers: Record<string, string | string[] | undefined>; protocol?: string }
   ) {
     const proto = String(req.headers["x-forwarded-proto"] || req.protocol || "http");
@@ -69,8 +68,7 @@ export class AdminIntegrationsController {
         ? category
         : undefined;
     return this.integrationsService.startGoogleOAuth(origin, {
-      category: normalizedCategory,
-      loginHint
+      category: normalizedCategory
     });
   }
 }

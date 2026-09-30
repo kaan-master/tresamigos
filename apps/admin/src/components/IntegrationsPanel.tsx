@@ -377,8 +377,8 @@ export function IntegrationsPanel({
     setConnectingCategory(category);
     setError("");
     try {
-      const hint = mailForm.notifications[category] || DEFAULT_NOTIFICATIONS[category];
-      const query = new URLSearchParams({ category, loginHint: hint });
+      // Geen login_hint: Google toont accountkiezer; gekozen account = koppeling.
+      const query = new URLSearchParams({ category });
       const result = await api<{ url: string }>(`/api/admin/integrations/mailrelay/google/start?${query.toString()}`);
       window.location.href = result.url;
     } catch (connectError) {
@@ -743,8 +743,8 @@ export function IntegrationsPanel({
                 <p className="ta-seo-hint">Sla Client ID en Secret op, daarna kun je per categorie inloggen.</p>
               ) : (
                 <p className="ta-seo-hint">
-                  Log per categorie één keer in met het juiste Google-account. De inbox-velden staan al klaar met de
-                  standaardadressen.
+                  Per categorie: Inloggen → Google-account kiezen → toestemming geven. Het gekozen account wordt de
+                  koppeling (adressen hieronder zijn alleen hint, geen vooraf gekozen login).
                 </p>
               )}
 
@@ -773,18 +773,10 @@ export function IntegrationsPanel({
                         <span>Google-account</span>
                         <input
                           type="email"
-                          value={mailForm.notifications[category.id]}
+                          value={connected.connected ? connected.email : ""}
                           placeholder={category.placeholder}
-                          onChange={(event) =>
-                            setMailForm((current) =>
-                              current
-                                ? {
-                                    ...current,
-                                    notifications: { ...current.notifications, [category.id]: event.target.value }
-                                  }
-                                : current
-                            )
-                          }
+                          readOnly
+                          autoComplete="off"
                         />
                       </label>
                       <div className="ta-integrations-category-actions">
@@ -811,11 +803,7 @@ export function IntegrationsPanel({
                             onClick={() => void connectGoogleMail(category.id)}
                           >
                             <ProviderIcon provider="google" />
-                            <span>
-                              {connectingCategory === category.id
-                                ? "Bezig..."
-                                : `Inloggen · ${mailForm.notifications[category.id] || category.placeholder}`}
-                            </span>
+                            <span>{connectingCategory === category.id ? "Bezig..." : "Inloggen met Google"}</span>
                           </button>
                         )}
                       </div>
