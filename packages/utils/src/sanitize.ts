@@ -341,7 +341,8 @@ export const DEFAULT_PAGE_MEDIA: SiteContent["site"]["pageMedia"] = {
     hero: defaultPageMediaSlot("assets/site/work-with-us-hero.png")
   },
   home: {
-    showcase: defaultPageMediaSlot("assets/site/home-hero.png")
+    showcase: defaultPageMediaSlot("assets/site/home-hero.png"),
+    guests: defaultPageMediaSlot("assets/site/home-hero.png")
   },
   ourValue: {
     hero: defaultPageMediaSlot("assets/site/our-value-hero.png"),
@@ -413,7 +414,8 @@ function sanitizePageMedia(value: SiteContent["site"]["pageMedia"] | undefined):
     home: {
       showcase: sanitizePageMediaSlot(raw.home?.showcase, DEFAULT_PAGE_MEDIA.home.showcase, [
         "assets/site/loyalty-cheers.jpg"
-      ])
+      ]),
+      guests: sanitizePageMediaSlot(raw.home?.guests, DEFAULT_PAGE_MEDIA.home.guests)
     },
     ourValue: {
       hero: sanitizePageMediaSlot(raw.ourValue?.hero, DEFAULT_PAGE_MEDIA.ourValue.hero),

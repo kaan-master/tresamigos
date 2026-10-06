@@ -1850,12 +1850,6 @@ select {
     min-height: 280px;
   }
 
-  .ta-sidebar {
-    position: static;
-    height: auto;
-    padding-bottom: 24px;
-  }
-
   .ta-action-dock {
     left: 14px;
     right: 14px;
@@ -4671,21 +4665,106 @@ body.admin-tablet-mode .ta-action-dock {
 .ta-nav-toggle{display:none}
 .ta-nav-dim{display:none}
 @media(max-width:980px){
-  .entra-shell{grid-template-columns:1fr}
-  .entra-nav{display:flex;overflow:auto;border-right:0;border-bottom:1px solid #e6e6e6;padding:8px}
-  .entra-nav-group{display:flex}
+  .ta-panel-entra{overflow:visible}
+  .entra-shell{grid-template-columns:1fr;min-height:0}
+  .ta-panel-entra .entra-shell{min-height:0}
+  .ta-nav-toggle{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:44px;
+    height:44px;
+    border:1px solid var(--ta-line);
+    border-radius:14px;
+    background:#fff;
+    color:var(--ta-text);
+    cursor:pointer;
+    flex:0 0 auto;
+  }
+  .ta-nav-dim{
+    display:block;
+    position:fixed;
+    inset:0;
+    z-index:90;
+    border:0;
+    background:rgba(17,12,8,.42);
+  }
+  .ta-sidebar{
+    position:fixed;
+    z-index:95;
+    left:0;
+    top:0;
+    width:min(320px,88vw);
+    height:100dvh;
+    transform:translateX(-110%);
+    transition:transform 220ms var(--ta-ease);
+    box-shadow:none;
+  }
+  .ta-sidebar.is-open{
+    transform:translateX(0);
+    box-shadow:16px 0 40px rgba(31,22,11,.18);
+  }
+  .entra-nav{
+    display:flex;
+    flex-wrap:nowrap;
+    gap:2px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;
+    scrollbar-width:thin;
+    border-right:0;
+    border-bottom:1px solid #e6e6e6;
+    padding:8px 10px;
+    background:#fafafa;
+  }
+  .entra-nav-group{display:flex;flex:0 0 auto}
   .entra-nav p{display:none}
-  .entra-nav button{min-width:max-content;grid-template-columns:18px auto;border-left:0;border-bottom:3px solid transparent;padding:8px 12px}
+  .entra-nav button{
+    min-width:max-content;
+    grid-template-columns:18px auto;
+    border-left:0;
+    border-bottom:3px solid transparent;
+    padding:10px 14px;
+  }
   .entra-nav button small{display:none}
+  .entra-nav button strong{font-size:15px}
   .entra-nav button.is-active{border-bottom-color:#fcb92a}
+  .entra-main{padding:14px 14px 28px}
+  .entra-breadcrumbs{display:none}
+  .entra-head h2{font-size:20px;margin:0 0 4px}
+  .entra-head p{font-size:14px;line-height:1.45;margin:0 0 12px}
+  .entra-commands{
+    display:flex;
+    flex-wrap:nowrap;
+    gap:6px;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;
+    padding:0 0 10px;
+    margin:0 0 14px;
+  }
+  .entra-cmd{
+    flex:0 0 auto;
+    padding:10px 14px;
+    font-size:14px;
+    border:1px solid #e6e6e6;
+    border-radius:999px;
+    background:#fff;
+  }
+  .entra-cmd.is-active{border-color:#fcb92a;background:#fff4d4}
+  .entra-search{min-width:0}
   .entra-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .entra-store-grid{grid-template-columns:1fr}
   .ta-hbar-row{grid-template-columns:1fr auto}
   .ta-hbar-track{grid-column:1/-1}
   .entra-blade{width:100%}
   .entra-blade-body input,.entra-blade-body select,.entra-search input{font-size:16px;height:42px}
-  .entra-cmd{padding:12px 14px;font-size:15px}
   .entra-table th,.entra-table td{padding:12px 10px}
+  .ta-home-card{padding:16px;border-radius:16px}
+  .ta-home-card-head h3{font-size:18px}
+  .ta-home-card-head p{font-size:14px;line-height:1.45}
+  .ta-hours-table{min-width:0}
 }
 
 @media (max-width: 900px) {
@@ -4733,6 +4812,8 @@ body.admin-tablet-mode .ta-action-dock {
   .ta-field select {
     font-size: 16px;
     min-height: 48px;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .ta-shell {
@@ -4755,17 +4836,48 @@ body.admin-tablet-mode .ta-action-dock {
 
   .ta-main-head {
     align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
   }
 
   .ta-main-head-title {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     min-width: 0;
+    flex: 1;
+  }
+
+  .ta-main-breadcrumbs {
+    display: none;
   }
 
   .ta-main-head h1 {
-    font-size: 28px;
+    font-size: 20px;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .ta-tablet-toggle span {
+    display: none;
+  }
+
+  .ta-tablet-toggle {
+    padding: 10px;
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+  }
+
+  .ta-field {
+    margin-bottom: 16px;
+    gap: 8px;
+  }
+
+  .ta-field span {
+    font-size: 14px;
+    font-weight: 700;
   }
 
   .ta-nav-dim {
@@ -4846,6 +4958,109 @@ body.admin-tablet-mode .ta-action-dock {
 
   .entra-cat-row {
     grid-template-columns: 1fr auto;
+  }
+}
+
+/* Phone: max leesruimte, minder chrome */
+@media (max-width: 640px) {
+  .ta-main {
+    padding: 12px 10px 40px;
+  }
+
+  .ta-shell.is-tablet-mode .ta-main {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .ta-tablet-bar {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  .ta-tablet-bar-title {
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .ta-panel {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .entra-main {
+    padding: 12px 10px 24px;
+  }
+
+  .entra-head h2 {
+    font-size: 18px;
+  }
+
+  .entra-head p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .entra-nav button {
+    padding: 10px 12px;
+  }
+
+  .entra-nav button strong {
+    font-size: 14px;
+  }
+
+  .entra-cmd {
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+
+  .ta-home-stack {
+    gap: 12px;
+  }
+
+  .ta-home-card {
+    padding: 14px;
+    border-radius: 14px;
+    box-shadow: none;
+  }
+
+  .ta-home-card-head {
+    margin-bottom: 12px;
+  }
+
+  .ta-home-card-head h3 {
+    font-size: 17px;
+  }
+
+  .ta-grid {
+    gap: 0;
+  }
+
+  .ta-field input,
+  .ta-field textarea,
+  .ta-field select {
+    font-size: 16px;
+    min-height: 48px;
+    padding: 12px 14px;
+  }
+
+  .ta-hours-layout {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .ta-hours-table {
+    min-width: 300px;
+  }
+
+  .ta-hours-table th,
+  .ta-hours-table td {
+    padding: 10px 8px;
+    font-size: 13px;
   }
 }
 

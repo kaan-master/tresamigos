@@ -36,6 +36,13 @@ const PAGE_SLOTS: Record<PageMediaPageId, SlotMeta[]> = {
       location: "Home · sfeerfoto naast het menu",
       format: "Showcase foto",
       aspectRatio: 3 / 4
+    },
+    {
+      id: "guests",
+      label: "Gasten-foto",
+      location: "Home · video-sectie (Tres Amigos gasten)",
+      format: "Hero-kaart",
+      aspectRatio: 4 / 5
     }
   ],
   ourStory: [

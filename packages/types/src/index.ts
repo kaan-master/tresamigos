@@ -335,6 +335,7 @@ export interface PageMediaSettings {
   };
   home: {
     showcase: PageMediaSlot;
+    guests: PageMediaSlot;
   };
   ourValue: {
     hero: PageMediaSlot;

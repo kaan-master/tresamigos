@@ -26,6 +26,8 @@ export function HomePage({ content }: { content: SiteContent }) {
   const seo = pageSeo(content, "home");
   const showcaseSlot = site.pageMedia.home.showcase;
   const showcaseSrc = resolvePageMediaSrc(showcaseSlot, SHOWCASE_FALLBACK);
+  const guestsSlot = site.pageMedia.home.guests;
+  const guestsSrc = resolvePageMediaSrc(guestsSlot, SHOWCASE_FALLBACK);
   const featuredItems = menu
     .flatMap((category) => category.items.filter((item) => item.active !== false))
     .filter((item) => item.featured)
@@ -108,7 +110,11 @@ export function HomePage({ content }: { content: SiteContent }) {
               <p className="lead">{t("home.videos.intro")}</p>
             </div>
             <div className="hero-card food-first">
-              <img src={assetUrl(site.seo.image || "/assets/site/home-hero.png")} alt="Tres Amigos gasten" />
+              <img
+                src={assetUrl(guestsSrc)}
+                alt="Tres Amigos gasten"
+                style={pageMediaImgStyle(guestsSlot)}
+              />
               <div className="image-caption">{t("home.videos.caption")}</div>
             </div>
           </div>
