@@ -12,7 +12,9 @@ const SEO_PATHS: Record<(typeof SEO_PAGE_KEYS)[number], string> = {
   ourValue: "/our-value",
   vacancy: "/vacancy",
   franchise: "/franchise",
-  loyalty: "/loyalty"
+  loyalty: "/loyalty",
+  privacy: "/privacy",
+  terms: "/terms"
 };
 
 @Controller()

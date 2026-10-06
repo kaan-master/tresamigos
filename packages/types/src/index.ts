@@ -74,7 +74,9 @@ export const SEO_PAGE_KEYS = [
   "ourValue",
   "vacancy",
   "franchise",
-  "loyalty"
+  "loyalty",
+  "privacy",
+  "terms"
 ] as const;
 
 export type SeoPageKey = (typeof SEO_PAGE_KEYS)[number];
@@ -95,7 +97,9 @@ export const SEO_PAGE_LABELS: Record<SeoPageKey, string> = {
   ourValue: "Our Value",
   vacancy: "Vacatures",
   franchise: "Franchise",
-  loyalty: "Loyalty"
+  loyalty: "Loyalty",
+  privacy: "Privacy",
+  terms: "Voorwaarden"
 };
 
 export const NAV_MAIN_ITEM_IDS = [

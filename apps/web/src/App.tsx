@@ -13,6 +13,7 @@ import { HomePage } from "./pages/HomePage";
 import { LocationsPage, OrderPage } from "./pages/LocationsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { LoyaltyPage } from "./pages/LoyaltyPage";
+import { PrivacyPage, TermsPage } from "./pages/LegalPages";
 import { MenuPage } from "./pages/MenuPage";
 import { OurStoryPage } from "./pages/OurStoryPage";
 import { OurValuePage } from "./pages/OurValuePage";
@@ -42,6 +43,8 @@ function ShellRoutes() {
         <Route path="locations" element={<LocationsPage content={data} />} />
         <Route path="franchise" element={<FranchisePage content={data} />} />
         <Route path="loyalty" element={<LoyaltyPage content={data} />} />
+        <Route path="privacy" element={<PrivacyPage content={data} />} />
+        <Route path="terms" element={<TermsPage content={data} />} />
         <Route path="contact" element={<ContactPage content={data} />} />
         <Route path="our-story" element={<OurStoryPage content={data} />} />
         <Route path="our-value" element={<OurValuePage content={data} />} />

@@ -772,6 +772,14 @@ const DEFAULT_SEO_PAGES: Record<SeoPageKey, PageSeo> = {
   loyalty: {
     title: "Loyalty | Tres Amigos",
     description: "Join El Club: verdien punten bij Tres Amigos en wissel in voor tacos, quesadillas en meer."
+  },
+  privacy: {
+    title: "Privacy | Tres Amigos",
+    description: "Privacyverklaring van Tres Amigos: hoe wij persoonsgegevens verwerken op tresamigos.nl."
+  },
+  terms: {
+    title: "Terms of Service | Tres Amigos",
+    description: "Algemene voorwaarden voor het gebruik van tresamigos.nl, catering en franchise."
   }
 };
 

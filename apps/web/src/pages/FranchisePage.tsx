@@ -464,7 +464,10 @@ export function FranchisePage({ content }: { content: SiteContent }) {
                         checked={form.termsAccepted}
                         onChange={(e) => update("termsAccepted", e.target.checked)}
                       />
-                      <span>{t("franchise.terms")}</span>
+                      <span>
+                        {t("franchise.terms")}{" "}
+                        <Link to="/terms">{t("franchise.termsLink")}</Link>
+                      </span>
                     </label>
                   </div>
                 ) : null}

@@ -10,7 +10,9 @@ const SEO_PAGE_PATHS: Record<SeoPageKey, string> = {
   ourValue: "/our-value",
   vacancy: "/vacancy",
   franchise: "/franchise",
-  loyalty: "/loyalty"
+  loyalty: "/loyalty",
+  privacy: "/privacy",
+  terms: "/terms"
 };
 
 function truncate(text: string, max: number) {

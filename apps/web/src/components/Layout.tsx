@@ -346,7 +346,13 @@ export function Layout({ content }: LayoutProps) {
             <SocialLinks instagramUrl={site.footer.instagramUrl} tiktokUrl={site.footer.tiktokUrl} />
           </div>
         </div>
-        <div className="shell copyright">{formatCopyright(site.footer.copyright)}</div>
+        <div className="shell copyright">
+          <span>{formatCopyright(site.footer.copyright)}</span>
+          <span className="footer-legal">
+            <Link to="/privacy">{t("footer.privacy")}</Link>
+            <Link to="/terms">{t("footer.terms")}</Link>
+          </span>
+        </div>
       </footer>
       {site.promoPopup?.enabled ? <PromoPopup settings={site.promoPopup} /> : null}
     </>
