@@ -32,6 +32,27 @@ function logStep(label: string) {
   console.log(`  · ${label}`);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+/** Keep existing objects; only add keys that are missing (never replace src/content). */
+function mergeMissingRecords(existing: unknown, incoming: unknown): unknown {
+  if (!isRecord(existing)) return incoming;
+  if (!isRecord(incoming)) return existing;
+  const out: Record<string, unknown> = { ...existing };
+  for (const [key, incomingValue] of Object.entries(incoming)) {
+    if (out[key] == null) {
+      out[key] = incomingValue;
+      continue;
+    }
+    if (isRecord(out[key]) && isRecord(incomingValue)) {
+      out[key] = mergeMissingRecords(out[key], incomingValue);
+    }
+  }
+  return out;
+}
+
 async function upsertSite(content: SiteContent) {
   const { site } = content;
   const siteData = {
@@ -73,20 +94,31 @@ async function upsertSite(content: SiteContent) {
     pageMedia: site.pageMedia as object
   };
 
-  await prisma.siteSettings.upsert({
-    where: { id: "default" },
-    create: { id: "default", ...siteData },
-    update: siteData
-  });
+  const existing = await prisma.siteSettings.findUnique({ where: { id: "default" } });
+  if (!existing) {
+    await prisma.siteSettings.create({ data: { id: "default", ...siteData } });
+    return;
+  }
+
+  // Nooit admin-content terugzetten. Alleen ontbrekende pageMedia-slots toevoegen (nieuwe velden).
+  const mergedPageMedia = mergeMissingRecords(existing.pageMedia, site.pageMedia);
+  if (JSON.stringify(mergedPageMedia) !== JSON.stringify(existing.pageMedia)) {
+    await prisma.siteSettings.update({
+      where: { id: "default" },
+      data: { pageMedia: mergedPageMedia as object }
+    });
+    console.log("  · bestaande site behouden; nieuwe pagina-foto slots aangevuld");
+  } else {
+    console.log("  · bestaande site behouden (geen overwrite)");
+  }
 }
 
 async function upsertLocations(content: SiteContent) {
-  const keepIds = content.locations.map((location) => location.id);
-
   for (const [index, location] of content.locations.entries()) {
-    await prisma.location.upsert({
-      where: { id: location.id },
-      create: {
+    const existing = await prisma.location.findUnique({ where: { id: location.id } });
+    if (existing) continue;
+    await prisma.location.create({
+      data: {
         id: location.id,
         area: location.area,
         name: location.name,
@@ -95,105 +127,59 @@ async function upsertLocations(content: SiteContent) {
         code: location.code || String(index + 1).padStart(3, "0"),
         featured: location.featured === true,
         active: location.active !== false,
-        sortOrder: index
-      },
-      update: {
-        area: location.area,
-        name: location.name,
-        address: location.address,
-        note: location.note,
-        code: location.code || String(index + 1).padStart(3, "0"),
-        featured: location.featured === true,
-        active: location.active !== false,
-        sortOrder: index
+        sortOrder: index,
+        links: location.links.length
+          ? {
+              create: location.links.map((link, linkIndex) => ({
+                label: link.label,
+                url: link.url,
+                sortOrder: linkIndex
+              }))
+            }
+          : undefined
       }
     });
-
-    await prisma.orderLink.deleteMany({ where: { locationId: location.id } });
-    if (location.links.length) {
-      await prisma.orderLink.createMany({
-        data: location.links.map((link, linkIndex) => ({
-          locationId: location.id,
-          label: link.label,
-          url: link.url,
-          sortOrder: linkIndex
-        }))
-      });
-    }
-  }
-
-  if (keepIds.length) {
-    await prisma.orderLink.deleteMany({ where: { locationId: { notIn: keepIds } } });
-    await prisma.location.deleteMany({ where: { id: { notIn: keepIds } } });
   }
 }
 
 async function upsertVideos(content: SiteContent) {
-  const keepIds = content.videos.map((video) => video.id);
-
   for (const [index, video] of content.videos.entries()) {
-    await prisma.video.upsert({
-      where: { id: video.id },
-      create: {
+    const existing = await prisma.video.findUnique({ where: { id: video.id } });
+    if (existing) continue;
+    await prisma.video.create({
+      data: {
         id: video.id,
         title: video.title,
         caption: video.caption,
         src: video.src,
         active: video.active !== false,
         sortOrder: index
-      },
-      update: {
-        title: video.title,
-        caption: video.caption,
-        src: video.src,
-        active: video.active !== false,
-        sortOrder: index
       }
     });
-  }
-
-  if (keepIds.length) {
-    await prisma.video.deleteMany({ where: { id: { notIn: keepIds } } });
   }
 }
 
 async function upsertMenu(content: SiteContent) {
-  const keepCategoryIds = content.menu.map((category) => category.id);
-  const keepItemIds = content.menu.flatMap((category) => category.items.map((item) => item.id));
-
   for (const [categoryIndex, category] of content.menu.entries()) {
-    await prisma.menuCategory.upsert({
-      where: { id: category.id },
-      create: {
-        id: category.id,
-        title: category.title,
-        orderLabel: category.orderLabel,
-        active: category.active !== false,
-        sortOrder: categoryIndex
-      },
-      update: {
-        title: category.title,
-        orderLabel: category.orderLabel,
-        active: category.active !== false,
-        sortOrder: categoryIndex
-      }
-    });
+    const existingCategory = await prisma.menuCategory.findUnique({ where: { id: category.id } });
+    if (!existingCategory) {
+      await prisma.menuCategory.create({
+        data: {
+          id: category.id,
+          title: category.title,
+          orderLabel: category.orderLabel,
+          active: category.active !== false,
+          sortOrder: categoryIndex
+        }
+      });
+    }
 
     for (const [itemIndex, item] of category.items.entries()) {
-      await prisma.menuItem.upsert({
-        where: { id: item.id },
-        create: {
+      const existingItem = await prisma.menuItem.findUnique({ where: { id: item.id } });
+      if (existingItem) continue;
+      await prisma.menuItem.create({
+        data: {
           id: item.id,
-          categoryId: category.id,
-          name: item.name,
-          description: item.description,
-          price: item.price,
-          image: item.image || "",
-          featured: item.featured === true,
-          active: item.active !== false,
-          sortOrder: itemIndex
-        },
-        update: {
           categoryId: category.id,
           name: item.name,
           description: item.description,
@@ -205,13 +191,6 @@ async function upsertMenu(content: SiteContent) {
         }
       });
     }
-  }
-
-  if (keepItemIds.length) {
-    await prisma.menuItem.deleteMany({ where: { id: { notIn: keepItemIds } } });
-  }
-  if (keepCategoryIds.length) {
-    await prisma.menuCategory.deleteMany({ where: { id: { notIn: keepCategoryIds } } });
   }
 }
 
@@ -278,16 +257,21 @@ async function upsertCountCatalog() {
 }
 
 async function upsertAdminUser(password: string) {
-  await prisma.adminUser.upsert({
-    where: { email: ADMIN_EMAIL },
-    create: {
+  const existing = await prisma.adminUser.findUnique({ where: { email: ADMIN_EMAIL } });
+  if (existing) {
+    await prisma.adminUser.update({
+      where: { email: ADMIN_EMAIL },
+      data: {
+        name: ADMIN_NAME,
+        permissions: [...ADMIN_TAB_IDS],
+        active: true
+      }
+    });
+    return;
+  }
+  await prisma.adminUser.create({
+    data: {
       email: ADMIN_EMAIL,
-      name: ADMIN_NAME,
-      passwordHash: hashPassword(password),
-      permissions: [...ADMIN_TAB_IDS],
-      active: true
-    },
-    update: {
       name: ADMIN_NAME,
       passwordHash: hashPassword(password),
       permissions: [...ADMIN_TAB_IDS],
