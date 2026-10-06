@@ -117,6 +117,7 @@ export class IntegrationsService {
           : oauth.source === "env"
             ? "•••••••• (env)"
             : "",
+        googleRedirectUri: this.mailService.googleRedirectUri(),
         googleByCategory: this.mailService.publicGoogleByCategory(row.mailRelayGoogleByCategory) as IntegrationGoogleByCategory,
         notifications: this.notificationsFromRow(row)
       },

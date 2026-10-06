@@ -636,10 +636,21 @@ export function IntegrationsPanel({
                   </span>
                 </div>
                 <p className="ta-seo-hint" style={{ margin: 0 }}>
-                  Haal Client ID en Secret uit Google Cloud Console → APIs &amp; Services → Credentials → OAuth 2.0 Client
-                  (Web). Redirect URI:{" "}
-                  <code>https://tresamigos.nl/api/integrations/mailrelay/google/callback</code>
+                  In Google Cloud Console → APIs &amp; Services → Credentials → jouw OAuth-client (type{" "}
+                  <strong>Web application</strong>) moet deze redirect URI <em>letterlijk</em> staan — anders krijg je
+                  Error 400 <code>redirect_uri_mismatch</code>:
                 </p>
+                <label className="ta-field">
+                  <span>Redirect URI (kopieer naar Google)</span>
+                  <input
+                    readOnly
+                    value={
+                      settings?.mailRelay.googleRedirectUri ||
+                      "https://tresamigos.nl/api/integrations/mailrelay/google/callback"
+                    }
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                </label>
                 <label className="ta-field">
                   <span>Client ID</span>
                   <input

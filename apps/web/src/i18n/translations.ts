@@ -121,6 +121,10 @@ export const translations: Record<Lang, Dict> = {
     "franchise.errorVisitedWhich": "Please select which location you visited.",
     "franchise.errorTerms": "Please accept the terms and conditions.",
     "franchise.errorSend": "Sending failed. Please try again.",
+    "franchise.portalEyebrow": "Existing franchisees",
+    "franchise.portalTitle": "Log in to your shop",
+    "franchise.portalIntro": "Already running a Tres Amigos? Sign in to order materials, merch and supplies for your location.",
+    "franchise.portalCta": "Franchise login",
 
     "loyalty.leatUrl": "https://bomies-fd-bv.app.leat.com",
     "loyalty.navJourney": "The Journey",
@@ -636,6 +640,10 @@ export const translations: Record<Lang, Dict> = {
     "franchise.errorVisitedWhich": "Selecteer welke vestiging je hebt bezocht.",
     "franchise.errorTerms": "Accepteer de algemene voorwaarden.",
     "franchise.errorSend": "Versturen mislukt. Probeer opnieuw.",
+    "franchise.portalEyebrow": "Bestaande franchisenemers",
+    "franchise.portalTitle": "Log in op je shop",
+    "franchise.portalIntro": "Heb je al een Tres Amigos? Log in om materialen, merch en voorraad voor jouw vestiging te bestellen.",
+    "franchise.portalCta": "Franchise inloggen",
 
     "loyalty.leatUrl": "https://bomies-fd-bv.app.leat.com",
     "loyalty.navJourney": "De journey",

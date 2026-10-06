@@ -52,6 +52,7 @@ type GoogleByCategoryStore = Partial<Record<MailNotifyCategory, StoredGoogleAcco
 
 type OAuthStatePayload = {
   category?: MailNotifyCategory;
+  redirectUri?: string;
 };
 
 const DEFAULT_NOTIFY: Record<MailNotifyCategory, string> = {
@@ -68,6 +69,23 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 const GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
 const USERINFO_SCOPE = "https://www.googleapis.com/auth/userinfo.email";
+const PRODUCTION_GOOGLE_REDIRECT_URI = "https://tresamigos.nl/api/integrations/mailrelay/google/callback";
+
+function canonicalizeGoogleRedirectUri(raw: string): string {
+  try {
+    const url = new URL(raw.trim());
+    const host = url.hostname.replace(/^www\./, "");
+    if (host === "tresamigos.nl") {
+      return PRODUCTION_GOOGLE_REDIRECT_URI;
+    }
+    url.hash = "";
+    url.search = "";
+    url.pathname = "/api/integrations/mailrelay/google/callback";
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return PRODUCTION_GOOGLE_REDIRECT_URI;
+  }
+}
 
 function isMailNotifyCategory(value: unknown): value is MailNotifyCategory {
   return typeof value === "string" && MAIL_NOTIFY_CATEGORIES.includes(value as MailNotifyCategory);
@@ -140,13 +158,14 @@ export class MailService {
   }
 
   googleRedirectUri(requestOrigin?: string) {
-    if (process.env.GOOGLE_MAIL_REDIRECT_URI) return process.env.GOOGLE_MAIL_REDIRECT_URI;
-    const base =
-      process.env.API_PUBLIC_URL ||
-      process.env.PUBLIC_API_URL ||
-      requestOrigin ||
-      `http://localhost:${process.env.PORT || 3100}`;
-    return `${base.replace(/\/$/, "")}/api/integrations/mailrelay/google/callback`;
+    const configured = String(process.env.GOOGLE_MAIL_REDIRECT_URI || "").trim();
+    if (configured) return canonicalizeGoogleRedirectUri(configured);
+    const base = String(process.env.API_PUBLIC_URL || process.env.PUBLIC_API_URL || "").trim();
+    if (base) return canonicalizeGoogleRedirectUri(`${base.replace(/\/$/, "")}/api/integrations/mailrelay/google/callback`);
+    if (requestOrigin) {
+      return canonicalizeGoogleRedirectUri(`${requestOrigin.replace(/\/$/, "")}/api/integrations/mailrelay/google/callback`);
+    }
+    return PRODUCTION_GOOGLE_REDIRECT_URI;
   }
 
   adminRedirectBase() {
@@ -580,8 +599,10 @@ export class MailService {
     const creds = await this.resolveGoogleOAuthCreds();
     const state = createHash("sha256").update(randomBytes(32)).digest("hex");
     const key = this.oauthStateKey(state);
+    const redirectUri = this.googleRedirectUri(requestOrigin);
     const payload: OAuthStatePayload = {
-      category: options?.category && isMailNotifyCategory(options.category) ? options.category : undefined
+      category: options?.category && isMailNotifyCategory(options.category) ? options.category : undefined,
+      redirectUri
     };
     const payloadJson = JSON.stringify(payload);
     try {
@@ -594,7 +615,7 @@ export class MailService {
     // select_account: altijd account kiezen op Google's pagina (geen vooraf geforceerd adres).
     const params = new URLSearchParams({
       client_id: creds.clientId,
-      redirect_uri: this.googleRedirectUri(requestOrigin),
+      redirect_uri: redirectUri,
       response_type: "code",
       scope: `${GMAIL_SEND_SCOPE} ${USERINFO_SCOPE}`,
       access_type: "offline",
@@ -642,11 +663,12 @@ export class MailService {
     if (!code) throw new Error("Google gaf geen autorisatiecode.");
 
     const creds = await this.resolveGoogleOAuthCreds();
+    const redirectUri = statePayload.redirectUri || this.googleRedirectUri(requestOrigin);
     const tokenBody = new URLSearchParams({
       code,
       client_id: creds.clientId,
       client_secret: creds.clientSecret,
-      redirect_uri: this.googleRedirectUri(requestOrigin),
+      redirect_uri: redirectUri,
       grant_type: "authorization_code"
     });
     const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {

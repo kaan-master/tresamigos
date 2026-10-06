@@ -748,6 +748,7 @@ export interface IntegrationMailRelaySettings {
   googleClientId: string;
   googleClientSecretSet: boolean;
   googleClientSecretMasked: string;
+  googleRedirectUri: string;
   googleByCategory: IntegrationGoogleByCategory;
   notifications: IntegrationMailNotifications;
 }

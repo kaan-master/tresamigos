@@ -119,8 +119,8 @@ export function FranchiseLoginPage() {
         <button type="submit" disabled={loading}>
           {loading ? "Bezig..." : "Inloggen"}
         </button>
-        <Link className="fs-back" to="/">
-          Terug naar website
+        <Link className="fs-back" to="/franchise">
+          Terug naar franchise
         </Link>
       </form>
     </div>

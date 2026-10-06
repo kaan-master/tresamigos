@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import type { SiteContent } from "@tresamigos/types";
 import { Helmet } from "../components/Helmet";
 import { useLanguage } from "../i18n/LanguageProvider";
@@ -188,9 +189,14 @@ export function FranchisePage({ content }: { content: SiteContent }) {
           <p className="franchise-hero-brand">Tres Amigos</p>
           <h1>{t("franchise.heroTitle")}</h1>
           <p className="franchise-hero-lead">{t("franchise.heroLead")}</p>
-          <a className="btn primary franchise-hero-cta" href="#franchise-aanvraag">
-            {t("franchise.heroCta")}
-          </a>
+          <div className="franchise-hero-actions">
+            <a className="btn primary franchise-hero-cta" href="#franchise-aanvraag">
+              {t("franchise.heroCta")}
+            </a>
+            <Link className="btn alt franchise-hero-cta" to="/franchise/login">
+              {t("franchise.portalCta")}
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -250,6 +256,19 @@ export function FranchisePage({ content }: { content: SiteContent }) {
             <p>
               <strong>{t("franchise.moneySupportLabel")}</strong> {t("franchise.moneySupport")}
             </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="section section-soft franchise-portal" id="franchise-shop-login">
+        <div className="shell">
+          <div className="franchise-portal-card">
+            <p className="franchise-eyebrow">{t("franchise.portalEyebrow")}</p>
+            <h2 className="section-title">{t("franchise.portalTitle")}</h2>
+            <p className="lead">{t("franchise.portalIntro")}</p>
+            <Link className="btn primary" to="/franchise/login">
+              {t("franchise.portalCta")}
+            </Link>
           </div>
         </div>
       </section>
