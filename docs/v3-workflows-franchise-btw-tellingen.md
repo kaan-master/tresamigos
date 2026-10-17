@@ -13,6 +13,7 @@
 2. [Architectuur & domeinkaart](#2-architectuur--domeinkaart)  
 3. [Spoor A — Multi-franchise pricing + webshop](#3-spoor-a--multi-franchise-pricing--webshop)  
 4. [Spoor B — B2B facturatie, BTW & offerte](#4-spoor-b--b2b-facturatie-btw--offerte)  
+5. [Spoor C — Operations & dagtelling (owner)](#5-spoor-c--operations--dagtelling-owner)  
 6. [Integratie tussen de drie sporen](#6-integratie-tussen-de-drie-sporen)  
 7. [Roadmap v3.1 → v3.3](#7-roadmap-v31--v33)  
 8. [Risico’s, non-goals & acceptatiecriteria](#8-risicos-non-goals--acceptatiecriteria)  
