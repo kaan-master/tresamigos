@@ -1,6 +1,7 @@
 import type { AdminSessionUser, CateringOrder } from "@tresamigos/types";
 import { IconLogout, IconSearch } from "../AdminIcons";
 import { useAdminTablet } from "../../context/AdminTabletContext";
+import { formatAdminVersionLabel } from "../../lib/changelog";
 import { filterSearchItems, type AdminSearchItem } from "../../lib/adminTabletSearch";
 import type { AdminTabletHubItem } from "./AdminTabletHub";
 
@@ -8,6 +9,7 @@ interface Props {
   hubItems: AdminTabletHubItem[];
   activeId?: string;
   onSelectTab: (id: string) => void;
+  onOpenChangelog?: () => void;
   searchItems: AdminSearchItem[];
   onSearchSelect: (item: AdminSearchItem) => void;
   user: AdminSessionUser | null;
@@ -42,6 +44,7 @@ export function AdminStartMenu({
   hubItems,
   activeId,
   onSelectTab,
+  onOpenChangelog,
   searchItems,
   onSearchSelect,
   user,
@@ -182,9 +185,24 @@ export function AdminStartMenu({
             <span>{user?.role === "master" ? "Beheerder" : user?.email || ""}</span>
           </div>
         </div>
-        <button type="button" className="ta-win-start-power" onClick={onLogout} aria-label="Uitloggen">
-          <IconLogout width={18} height={18} />
-        </button>
+        <div className="ta-win-start-foot-actions">
+          {onOpenChangelog ? (
+            <button
+              type="button"
+              className="ta-win-start-version"
+              onClick={() => {
+                setMenuOpen(false);
+                onOpenChangelog();
+              }}
+              aria-label="Versie en wijzigingen"
+            >
+              {formatAdminVersionLabel()}
+            </button>
+          ) : null}
+          <button type="button" className="ta-win-start-power" onClick={onLogout} aria-label="Uitloggen">
+            <IconLogout width={18} height={18} />
+          </button>
+        </div>
       </footer>
     </div>
   );

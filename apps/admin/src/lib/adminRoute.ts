@@ -10,7 +10,9 @@ const TAB_IDS = [
   "reviews",
   "seo",
   "siteSettings",
-  "tellingen"
+  "tellingen",
+  "todo",
+  "changelog"
 ] as const;
 
 export type AdminRouteTab = (typeof TAB_IDS)[number];

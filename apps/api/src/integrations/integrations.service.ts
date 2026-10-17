@@ -307,15 +307,22 @@ export class IntegrationsService {
 
   async testMailRelay(input: IntegrationTestMailInput) {
     const to = cleanText(input?.to, "", 180).toLowerCase();
-    if (!to || !to.includes("@")) {
+    if (to && !to.includes("@")) {
       throw new BadRequestException({ message: "Vul een geldig e-mailadres in voor de testmail." });
     }
+    const category =
+      input?.category === "applications" ||
+      input?.category === "catering" ||
+      input?.category === "franchise" ||
+      input?.category === "other"
+        ? input.category
+        : undefined;
 
     const settings = await this.getOrCreate();
     const result = await this.mailService.sendTestEmail({
       to,
       fromName: settings.mailRelayFromName || "Tres Amigos",
-      fromEmail: settings.mailRelayFromEmail || settings.mailRelayGoogleEmail || settings.mailRelayUsername
+      category
     });
 
     await this.prisma.integrationSettings.update({

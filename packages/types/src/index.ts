@@ -171,7 +171,8 @@ export const ADMIN_TAB_IDS = [
   "footer",
   "integrations",
   "users",
-  "tellingen"
+  "tellingen",
+  "todo"
 ] as const;
 
 export type AdminTabId = (typeof ADMIN_TAB_IDS)[number];
@@ -194,7 +195,8 @@ export const ADMIN_TAB_LABELS: Record<AdminTabId, string> = {
   footer: "Footer",
   integrations: "Integraties",
   users: "Gebruikers",
-  tellingen: "Tellingen"
+  tellingen: "Tellingen",
+  todo: "To do"
 };
 
 export interface AdminUserRecord {
@@ -817,7 +819,8 @@ export interface UpdateIntegrationNewsletterInput {
 }
 
 export interface IntegrationTestMailInput {
-  to: string;
+  to?: string;
+  category?: MailNotifyCategory;
 }
 
 export const APPLICATION_ROLES: ApplicationRole[] = [];

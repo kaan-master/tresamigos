@@ -18,7 +18,9 @@ import { buildAdminSearchItems, type AdminSearchItem } from "./lib/adminTabletSe
 import { ReviewsPanel } from "./components/ReviewsPanel";
 import { SeoPanel } from "./components/SeoPanel";
 import { TellingenPanel } from "./components/TellingenPanel";
+import { TodoPanel } from "./components/todo/TaskBoard";
 import { allowedSiteSettingsViews, SiteSettingsPanel, type SiteSettingsView } from "./components/SiteSettingsPanel";
+import { ChangelogPanel } from "./components/ChangelogPanel";
 import { AdminStartDock } from "./components/tablet/AdminStartDock";
 import { AdminTabletBar } from "./components/tablet/AdminTabletBar";
 import { AdminTabletHub } from "./components/tablet/AdminTabletHub";
@@ -26,6 +28,7 @@ import { AdminTabletToggle } from "./components/tablet/AdminTabletToggle";
 import { useAdminFeedback } from "./context/AdminFeedbackContext";
 import { QuietSaveCapture, QuietSaveProvider } from "./context/QuietSaveContext";
 import { useAdminTablet } from "./context/AdminTabletContext";
+import { formatAdminVersionLabel } from "./lib/changelog";
 import type { AdminSessionUser, AdminTabId } from "@tresamigos/types";
 
 const tabs = [
@@ -40,7 +43,8 @@ const tabs = [
   ["reviews", "Reviews"],
   ["seo", "SEO"],
   ["siteSettings", "Website-instellingen"],
-  ["tellingen", "Tellingen"]
+  ["tellingen", "Tellingen"],
+  ["todo", "To do"]
 ] as const;
 
 type TabId = (typeof tabs)[number][0];
@@ -49,7 +53,7 @@ const NAV_SECTIONS: Array<{ label: string; ids: TabId[] }> = [
   { label: "Overzicht", ids: ["overview"] },
   { label: "Inhoud", ids: ["locations", "products", "media", "seo", "siteSettings"] },
   { label: "Aanvragen", ids: ["applications", "franchise", "newsletter", "catering", "reviews"] },
-  { label: "Beheer", ids: ["tellingen"] }
+  { label: "Beheer", ids: ["todo", "tellingen"] }
 ];
 
 interface Props {
@@ -61,7 +65,9 @@ export function AdminDashboard({ user, onLogout }: Props) {
   const { enabled: tabletMode, screen: tabletScreen, openPanel } = useAdminTablet();
   const { notifyLoading, notifyError, clear: clearFeedback, runSave } = useAdminFeedback();
   const initialRoute = useMemo(() => readAdminRoute(), []);
-  const [activeTab, setActiveTab] = useState<TabId>(initialRoute.tab);
+  const [activeTab, setActiveTab] = useState<TabId | "changelog">(
+    initialRoute.tab === "changelog" ? "changelog" : initialRoute.tab
+  );
   const [navOpen, setNavOpen] = useState(false);
   const [cateringNavigateView, setCateringNavigateView] = useState<CateringView | null>(
     initialRoute.tab === "catering" ? (initialRoute.view as CateringView | null) : null
@@ -157,6 +163,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
   }, [user, siteSettingViews]);
 
   useEffect(() => {
+    if (activeTab === "changelog") return;
     if (!visibleTabs.some(([id]) => id === activeTab)) {
       setActiveTab(visibleTabs[0]?.[0] || "overview");
     }
@@ -260,7 +267,22 @@ export function AdminDashboard({ user, onLogout }: Props) {
     return <AdminLoaderScreen />;
   }
 
-  const activeLabel = tabs.find(([id]) => id === activeTab)?.[1] || "Dashboard";
+  const activeLabel =
+    activeTab === "changelog" ? "Wijzigingen" : tabs.find(([id]) => id === activeTab)?.[1] || "Dashboard";
+
+  function openChangelog() {
+    setActiveTab("changelog");
+    setNavOpen(false);
+    openPanel();
+    setCateringNavigateView(null);
+    setCateringOpenOrderId(null);
+    setApplicationsNavigateView(null);
+    setSiteSettingsNavigateView(null);
+    setIntegrationsSubView(null);
+    setFranchiseNavigateView(null);
+    setTellingenNavigateView(null);
+    writeAdminRoute({ tab: "changelog", view: null, sub: null });
+  }
 
   function selectTab(id: TabId) {
     setActiveTab(id);
@@ -286,6 +308,10 @@ export function AdminDashboard({ user, onLogout }: Props) {
 
   function handleSearchSelect(item: AdminSearchItem) {
     if (item.target.kind === "tab") {
+      if (item.target.tabId === "changelog") {
+        openChangelog();
+        return;
+      }
       selectTab(item.target.tabId as TabId);
       return;
     }
@@ -489,6 +515,12 @@ export function AdminDashboard({ user, onLogout }: Props) {
         </section>
       ) : null}
 
+      {activeTab === "todo" ? (
+        <section className="ta-panel ta-panel-todo">
+          <TodoPanel userId={user?.id ?? null} />
+        </section>
+      ) : null}
+
       {activeTab === "tellingen" ? (
         <section className="ta-panel ta-fade-in ta-panel-entra">
           <TellingenPanel
@@ -519,6 +551,12 @@ export function AdminDashboard({ user, onLogout }: Props) {
               syncNestedView("siteSettings", view, view === "integrations" ? sub : null);
             }}
           />
+        </section>
+      ) : null}
+
+      {activeTab === "changelog" ? (
+        <section className="ta-panel ta-fade-in ta-panel-entra">
+          <ChangelogPanel />
         </section>
       ) : null}
     </>
@@ -584,6 +622,15 @@ export function AdminDashboard({ user, onLogout }: Props) {
                   <IconLogout width={16} height={16} />
                   <span>Uitloggen</span>
                 </button>
+                <button
+                  type="button"
+                  className={`ta-sidebar-version${activeTab === "changelog" ? " is-active" : ""}`}
+                  onClick={openChangelog}
+                  aria-label="Versie en wijzigingen"
+                >
+                  <span>{formatAdminVersionLabel()}</span>
+                  <span className="ta-sidebar-version-label">Wijzigingen</span>
+                </button>
               </div>
             ) : null}
           </aside>
@@ -643,6 +690,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
           hubItems={tabletHubItems}
           activeId={activeTab}
           onSelectTab={(id) => selectTab(id as TabId)}
+          onOpenChangelog={openChangelog}
           searchItems={searchItems}
           onSearchSelect={handleSearchSelect}
           user={user}

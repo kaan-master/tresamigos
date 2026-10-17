@@ -20,6 +20,7 @@ import { ReviewsModule } from "./reviews/reviews.module";
 import { SeoModule } from "./seo/seo.module";
 import { UsersModule } from "./users/users.module";
 import { TellingenModule } from "./tellingen/tellingen.module";
+import { TasksModule } from "./tasks/tasks.module";
 
 @Module({
   imports: [
@@ -44,7 +45,8 @@ import { TellingenModule } from "./tellingen/tellingen.module";
     InstagramModule,
     UsersModule,
     SeoModule,
-    TellingenModule
+    TellingenModule,
+    TasksModule
   ],
   controllers: [HealthController]
 })

@@ -201,7 +201,7 @@ export function IntegrationsPanel({
   const [newsletterForm, setNewsletterForm] = useState<NewsletterForm | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<"mail" | "google" | "newsletter" | null>(null);
-  const [testing, setTesting] = useState(false);
+  const [testingTarget, setTestingTarget] = useState<MailNotifyCategory | "relay" | null>(null);
   const [testRecipient, setTestRecipient] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -486,22 +486,23 @@ export function IntegrationsPanel({
     }
   }
 
-  async function sendTestMail() {
-    if (testing) return;
-    setTesting(true);
+  async function sendTestMail(category?: MailNotifyCategory) {
+    if (testingTarget) return;
+    const target = category || "relay";
+    setTestingTarget(target);
     setMessage("");
     setError("");
     try {
       const result = await api<{ message: string; integrations: IntegrationSettingsPublic }>(
         "/api/admin/integrations/mailrelay/test",
-        { method: "POST", body: JSON.stringify({ to: testRecipient }) }
+        { method: "POST", body: JSON.stringify({ to: testRecipient, category }) }
       );
       applySettings(result.integrations);
       setMessage(result.message);
     } catch (testError) {
       setError(testError instanceof Error ? testError.message : "Testmail mislukt.");
     } finally {
-      setTesting(false);
+      setTestingTarget(null);
     }
   }
 
@@ -796,8 +797,14 @@ export function IntegrationsPanel({
                             <span className="ta-seo-hint">Gekoppeld als {connected.email}</span>
                             <EntraCommands>
                               <EntraCommand
+                                onClick={() => void sendTestMail(category.id)}
+                                disabled={testingTarget !== null}
+                              >
+                                {testingTarget === category.id ? "Testen..." : "Testmail"}
+                              </EntraCommand>
+                              <EntraCommand
                                 onClick={() => void connectGoogleMail(category.id)}
-                                disabled={!settings?.mailRelay.googleOAuthConfigured || connectingCategory === category.id}
+                                disabled={!settings?.mailRelay.googleOAuthConfigured || connectingCategory === category.id || testingTarget !== null}
                               >
                                 {connectingCategory === category.id ? "Bezig..." : "Opnieuw"}
                               </EntraCommand>
@@ -903,6 +910,15 @@ export function IntegrationsPanel({
                       )
                     }
                   />
+                  <button
+                    type="button"
+                    className="ta-btn ta-btn-ghost"
+                    style={{ marginTop: 8, justifySelf: "start" }}
+                    disabled={testingTarget !== null || !mailForm.notifications[category.id].includes("@")}
+                    onClick={() => void sendTestMail(category.id)}
+                  >
+                    {testingTarget === category.id ? "Testen..." : "Testmail"}
+                  </button>
                 </label>
               ))}
             </div>
@@ -920,20 +936,27 @@ export function IntegrationsPanel({
 
           <div className="ta-integration-monitor">
             <strong>Testmail</strong>
+            <p className="ta-seo-hint" style={{ margin: "6px 0 0" }}>
+              {mailForm.provider === "google"
+                ? "Elke gekoppelde categorie heeft een eigen testmail. Leeg laten stuurt naar dat Google-account zelf."
+                : "Elke categorie hierboven heeft een testmail via deze SMTP-koppeling. Leeg laten stuurt naar het adres van die categorie."}
+            </p>
             <div className="ta-grid" style={{ marginTop: 8 }}>
               <label className="ta-field">
-                <span>Ontvanger</span>
+                <span>Ontvanger (optioneel)</span>
                 <input
                   value={testRecipient}
                   onChange={(event) => setTestRecipient(event.target.value)}
-                  placeholder={mailForm.notifications.other || "test@email.nl"}
+                  placeholder="Leeg = naar het ingestelde adres"
                 />
               </label>
-              <div style={{ alignSelf: "end" }}>
-                <EntraCommand onClick={() => void sendTestMail()} disabled={testing}>
-                  {testing ? "Testen..." : "Versturen"}
-                </EntraCommand>
-              </div>
+              {mailForm.provider !== "google" ? (
+                <div style={{ alignSelf: "end" }}>
+                  <EntraCommand onClick={() => void sendTestMail()} disabled={testingTarget !== null}>
+                    {testingTarget === "relay" ? "Testen..." : "Test algemene mail"}
+                  </EntraCommand>
+                </div>
+              ) : null}
             </div>
             {settings?.mailRelay.lastMessage ? <span>{settings.mailRelay.lastMessage}</span> : null}
           </div>

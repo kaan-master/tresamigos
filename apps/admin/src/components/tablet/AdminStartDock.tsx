@@ -8,6 +8,7 @@ interface Props {
   hubItems: AdminTabletHubItem[];
   activeId?: string;
   onSelectTab: (id: string) => void;
+  onOpenChangelog?: () => void;
   searchItems: AdminSearchItem[];
   onSearchSelect: (item: AdminSearchItem) => void;
   user: AdminSessionUser | null;

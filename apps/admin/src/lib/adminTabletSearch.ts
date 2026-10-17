@@ -129,6 +129,15 @@ export function buildAdminSearchItems(
     });
   }
 
+  items.push({
+    id: "tab-changelog",
+    label: "Wijzigingen",
+    group: "Systeem",
+    description: "Versie en changelog",
+    searchText: "wijzigingen versie changelog release notes",
+    target: { kind: "tab", tabId: "changelog" }
+  });
+
   return items;
 }
 

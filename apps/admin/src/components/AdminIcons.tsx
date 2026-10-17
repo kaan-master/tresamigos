@@ -332,6 +332,19 @@ export function IconMinimize(props: IconProps) {
   );
 }
 
+export function IconTodo(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 6h11" />
+      <path d="M9 12h11" />
+      <path d="M9 18h11" />
+      <path d="M4 6.5 5.2 8 8 4.8" />
+      <path d="M4 12.5 5.2 14 8 10.8" />
+      <rect x="3.2" y="16.2" width="4.2" height="4.2" rx="0.6" />
+    </Icon>
+  );
+}
+
 export function IconFranchiseShop(props: IconProps) {
   return (
     <Icon {...props}>
@@ -361,5 +374,6 @@ export const tabIcons = {
   footer: IconFooter,
   integrations: IconIntegrations,
   users: IconUsers,
-  tellingen: IconTellingen
+  tellingen: IconTellingen,
+  todo: IconTodo
 } as const;

@@ -549,33 +549,60 @@ export class MailService {
     return this.sendNotificationEmail({ ...input, category: "catering" });
   }
 
-  async sendTestEmail(input: { to: string; fromName: string; fromEmail?: string }) {
+  async sendTestEmail(input: { to?: string; fromName: string; category?: MailNotifyCategory }) {
+    const labels: Record<MailNotifyCategory, string> = {
+      applications: "Sollicitaties",
+      catering: "Catering",
+      franchise: "Franchise",
+      other: "Overig"
+    };
     try {
-      const config = await this.resolveConfig();
+      const category = input.category && isMailNotifyCategory(input.category) ? input.category : undefined;
+      const config = await this.resolveConfig(category);
       if (!config) {
         return {
           ok: false,
-          message:
-            "Mail is niet geconfigureerd. Kies Google (inloggen) of vul SMTP in, of zet SMTP_* in .env."
+          message: "Mail is niet geconfigureerd. Kies Google (inloggen) of vul SMTP in, of zet SMTP_* in .env."
         };
+      }
+
+      if (category && config.kind === "google") {
+        const row = await this.prisma.integrationSettings.findUnique({ where: { id: "primary" } });
+        const account = this.parseGoogleByCategory(row?.mailRelayGoogleByCategory)[category];
+        if (!account?.refreshToken || account.email.toLowerCase() !== config.email.toLowerCase()) {
+          return { ok: false, message: `Koppel eerst een Google-account voor ${labels[category]}.` };
+        }
+      }
+
+      const requested = String(input.to || "").trim().toLowerCase();
+      const fallback = category ? await this.getNotifyEmail(category) : config.fromEmail;
+      const to = requested || fallback || config.fromEmail;
+      if (!to.includes("@")) {
+        return { ok: false, message: "Vul een geldig e-mailadres in voor de testmail." };
       }
 
       const detail =
         config.kind === "google"
           ? `Bron: Google Gmail (${config.email})`
           : `Bron: ${config.source === "db" ? "Integraties (mailrelay)" : "Omgevingsvariabelen (.env)"}\nHost: ${config.host}:${config.port}`;
+      const categoryLine = category ? `Categorie: ${labels[category]}` : "Categorie: algemene mailrelay";
 
       await this.sendRaw({
-        to: input.to,
+        to,
         fromName: input.fromName || config.fromName,
-        fromEmail: input.fromEmail || config.fromEmail,
-        subject: "Tres Amigos — testmail",
-        text: ["Dit is een testmail van Tres Amigos admin.", "", detail, `Verstuurd om: ${new Date().toLocaleString("nl-NL")}`].join(
-          "\n"
-        )
+        fromEmail: config.fromEmail,
+        subject: category ? `Tres Amigos — testmail ${labels[category]}` : "Tres Amigos — testmail",
+        text: [
+          "Dit is een testmail van Tres Amigos admin.",
+          "",
+          categoryLine,
+          detail,
+          `Verstuurd om: ${new Date().toLocaleString("nl-NL")}`
+        ].join("\n"),
+        category
       });
 
-      return { ok: true, message: `Testmail verstuurd naar ${input.to}.` };
+      return { ok: true, message: `Testmail verstuurd van ${config.fromEmail} naar ${to}.` };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Testmail mislukt.";
       this.logger.error(`Testmail mislukt: ${message}`);
