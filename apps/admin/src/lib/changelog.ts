@@ -1,6 +1,6 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
-export const ADMIN_APP_VERSION = "0.3.0";
+export const ADMIN_APP_VERSION = "0.3.1";
 
 export type ChangelogEntry = {
   version: string;
@@ -11,9 +11,16 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.3.1",
+    date: "18 oktober 2026",
+    current: true,
+    changes: [
+      "De opmaak van de admin laadde niet op een computer. Dat is hersteld, zodat menu, To do en de versiepagina weer normaal zichtbaar zijn."
+    ]
+  },
+  {
     version: "0.3.0",
     date: "17 oktober 2026",
-    current: true,
     changes: [
       "Het versienummer onder in de zijbalk opent deze pagina met alle wijzigingen.",
       "Franchise-pagina: inloggen naar de shop voor bestaande houders (hero + apart blok).",

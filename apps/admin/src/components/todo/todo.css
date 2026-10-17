@@ -166,6 +166,7 @@
   background: #0a6cff;
   pointer-events: none;
 }
+.agenda-mode button {
   font-size: 12px;
   padding: 8px 12px;
   height: 36px;
@@ -980,6 +981,29 @@ html { -webkit-tap-highlight-color: transparent; }
   .task-delete { opacity: 1; }
   a.nav-item:hover,
   button.nav-item:hover,
+  .ay-menu:hover,
+  .agenda-phone-menu:hover,
+  .phone-icon:hover {
+    background: transparent;
+    color: #6b7280;
+  }
+  a.nav-item.active,
+  .nav-item.active,
+  a.nav-item.active:hover,
+  button.nav-item.active:hover {
+    background: #e7f1ff;
+    color: #0a6cff;
+  }
+  .ay-menu:focus,
+  .ay-menu:focus-visible,
+  .agenda-phone-menu:focus,
+  .agenda-phone-menu:focus-visible,
+  .phone-icon:focus,
+  .phone-icon:focus-visible {
+    outline: none;
+  }
+}
+
 .dt-field { min-width: 0; }
 .dt-pair { display: grid; grid-template-columns: 1fr 118px; gap: 8px; }
 .dt-trigger {
