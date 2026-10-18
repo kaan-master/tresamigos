@@ -1,6 +1,6 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
-export const ADMIN_APP_VERSION = "0.3.2";
+export const ADMIN_APP_VERSION = "0.3.3";
 
 export type ChangelogEntry = {
   version: string;
@@ -11,9 +11,16 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
-    version: "0.3.2",
+    version: "0.3.3",
     date: "18 oktober 2026",
     current: true,
+    changes: [
+      "Gewoon naar tresamigos.nl gaan haalt de pagina vers op, niet meer uit de oude cache. De loyalty-link blijft het nieuwe formulier, ook zonder harde refresh."
+    ]
+  },
+  {
+    version: "0.3.2",
+    date: "18 oktober 2026",
     changes: [
       "Loyalty opent het nieuwe Leat-formulier. Een refresh haalt versie 0.3.2 op, zodat de oude link niet in de cache blijft staan."
     ]

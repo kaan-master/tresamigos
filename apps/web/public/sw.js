@@ -1,5 +1,5 @@
-/* Cache-first for static brand/menu/site assets (images + full video GETs). */
-const CACHE = "ta-assets-v2";
+/* Afbeeldingen mogen uit de cache. De pagina zelf nooit: anders blijft een oude loyalty-link staan. */
+const CACHE = "ta-assets-v3";
 const ASSET_RE = /^\/assets\/(brand|menu|site)\//;
 
 self.addEventListener("install", (event) => {
@@ -12,14 +12,23 @@ self.addEventListener("activate", (event) => {
       .keys()
       .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: "window", includeUncontrolled: true }))
+      .then((clients) => {
+        for (const client of clients) client.postMessage({ type: "tresamigos-reload" });
+      })
   );
 });
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
-  // Range/partial video requests must hit the network (and browser HTTP cache).
   if (request.headers.get("range")) return;
+
+  const isDocument = request.mode === "navigate" || request.destination === "document";
+  if (isDocument) {
+    event.respondWith(fetch(request, { cache: "reload" }));
+    return;
+  }
 
   let url;
   try {

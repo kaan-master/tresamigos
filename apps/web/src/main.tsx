@@ -31,8 +31,21 @@ createRoot(document.getElementById("root")!).render(
 );
 
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  const reloadKey = "ta-sw-reload";
+  function reloadOnce() {
+    if (sessionStorage.getItem(reloadKey) === "1") return;
+    sessionStorage.setItem(reloadKey, "1");
+    window.location.reload();
+  }
+  navigator.serviceWorker.addEventListener("controllerchange", reloadOnce);
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.type === "tresamigos-reload") reloadOnce();
+  });
   window.addEventListener("load", () => {
-    void navigator.serviceWorker.register("/sw.js?v=2", { updateViaCache: "none" }).catch(() => {
+    window.setTimeout(() => sessionStorage.removeItem(reloadKey), 4000);
+    void navigator.serviceWorker.register("/sw.js?v=3", { updateViaCache: "none" }).then((registration) => {
+      void registration.update();
+    }).catch(() => {
       /* offline cache is best-effort */
     });
   });
