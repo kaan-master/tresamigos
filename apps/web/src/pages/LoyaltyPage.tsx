@@ -6,7 +6,7 @@ import { assetUrl } from "../lib/api";
 import { pageMediaImgStyle, resolvePageMediaSrc } from "../lib/pageMedia";
 import { pageSeo } from "../lib/seo";
 
-const LEAT_URL = "https://bomies-fd-bv.app.leat.com";
+const LEAT_URL = "https://forms.leat.com/forms/70a81a2c-01d3-4838-98f5-0eddc9ad6a5e/public/custom";
 
 /** Fallback sfeerbeelden — hero uit assets/Loyalty. */
 const LOYALTY_FALLBACKS = {
