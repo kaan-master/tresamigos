@@ -1,11 +1,53 @@
-import { useEffect, useMemo, useState } from "react";
-import { ADMIN_TAB_IDS, ADMIN_TAB_LABELS, type AdminTabId, type AdminUserRecord } from "@tresamigos/types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ADMIN_TAB_LABELS, type AdminTabId, type AdminUserRecord } from "@tresamigos/types";
 import { useAdminFeedback } from "../context/AdminFeedbackContext";
 import { createAdminUser, deleteAdminUser, listAdminUsers, updateAdminUser } from "../lib/api";
+import { readAvatarFile } from "../lib/avatarFile";
 import { EntraBlade, EntraCommand, EntraCommands, EntraSearch } from "./telling/entraUi";
 import { AdminButton } from "./AdminButton";
 
-const createTabs = ADMIN_TAB_IDS.filter((tab) => tab !== "users" && tab !== "franchiseShop");
+const ACCESS_GROUPS: Array<{ label: string; items: Array<{ id: AdminTabId; label: string }> }> = [
+  { label: "Overzicht", items: [{ id: "overview", label: "Overzicht" }] },
+  {
+    label: "Inhoud",
+    items: [
+      { id: "locations", label: "Vestigingen" },
+      { id: "products", label: "Producten" },
+      { id: "media", label: "Media" },
+      { id: "seo", label: "SEO" }
+    ]
+  },
+  {
+    label: "Website-instellingen",
+    items: [
+      { id: "home", label: "Home-tekst" },
+      { id: "pageMedia", label: "Pagina-foto's" },
+      { id: "navigation", label: "Menu" },
+      { id: "footer", label: "Footer" },
+      { id: "integrations", label: "Koppelingen" },
+      { id: "users", label: "Gebruikers" }
+    ]
+  },
+  {
+    label: "Aanvragen",
+    items: [
+      { id: "applications", label: "Sollicitaties" },
+      { id: "franchise", label: "Franchise" },
+      { id: "newsletter", label: "Nieuwsbrief" },
+      { id: "catering", label: "Catering" },
+      { id: "reviews", label: "Reviews" }
+    ]
+  },
+  {
+    label: "Beheer",
+    items: [
+      { id: "todo", label: "To do" },
+      { id: "tellingen", label: "Tellingen" }
+    ]
+  }
+];
+
+const ACCESS_LABELS = new Map(ACCESS_GROUPS.flatMap((group) => group.items.map((item) => [item.id, item.label] as const)));
 
 /** franchiseShop is an alias of franchise (merged hub). */
 function normalizePermissions(permissions: AdminTabId[]): AdminTabId[] {
@@ -18,34 +60,87 @@ function normalizePermissions(permissions: AdminTabId[]): AdminTabId[] {
 
 function PermissionPicker({
   value,
-  onChange,
-  tabs
+  onChange
 }: {
   value: AdminTabId[];
   onChange: (permissions: AdminTabId[]) => void;
-  tabs: readonly AdminTabId[];
 }) {
   function toggle(tab: AdminTabId) {
     onChange(value.includes(tab) ? value.filter((item) => item !== tab) : [...value, tab]);
   }
 
   return (
-    <div className="ta-permission-grid">
-      {tabs.map((tab) => (
-        <label className="ta-permission-chip" key={tab}>
-          <input type="checkbox" checked={value.includes(tab)} onChange={() => toggle(tab)} />
-          <span>
-            {tab === "home" ||
-            tab === "pageMedia" ||
-            tab === "navigation" ||
-            tab === "footer" ||
-            tab === "integrations" ||
-            tab === "users"
-              ? `Website · ${ADMIN_TAB_LABELS[tab]}`
-              : ADMIN_TAB_LABELS[tab]}
-          </span>
-        </label>
+    <div className="ta-permission-list">
+      {ACCESS_GROUPS.map((group) => (
+        <section className="ta-permission-group" key={group.label}>
+          <p>{group.label}</p>
+          {group.items.map((item) => (
+            <label className="ta-permission-row" key={item.id}>
+              <input type="checkbox" checked={value.includes(item.id)} onChange={() => toggle(item.id)} />
+              <span>{item.label}</span>
+            </label>
+          ))}
+        </section>
       ))}
+    </div>
+  );
+}
+
+function permissionSummary(permissions: AdminTabId[]) {
+  const labels = normalizePermissions(permissions).map((tab) => ACCESS_LABELS.get(tab) || ADMIN_TAB_LABELS[tab]);
+  return labels.length ? labels.join(" · ") : "Geen rechten";
+}
+
+function UserAvatarField({
+  name,
+  value,
+  onChange
+}: {
+  name: string;
+  value: string;
+  onChange: (avatarData: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState("");
+  const letters = name.trim().slice(0, 2).toUpperCase() || "?";
+
+  return (
+    <div className="ta-avatar-field">
+      <span>Profielfoto</span>
+      <div className="ta-avatar-field-row">
+        <span className={`ta-avatar-preview${value ? " has-photo" : ""}`}>
+          {value ? <img src={value} alt="" /> : letters}
+        </span>
+        <div>
+          <p>Deze foto staat bij de persoon op het kanbanbord.</p>
+          <div className="ta-avatar-actions">
+            <button type="button" onClick={() => inputRef.current?.click()}>
+              Foto uploaden
+            </button>
+            {value ? (
+              <button type="button" onClick={() => onChange("")}>
+                Verwijderen
+              </button>
+            ) : null}
+          </div>
+          {error ? <p className="entra-error">{error}</p> : null}
+        </div>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif"
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (!file) return;
+          setError("");
+          void readAvatarFile(file)
+            .then(onChange)
+            .catch((readError: unknown) => setError(readError instanceof Error ? readError.message : "Uploaden mislukt."));
+        }}
+      />
     </div>
   );
 }
@@ -54,7 +149,8 @@ const emptyForm = {
   name: "",
   email: "",
   password: "",
-  permissions: ["home"] as AdminTabId[]
+  avatarData: "",
+  permissions: ["overview"] as AdminTabId[]
 };
 
 export function UsersPanel() {
@@ -69,6 +165,7 @@ export function UsersPanel() {
   const [editForm, setEditForm] = useState({
     name: "",
     password: "",
+    avatarData: "",
     permissions: [] as AdminTabId[]
   });
 
@@ -112,6 +209,7 @@ export function UsersPanel() {
     setEditForm({
       name: user.name,
       password: "",
+      avatarData: user.avatarData || "",
       permissions: normalizePermissions(user.permissions)
     });
     setMessage("");
@@ -152,6 +250,7 @@ export function UsersPanel() {
           await updateAdminUser(userId, {
             name: editForm.name.trim(),
             permissions: normalizePermissions(editForm.permissions),
+            avatarData: editForm.avatarData,
             ...(editForm.password ? { password: editForm.password } : {})
           });
           setBlade(null);
@@ -247,17 +346,20 @@ export function UsersPanel() {
                 <td>
                   <button
                     type="button"
-                    className="entra-link"
+                    className="entra-link ta-user-name"
                     onClick={() => {
                       setSelectedId(user.id);
                       openEdit(user);
                     }}
                   >
+                    <span className={`ta-avatar-preview is-small${user.avatarData ? " has-photo" : ""}`}>
+                      {user.avatarData ? <img src={user.avatarData} alt="" /> : user.name.trim().slice(0, 2).toUpperCase()}
+                    </span>
                     {user.name}
                   </button>
                 </td>
                 <td>{user.email}</td>
-                <td>{user.permissions.map((tab) => ADMIN_TAB_LABELS[tab]).join(" · ") || "Geen rechten"}</td>
+                <td>{permissionSummary(user.permissions)}</td>
                 <td>
                   <span className={`entra-pill${user.active ? " is-on" : ""}`}>{user.active ? "Actief" : "Uit"}</span>
                 </td>
@@ -293,10 +395,14 @@ export function UsersPanel() {
               onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
             />
           </label>
+          <UserAvatarField
+            name={form.name}
+            value={form.avatarData}
+            onChange={(avatarData) => setForm((current) => ({ ...current, avatarData }))}
+          />
           <div className="ta-field">
             <span>Toegang tot</span>
             <PermissionPicker
-              tabs={createTabs}
               value={form.permissions}
               onChange={(permissions) => setForm((current) => ({ ...current, permissions }))}
             />
@@ -324,10 +430,14 @@ export function UsersPanel() {
               onChange={(event) => setEditForm((current) => ({ ...current, password: event.target.value }))}
             />
           </label>
+          <UserAvatarField
+            name={editForm.name}
+            value={editForm.avatarData}
+            onChange={(avatarData) => setEditForm((current) => ({ ...current, avatarData }))}
+          />
           <div className="ta-field">
             <span>Toegang tot</span>
             <PermissionPicker
-              tabs={ADMIN_TAB_IDS}
               value={editForm.permissions}
               onChange={(permissions) => setEditForm((current) => ({ ...current, permissions }))}
             />

@@ -204,6 +204,7 @@ export interface AdminUserRecord {
   email: string;
   name: string;
   permissions: AdminTabId[];
+  avatarData: string;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -227,6 +228,7 @@ export interface CreateAdminUserInput {
   name: string;
   password: string;
   permissions: AdminTabId[];
+  avatarData?: string;
 }
 
 export interface UpdateAdminUserInput {
@@ -234,6 +236,8 @@ export interface UpdateAdminUserInput {
   password?: string;
   permissions?: AdminTabId[];
   active?: boolean;
+  /** Lege string verwijdert de foto. Data-URL (PNG of JPEG) zet een nieuwe. */
+  avatarData?: string;
 }
 
 export interface VacancyJob {

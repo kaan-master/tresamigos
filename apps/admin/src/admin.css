@@ -2770,22 +2770,120 @@ select {
   margin: 20px 0 0;
 }
 
-.ta-permission-grid {
+.ta-permission-list {
+  display: grid;
+  gap: 14px;
+}
+
+.ta-permission-group {
+  display: grid;
+  gap: 2px;
+}
+
+.ta-permission-group > p {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #616161;
+}
+
+.ta-permission-row,
+.entra-blade-body .ta-permission-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 6px 2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #242424;
+}
+
+.entra-blade-body .ta-permission-row input {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: #0056d7;
+  flex: 0 0 auto;
+}
+
+.ta-user-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ta-avatar-preview {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #0056d7;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.ta-avatar-preview.is-small {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+}
+
+.ta-avatar-preview.has-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ta-avatar-field {
+  display: grid;
+  gap: 8px;
+}
+
+.ta-avatar-field > span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #616161;
+}
+
+.ta-avatar-field-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ta-avatar-field-row p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #616161;
+}
+
+.ta-avatar-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.ta-permission-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid var(--ta-line);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
+.ta-avatar-actions button {
+  border: 1px solid #d1d1d1;
+  background: #fff;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font: inherit;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 650;
+  cursor: pointer;
 }
 
 .ta-user-list {
@@ -4738,7 +4836,7 @@ body.admin-tablet-mode .ta-action-dock {
 .entra-embed{min-width:0}
 .entra-embed .ta-stack-panel{margin:0}
 .entra-embed .catering-settings-page{margin-top:0}
-.entra-blade .ta-permission-grid{max-height:220px;overflow:auto}
+.entra-blade .ta-permission-list{padding-right:4px}
 .entra-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
 .entra-toolbar-wrap input,.entra-toolbar-wrap select,.entra-toolbar select{height:32px;border:1px solid #d1d1d1;border-radius:4px;padding:0 10px;font:inherit;font-size:13px;background:#fff}
 .entra-search{display:flex;align-items:center;gap:8px;flex:1;min-width:240px}

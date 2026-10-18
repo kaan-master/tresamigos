@@ -1,5 +1,5 @@
 /* Cache-first for static brand/menu/site assets (images + full video GETs). */
-const CACHE = "ta-assets-v1";
+const CACHE = "ta-assets-v2";
 const ASSET_RE = /^\/assets\/(brand|menu|site)\//;
 
 self.addEventListener("install", (event) => {

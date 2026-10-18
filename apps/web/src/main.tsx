@@ -32,7 +32,7 @@ createRoot(document.getElementById("root")!).render(
 
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    void navigator.serviceWorker.register("/sw.js").catch(() => {
+    void navigator.serviceWorker.register("/sw.js?v=2", { updateViaCache: "none" }).catch(() => {
       /* offline cache is best-effort */
     });
   });

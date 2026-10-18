@@ -42,7 +42,14 @@ location /admin/ {
     try_files $uri $uri/ index.html;
 }
 
+# HTML en sw.js nooit lang cachen. Anders blijft een oude loyalty-link in de JS-bundle hangen.
+location = /sw.js {
+    add_header Cache-Control "no-cache, no-store, must-revalidate";
+    try_files $uri =404;
+}
+
 location / {
+    add_header Cache-Control "no-cache, no-store, must-revalidate";
     try_files $uri $uri/ /index.html;
 }
 

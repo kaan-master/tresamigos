@@ -42,7 +42,7 @@ const MIME_BY_EXT: Record<string, string> = {
   xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 };
 
-const personSelect = { id: true, name: true } as const;
+const personSelect = { id: true, name: true, avatarData: true } as const;
 
 const taskInclude = {
   customer: { select: { id: true, companyName: true, city: true } },

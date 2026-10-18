@@ -1,6 +1,6 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
-export const ADMIN_APP_VERSION = "0.3.1";
+export const ADMIN_APP_VERSION = "0.3.2";
 
 export type ChangelogEntry = {
   version: string;
@@ -11,11 +11,20 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
-    version: "0.3.1",
+    version: "0.3.2",
     date: "18 oktober 2026",
     current: true,
     changes: [
-      "De opmaak van de admin laadde niet op een computer. Dat is hersteld, zodat menu, To do en de versiepagina weer normaal zichtbaar zijn."
+      "Loyalty opent het nieuwe Leat-formulier. Een refresh haalt versie 0.3.2 op, zodat de oude link niet in de cache blijft staan."
+    ]
+  },
+  {
+    version: "0.3.1",
+    date: "18 oktober 2026",
+    changes: [
+      "De opmaak van de admin laadde niet op een computer. Dat is hersteld, zodat menu, To do en de versiepagina weer normaal zichtbaar zijn.",
+      "Toegang tot een medewerker is een lijst per onderdeel, gelijk aan het menu.",
+      "Per medewerker kun je een profielfoto uploaden. Die foto staat op het kanbanbord."
     ]
   },
   {

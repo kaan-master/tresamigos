@@ -8,6 +8,14 @@ function sanitizePermissions(input: string[] | undefined): AdminTabId[] {
   return (input || []).filter((item): item is AdminTabId => allowed.has(item));
 }
 
+function sanitizeAvatar(value: unknown): string {
+  if (value === undefined || value === null || value === "") return "";
+  if (typeof value !== "string" || value.length > 1_200_000 || !/^data:image\/(png|jpeg);base64,/.test(value)) {
+    throw new Error("Profielfoto moet een PNG of JPEG zijn, klein genoeg om op te slaan.");
+  }
+  return value;
+}
+
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -17,6 +25,7 @@ export class UsersService {
     email: string;
     name: string;
     permissions: string[];
+    avatarData: string;
     active: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -26,6 +35,7 @@ export class UsersService {
       email: user.email,
       name: user.name,
       permissions: sanitizePermissions(user.permissions),
+      avatarData: user.avatarData || "",
       active: user.active,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString()
@@ -52,7 +62,8 @@ export class UsersService {
         email,
         name,
         passwordHash: hashPassword(password),
-        permissions: sanitizePermissions(input.permissions)
+        permissions: sanitizePermissions(input.permissions),
+        avatarData: input.avatarData === undefined ? "" : sanitizeAvatar(input.avatarData)
       }
     });
     return this.toRecord(user);
@@ -64,11 +75,13 @@ export class UsersService {
       passwordHash?: string;
       permissions?: string[];
       active?: boolean;
+      avatarData?: string;
     } = {};
 
     if (input.name !== undefined) data.name = String(input.name).trim();
     if (input.permissions !== undefined) data.permissions = sanitizePermissions(input.permissions);
     if (input.active !== undefined) data.active = Boolean(input.active);
+    if (input.avatarData !== undefined) data.avatarData = sanitizeAvatar(input.avatarData);
     if (input.password) {
       if (input.password.length < 8) throw new Error("Wachtwoord moet minimaal 8 tekens zijn.");
       data.passwordHash = hashPassword(input.password);
