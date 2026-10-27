@@ -6,7 +6,8 @@ import { assetUrl } from "../lib/api";
 import { pageMediaImgStyle, resolvePageMediaSrc } from "../lib/pageMedia";
 import { pageSeo } from "../lib/seo";
 
-const LEAT_URL = "https://forms.leat.com/forms/70a81a2c-01d3-4838-98f5-0eddc9ad6a5e/public/custom";
+const LEAT_SIGNUP_URL = "https://forms.leat.com/forms/70a81a2c-01d3-4838-98f5-0eddc9ad6a5e/public/custom";
+const LEAT_LOGIN_URL = "https://bomies-fd-bv.app.leat.com";
 
 /** Fallback sfeerbeelden — hero uit assets/Loyalty. */
 const LOYALTY_FALLBACKS = {
@@ -42,10 +43,10 @@ export function LoyaltyPage({ content }: { content: SiteContent }) {
             <h1>{t("loyalty.heroTitle")}</h1>
             <p className="loyalty-hero-lead">{t("loyalty.heroIntro")}</p>
             <div className="actions">
-              <a className="btn primary" href={LEAT_URL} target="_blank" rel="noreferrer">
+              <a className="btn primary" href={LEAT_SIGNUP_URL} target="_blank" rel="noreferrer">
                 {t("loyalty.signup")}
               </a>
-              <a className="btn alt" href={LEAT_URL} target="_blank" rel="noreferrer">
+              <a className="btn alt" href={LEAT_LOGIN_URL} target="_blank" rel="noreferrer">
                 {t("loyalty.login")}
               </a>
               <a className="btn alt" href="#loyalty-journey">
@@ -153,10 +154,10 @@ export function LoyaltyPage({ content }: { content: SiteContent }) {
           <h2 className="section-title">{t("loyalty.joinTitle")}</h2>
           <p className="lead">{t("loyalty.joinIntro")}</p>
           <div className="actions">
-            <a className="btn primary" href={LEAT_URL} target="_blank" rel="noreferrer">
+            <a className="btn primary" href={LEAT_SIGNUP_URL} target="_blank" rel="noreferrer">
               {t("loyalty.signup")}
             </a>
-            <a className="btn alt" href={LEAT_URL} target="_blank" rel="noreferrer">
+            <a className="btn alt" href={LEAT_LOGIN_URL} target="_blank" rel="noreferrer">
               {t("loyalty.login")}
             </a>
           </div>

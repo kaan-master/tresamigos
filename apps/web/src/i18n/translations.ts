@@ -127,7 +127,8 @@ export const translations: Record<Lang, Dict> = {
     "franchise.portalIntro": "Already running a Tres Amigos? Sign in to order materials, merch and supplies for your location.",
     "franchise.portalCta": "Franchise login",
 
-    "loyalty.leatUrl": "https://forms.leat.com/forms/70a81a2c-01d3-4838-98f5-0eddc9ad6a5e/public/custom",
+    "loyalty.signupUrl": "https://forms.leat.com/forms/70a81a2c-01d3-4838-98f5-0eddc9ad6a5e/public/custom",
+    "loyalty.loginUrl": "https://bomies-fd-bv.app.leat.com",
     "loyalty.navJourney": "The Journey",
     "loyalty.navRewards": "Rewards",
     "loyalty.navFaq": "FAQ",
@@ -656,7 +657,8 @@ export const translations: Record<Lang, Dict> = {
     "franchise.portalIntro": "Heb je al een Tres Amigos? Log in om materialen, merch en voorraad voor jouw vestiging te bestellen.",
     "franchise.portalCta": "Franchise inloggen",
 
-    "loyalty.leatUrl": "https://forms.leat.com/forms/70a81a2c-01d3-4838-98f5-0eddc9ad6a5e/public/custom",
+    "loyalty.signupUrl": "https://forms.leat.com/forms/70a81a2c-01d3-4838-98f5-0eddc9ad6a5e/public/custom",
+    "loyalty.loginUrl": "https://bomies-fd-bv.app.leat.com",
     "loyalty.navJourney": "De journey",
     "loyalty.navRewards": "Beloningen",
     "loyalty.navFaq": "Veelgestelde vragen",
