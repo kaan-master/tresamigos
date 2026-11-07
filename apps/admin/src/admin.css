@@ -4496,6 +4496,41 @@ body.admin-tablet-mode .ta-action-dock {
   cursor: wait;
 }
 
+.ta-smtp-presets {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.ta-smtp-preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ta-smtp-preset-row button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #d1d1d1;
+  border-radius: var(--ta-radius-sm);
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.ta-smtp-preset-row button:hover {
+  background: #fafafa;
+}
+
+.ta-smtp-preset-row button.is-active {
+  background: #fff4d4;
+  border-color: #efd596;
+}
+
 .ta-integration-help {
   border: 1px solid #efd596;
   border-radius: var(--ta-radius);
@@ -4815,14 +4850,19 @@ body.admin-tablet-mode .ta-action-dock {
 .entra-head h2{margin:2px 0 4px;font-size:24px;letter-spacing:-.03em}
 .entra-head p{margin:0 0 14px;color:#616161;font-size:13px}
 .ta-provider-icon{width:18px;height:18px;object-fit:contain;flex-shrink:0;border-radius:3px}
-.ta-oauth-creds{display:grid;gap:12px;padding:14px;border:1px solid var(--ta-line);border-radius:var(--ta-radius-sm);background:#fafafa;margin:4px 0 12px}
-.ta-oauth-creds-head{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;justify-content:space-between}
-.ta-oauth-creds-head strong{font-size:14px}
+.ta-mail-owner-help{display:grid;gap:6px;padding:14px 16px;border:1px solid #efd596;border-radius:var(--ta-radius-sm);background:#fffaf0;margin:4px 0 8px}
+.ta-mail-owner-help strong{font-size:14px}
+.ta-mail-owner-help p{margin:0;color:var(--ta-muted);font-size:13px;line-height:1.45;font-weight:550}
+.ta-oauth-creds{display:grid;gap:0;padding:0;border:1px solid var(--ta-line);border-radius:var(--ta-radius-sm);background:#fafafa;margin:12px 0 4px;overflow:hidden}
+.ta-oauth-creds-toggle{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;width:100%;padding:12px 14px;border:0;background:transparent;font:inherit;text-align:left;cursor:pointer}
+.ta-oauth-creds-toggle strong{font-size:14px;flex:1}
+.ta-oauth-creds-toggle:hover{background:#f3f2f1}
+.ta-oauth-creds-body{display:grid;gap:12px;padding:0 14px 14px;border-top:1px solid var(--ta-line)}
+.ta-oauth-echo-grid{display:grid;gap:12px}
+.ta-oauth-echo{margin:4px 0 0;padding:10px 12px;border:1px solid var(--ta-line);border-radius:var(--ta-radius-sm);background:#fff;font-size:13px;font-weight:650;word-break:break-all}
 .ta-oauth-secret-box{display:grid;gap:8px}
 .ta-oauth-secret-masked{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;letter-spacing:.04em;color:#616161}
 .ta-oauth-clear{display:grid;gap:10px;padding:12px;border:1px solid #f1c0c0;border-radius:var(--ta-radius-sm);background:#fff8f8}
-.ta-oauth-clear-steps{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.ta-oauth-clear-steps button.is-done{opacity:.55}
 .entra-commands{display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid #e6e6e6;padding-bottom:8px;margin-bottom:12px}
 .entra-cmd{border:0;background:transparent;padding:8px 12px;font:inherit;font-size:13px;font-weight:650;color:#242424;cursor:pointer;border-radius:4px}
 .entra-cmd:hover:not(:disabled){background:#f3f2f1}

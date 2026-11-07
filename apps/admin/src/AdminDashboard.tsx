@@ -426,6 +426,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
             content={content}
             applications={applications}
             onChange={updateContent}
+            onApplicationsChange={setApplications}
             onSave={saveContent}
             onSaveQuiet={saveContentQuiet}
             saving={saving}

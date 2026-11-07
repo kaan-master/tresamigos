@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Application, SiteContent, VacancyJob } from "@tresamigos/types";
+import type { Application, ApplicationStatus, SiteContent, VacancyJob } from "@tresamigos/types";
+import { APPLICATION_STATUSES, APPLICATION_STATUS_LABELS } from "@tresamigos/types";
 import { FormSaveBar, type PanelSaveProps } from "./FormSaveBar";
 import { MediaField } from "./MediaPickerModal";
 import { IconApplications, IconList, IconPageMedia } from "./AdminIcons";
 import { createSlugId } from "../lib/id";
 import { mediaAssetUrl } from "../lib/media";
+import { api } from "../lib/api";
+import { useAdminFeedback } from "../context/AdminFeedbackContext";
 import { EntraBlade, EntraCommand, EntraCommands, EntraSearch, EntraShell, type EntraNavItem } from "./telling/entraUi";
 
 interface Props extends PanelSaveProps {
   content: SiteContent;
   applications: Application[];
   onChange: (content: SiteContent) => void;
+  onApplicationsChange?: (applications: Application[]) => void;
   initialView?: ApplicationsView | null;
   onViewChange?: (view: ApplicationsView) => void;
 }
@@ -83,23 +87,29 @@ function localDateKey(iso: string) {
 }
 
 function statusLabel(status: string) {
-  if (status === "nieuw") return "Nieuw";
+  if ((APPLICATION_STATUSES as readonly string[]).includes(status)) {
+    return APPLICATION_STATUS_LABELS[status as ApplicationStatus];
+  }
   return status;
 }
 
 function IncomingView({
   content,
-  applications
+  applications,
+  onApplicationsChange
 }: {
   content: SiteContent;
   applications: Application[];
+  onApplicationsChange?: (applications: Application[]) => void;
 }) {
+  const { runSave } = useAdminFeedback();
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [selected, setSelected] = useState<Application | null>(null);
+  const [savingStatus, setSavingStatus] = useState(false);
 
   const sorted = useMemo(
     () => [...applications].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
@@ -114,11 +124,30 @@ function IncomingView({
     return [...options, ...orphans.map((role) => ({ value: role, label: role }))];
   }, [content.site.vacancy.jobs, sorted]);
 
-  const statusOptions = useMemo(() => {
-    const values = [...new Set(sorted.map((item) => item.status).filter(Boolean))];
-    if (!values.includes("nieuw")) values.unshift("nieuw");
-    return values;
-  }, [sorted]);
+  const statusOptions = APPLICATION_STATUSES;
+
+  async function updateStatus(next: ApplicationStatus) {
+    if (!selected || savingStatus || selected.status === next) return;
+    setSavingStatus(true);
+    try {
+      await runSave(
+        async () => {
+          const result = await api<{ application: Application }>(`/api/admin/applications/${selected.id}/status`, {
+            method: "PATCH",
+            body: JSON.stringify({ status: next })
+          });
+          const updated = result.application;
+          onApplicationsChange?.(applications.map((item) => (item.id === updated.id ? updated : item)));
+          setSelected(updated);
+        },
+        { successMessage: `Status: ${statusLabel(next)}.` }
+      );
+    } catch {
+      /* feedback toont de fout */
+    } finally {
+      setSavingStatus(false);
+    }
+  }
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -241,9 +270,22 @@ function IncomingView({
       {selected ? (
         <EntraBlade title={selected.name} onClose={() => setSelected(null)}>
           <p className="entra-meta">
-            {roleLabel(content, selected.role)} · {new Date(selected.createdAt).toLocaleString("nl-NL")} ·{" "}
-            {statusLabel(selected.status)}
+            {roleLabel(content, selected.role)} · {new Date(selected.createdAt).toLocaleString("nl-NL")}
           </p>
+          <label>
+            Status
+            <select
+              value={selected.status}
+              disabled={savingStatus}
+              onChange={(event) => void updateStatus(event.target.value as ApplicationStatus)}
+            >
+              {APPLICATION_STATUSES.map((status) => (
+                <option value={status} key={status}>
+                  {APPLICATION_STATUS_LABELS[status]}
+                </option>
+              ))}
+            </select>
+          </label>
           <label>
             Functie
             <input readOnly value={roleLabel(content, selected.role)} />
@@ -514,7 +556,16 @@ function PageView({
   );
 }
 
-export function ApplicationsPanel({ content, applications, onChange, onSave, saving, initialView, onViewChange }: Props) {
+export function ApplicationsPanel({
+  content,
+  applications,
+  onChange,
+  onApplicationsChange,
+  onSave,
+  saving,
+  initialView,
+  onViewChange
+}: Props) {
   const [view, setView] = useState<ApplicationsView>(initialView || "incoming");
 
   useEffect(() => {
@@ -530,7 +581,9 @@ export function ApplicationsPanel({ content, applications, onChange, onSave, sav
 
   return (
     <EntraShell brand="Sollicitaties" items={NAV} view={view} onChange={changeView} title={copy.title} subtitle={copy.subtitle}>
-      {view === "incoming" ? <IncomingView content={content} applications={applications} /> : null}
+      {view === "incoming" ? (
+        <IncomingView content={content} applications={applications} onApplicationsChange={onApplicationsChange} />
+      ) : null}
       {view === "jobs" ? <JobsView content={content} onChange={onChange} onSave={onSave} saving={saving} /> : null}
       {view === "page" ? <PageView content={content} onChange={onChange} onSave={onSave} saving={saving} /> : null}
     </EntraShell>

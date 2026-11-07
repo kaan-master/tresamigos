@@ -605,10 +605,30 @@ export interface ApplicationPdf {
   data: string;
 }
 
+export const APPLICATION_STATUSES = [
+  "nieuw",
+  "contact_opgenomen",
+  "in_gesprek",
+  "aangenomen",
+  "afgewezen",
+  "ingetrokken"
+] as const;
+
+export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
+
+export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
+  nieuw: "Nieuw",
+  contact_opgenomen: "Contact opgenomen",
+  in_gesprek: "In gesprek",
+  aangenomen: "Aangenomen",
+  afgewezen: "Afgewezen",
+  ingetrokken: "Ingetrokken"
+};
+
 export interface Application {
   id: string;
   createdAt: string;
-  status: string;
+  status: ApplicationStatus;
   role: ApplicationRole;
   name: string;
   email: string;
@@ -620,10 +640,14 @@ export interface Application {
   pdf: ApplicationPdf | null;
 }
 
+export interface UpdateApplicationStatusInput {
+  status: ApplicationStatus;
+}
+
 export interface CreateApplicationInput {
   id?: string;
   createdAt?: string;
-  status?: string;
+  status?: ApplicationStatus | string;
   role: ApplicationRole;
   name: string;
   email: string;

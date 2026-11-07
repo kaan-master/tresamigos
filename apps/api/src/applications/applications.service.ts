@@ -1,5 +1,12 @@
-import { BadRequestException, Injectable, Logger } from "@nestjs/common";
-import type { Application, CreateApplicationInput, SiteContent } from "@tresamigos/types";
+import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import type {
+  Application,
+  ApplicationStatus,
+  CreateApplicationInput,
+  SiteContent,
+  UpdateApplicationStatusInput
+} from "@tresamigos/types";
+import { APPLICATION_STATUSES } from "@tresamigos/types";
 import { sanitizeApplication, sanitizeContent } from "@tresamigos/utils";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.module";
@@ -82,7 +89,7 @@ export class ApplicationsService {
       data: {
         id: application.id,
         createdAt: new Date(application.createdAt),
-        status: application.status,
+        status: "nieuw",
         role: job.title,
         name: application.name,
         email: application.email,
@@ -137,6 +144,27 @@ export class ApplicationsService {
     return {
       applications: records.map((record) => this.toDto(record))
     };
+  }
+
+  async updateStatus(id: string, input: UpdateApplicationStatusInput): Promise<{ application: Application }> {
+    const status = String(input?.status || "").trim() as ApplicationStatus;
+    if (!(APPLICATION_STATUSES as readonly string[]).includes(status)) {
+      throw new BadRequestException({
+        message: `Ongeldige status. Kies: ${APPLICATION_STATUSES.join(", ")}.`
+      });
+    }
+
+    const existing = await this.prisma.application.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException({ message: "Sollicitatie niet gevonden." });
+    }
+
+    const record = await this.prisma.application.update({
+      where: { id },
+      data: { status }
+    });
+
+    return { application: this.toDto(record) };
   }
 
   private async notifyTeam(input: {

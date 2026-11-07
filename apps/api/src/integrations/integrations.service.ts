@@ -233,14 +233,7 @@ export class IntegrationsService {
     return this.getSettings();
   }
 
-  async clearGoogleOAuthSecret(input: ClearGoogleOAuthSecretInput) {
-    const confirmation = String(input?.confirmation || "").trim();
-    if (confirmation !== "bevestig") {
-      throw new BadRequestException({
-        message: 'Secret wissen geweigerd. Typ exact "bevestig" — andere tekst wordt niet geaccepteerd.'
-      });
-    }
-
+  async clearGoogleOAuthSecret(_input?: ClearGoogleOAuthSecretInput) {
     await this.prisma.integrationSettings.update({
       where: { id: PRIMARY_ID },
       data: { mailRelayGoogleClientSecret: "" }

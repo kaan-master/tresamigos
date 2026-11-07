@@ -54,8 +54,6 @@ const REQUEST_EMAIL = "info@tresamigos.nl";
 const REQUESTED_STORAGE_KEY = "ta-integration-requests";
 const GOOGLE_ICON = "/assets/brand/platforms/google-g.png";
 const OUTLOOK_ICON = "/assets/brand/platforms/outlook.png";
-const CLEAR_CONFIRM_WORD = "bevestig";
-
 const DEFAULT_NOTIFICATIONS: IntegrationMailNotifications = {
   applications: "work@tresamigos.nl",
   catering: "catering@tresamigos.nl",
@@ -91,11 +89,52 @@ type AvailableIntegration = (typeof AVAILABLE_INTEGRATIONS)[number];
 
 const TITLES: Record<IntegrationsView, { title: string; subtitle: string }> = {
   overview: { title: "Alle koppelingen", subtitle: "Klik op een rij om in te stellen" },
-  mail: { title: "E-mail", subtitle: "Kies Google of Outlook, log daarna per categorie in" },
+  mail: {
+    title: "E-mail",
+    subtitle: "Google (OAuth of SMTP), Outlook of eigen SMTP — daarna inbox per categorie"
+  },
   googleAds: { title: "Google Ads", subtitle: "gtag.js conversietag op de website" },
   newsletter: { title: "Nieuwsbrief", subtitle: "Waar het aanmeldformulier zichtbaar is" },
   extra: { title: "Op aanvraag", subtitle: "Extra koppelingen aanvragen" }
 };
+
+type SmtpPreset = "google" | "outlook" | "custom";
+
+function detectSmtpPreset(host: string, provider: MailRelayProvider): SmtpPreset {
+  if (provider === "outlook") return "outlook";
+  const h = host.trim().toLowerCase();
+  if (h === "smtp.gmail.com" || h.includes("gmail")) return "google";
+  if (h === "smtp.office365.com" || h.includes("office365") || h.includes("outlook")) return "outlook";
+  return "custom";
+}
+
+function applySmtpPreset(current: MailForm, preset: SmtpPreset): MailForm {
+  if (preset === "google") {
+    return {
+      ...current,
+      provider: "smtp",
+      host: "smtp.gmail.com",
+      port: "465",
+      secure: true
+    };
+  }
+  if (preset === "outlook") {
+    return {
+      ...current,
+      provider: "outlook",
+      host: "smtp.office365.com",
+      port: "587",
+      secure: false
+    };
+  }
+  return {
+    ...current,
+    provider: "smtp",
+    host: current.host === "smtp.gmail.com" || current.host === "smtp.office365.com" ? "" : current.host,
+    port: current.port || "587",
+    secure: false
+  };
+}
 
 function ProviderIcon({ provider }: { provider: "google" | "outlook" }) {
   return (
@@ -162,18 +201,13 @@ function requestIntegrationMailto(item: AvailableIntegration) {
 
 function setProviderDefaults(current: MailForm, provider: MailRelayProvider): MailForm {
   if (provider === "google") {
-    return { ...current, provider, host: "smtp.gmail.com", port: "465", secure: true };
+    return { ...current, provider };
   }
   if (provider === "outlook") {
-    return {
-      ...current,
-      provider,
-      host: current.host || "smtp.office365.com",
-      port: current.port === "465" ? "587" : current.port || "587",
-      secure: false
-    };
+    return applySmtpPreset(current, "outlook");
   }
-  return { ...current, provider };
+  // SMTP: standaard Google Workspace-preset (tijdelijk tot OAuth rond is).
+  return applySmtpPreset(current, "google");
 }
 
 export function IntegrationsPanel({
@@ -208,8 +242,8 @@ export function IntegrationsPanel({
   const [requestedIds, setRequestedIds] = useState<string[]>(() => readRequestedIds());
   const [connectingCategory, setConnectingCategory] = useState<MailNotifyCategory | null>(null);
   const [providerMenuOpen, setProviderMenuOpen] = useState(false);
-  const [clearSecretStep, setClearSecretStep] = useState(0);
-  const [clearSecretConfirm, setClearSecretConfirm] = useState("");
+  const [oauthExpanded, setOauthExpanded] = useState(false);
+  const [editingOauth, setEditingOauth] = useState(false);
   const [clearingSecret, setClearingSecret] = useState(false);
 
   function changeView(next: IntegrationsView) {
@@ -280,14 +314,16 @@ export function IntegrationsPanel({
       {
         id: "mail" as const,
         label: "E-mail",
-        hint: "Google of Outlook · inbox per categorie",
+        hint: "Google OAuth, Google SMTP of Outlook",
         active: settings.mailRelay.enabled,
         detail:
           settings.mailRelay.provider === "google"
-            ? `Google · ${connectedCategories}/4 categorieën gekoppeld`
+            ? `Google OAuth · ${connectedCategories}/4 categorieën gekoppeld`
             : settings.mailRelay.provider === "outlook"
               ? "Outlook / Microsoft 365"
-              : "SMTP"
+              : detectSmtpPreset(settings.mailRelay.host, "smtp") === "google"
+                ? "Google SMTP (app-wachtwoord)"
+                : "SMTP"
       },
       {
         id: "googleAds" as const,
@@ -407,7 +443,8 @@ export function IntegrationsPanel({
   }
 
   async function clearGoogleSecret() {
-    if (clearSecretStep < 3 || clearSecretConfirm !== CLEAR_CONFIRM_WORD || clearingSecret) return;
+    if (clearingSecret) return;
+    if (!window.confirm("Google client secret wissen? Daarna moet je een nieuwe secret opslaan.")) return;
     setClearingSecret(true);
     setError("");
     try {
@@ -415,19 +452,15 @@ export function IntegrationsPanel({
         async () => {
           const result = await api<{ integrations: IntegrationSettingsPublic }>(
             "/api/admin/integrations/mailrelay/google/clear-secret",
-            {
-              method: "POST",
-              body: JSON.stringify({ confirmation: CLEAR_CONFIRM_WORD })
-            }
+            { method: "POST", body: JSON.stringify({}) }
           );
           applySettings(result.integrations);
           setMailForm((current) => (current ? { ...current, googleClientSecret: "" } : current));
+          setEditingOauth(true);
         },
         { successMessage: "Google client secret gewist." }
       );
       setMessage("Google client secret gewist.");
-      setClearSecretStep(0);
-      setClearSecretConfirm("");
     } catch (clearError) {
       setError(clearError instanceof Error ? clearError.message : "Secret wissen mislukt.");
     } finally {
@@ -581,10 +614,12 @@ export function IntegrationsPanel({
                 {mailForm.provider === "smtp" ? <IconIntegrations width={18} height={18} /> : null}
                 <span>
                   {mailForm.provider === "google"
-                    ? "Google (Gmail / Workspace)"
+                    ? "Google OAuth (inloggen)"
                     : mailForm.provider === "outlook"
                       ? "Outlook / Microsoft 365"
-                      : "SMTP / andere provider"}
+                      : detectSmtpPreset(mailForm.host, "smtp") === "google"
+                        ? "Google SMTP (app-wachtwoord)"
+                        : "SMTP / andere provider"}
                 </span>
                 <span className="ta-provider-caret">▾</span>
               </button>
@@ -593,8 +628,22 @@ export function IntegrationsPanel({
                   <button type="button" className={mailForm.provider === "google" ? "is-active" : ""} onClick={() => chooseProvider("google")}>
                     <ProviderIcon provider="google" />
                     <span>
-                      <strong>Google</strong>
-                      <small>Workspace / Gmail — aanbevolen voor @tresamigos.nl</small>
+                      <strong>Google OAuth</strong>
+                      <small>Inloggen met Workspace — later, na Google-verificatie</small>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={mailForm.provider === "smtp" && detectSmtpPreset(mailForm.host, "smtp") === "google" ? "is-active" : ""}
+                    onClick={() => {
+                      setMailForm((current) => (current ? applySmtpPreset(current, "google") : current));
+                      setProviderMenuOpen(false);
+                    }}
+                  >
+                    <ProviderIcon provider="google" />
+                    <span>
+                      <strong>Google SMTP</strong>
+                      <small>Tijdelijk · smtp.gmail.com + app-wachtwoord</small>
                     </span>
                   </button>
                   <button type="button" className={mailForm.provider === "outlook" ? "is-active" : ""} onClick={() => chooseProvider("outlook")}>
@@ -604,11 +653,18 @@ export function IntegrationsPanel({
                       <small>Microsoft 365 SMTP</small>
                     </span>
                   </button>
-                  <button type="button" className={mailForm.provider === "smtp" ? "is-active" : ""} onClick={() => chooseProvider("smtp")}>
+                  <button
+                    type="button"
+                    className={mailForm.provider === "smtp" && detectSmtpPreset(mailForm.host, "smtp") === "custom" ? "is-active" : ""}
+                    onClick={() => {
+                      setMailForm((current) => (current ? applySmtpPreset(current, "custom") : current));
+                      setProviderMenuOpen(false);
+                    }}
+                  >
                     <IconIntegrations width={18} height={18} />
                     <span>
-                      <strong>SMTP</strong>
-                      <small>Handmatige host / poort</small>
+                      <strong>Eigen SMTP</strong>
+                      <small>Host, poort, SSL en inlog zelf invullen</small>
                     </span>
                   </button>
                 </div>
@@ -627,138 +683,20 @@ export function IntegrationsPanel({
 
           {mailForm.provider === "google" ? (
             <>
-              <div className="ta-oauth-creds">
-                <div className="ta-oauth-creds-head">
-                  <strong>Google OAuth Client</strong>
-                  <span className="ta-seo-hint">
-                    {settings?.mailRelay.googleOAuthConfigured
-                      ? `Actief (${settings.mailRelay.googleOAuthSource === "db" ? "opgeslagen hier" : "via .env fallback"})`
-                      : "Nog niet compleet — vul ID + secret in"}
-                  </span>
-                </div>
-                <p className="ta-seo-hint" style={{ margin: 0 }}>
-                  In Google Cloud Console → APIs &amp; Services → Credentials → jouw OAuth-client (type{" "}
-                  <strong>Web application</strong>) moet deze redirect URI <em>letterlijk</em> staan — anders krijg je
-                  Error 400 <code>redirect_uri_mismatch</code>:
+              <div className="ta-mail-owner-help">
+                <strong>Mailbox koppelen</strong>
+                <p>
+                  Klik hieronder op <em>Inloggen met Google</em> bij jouw categorie. Kies het Google-adres van die mailbox
+                  en geef toestemming. Klaar — mails gaan daarna vanaf dat adres.
                 </p>
-                <label className="ta-field">
-                  <span>Redirect URI (kopieer naar Google)</span>
-                  <input
-                    readOnly
-                    value={
-                      settings?.mailRelay.googleRedirectUri ||
-                      "https://tresamigos.nl/api/integrations/mailrelay/google/callback"
-                    }
-                    onFocus={(event) => event.currentTarget.select()}
-                  />
-                </label>
-                <label className="ta-field">
-                  <span>Client ID</span>
-                  <input
-                    value={mailForm.googleClientId}
-                    onChange={(event) =>
-                      setMailForm((current) => (current ? { ...current, googleClientId: event.target.value } : current))
-                    }
-                    autoComplete="off"
-                    placeholder="xxxxx.apps.googleusercontent.com"
-                  />
-                </label>
-                <div className="ta-oauth-secret-box">
-                  <label className="ta-field">
-                    <span>Client Secret</span>
-                    {settings?.mailRelay.googleClientSecretSet ? (
-                      <p className="ta-oauth-secret-masked">
-                        Opgeslagen: {settings.mailRelay.googleClientSecretMasked || "••••••••"} — blijft behouden tenzij je
-                        hieronder een nieuwe invult.
-                      </p>
-                    ) : (
-                      <p className="ta-seo-hint" style={{ margin: "0 0 6px" }}>
-                        Nog geen secret opgeslagen.
-                      </p>
-                    )}
-                    <input
-                      type="password"
-                      value={mailForm.googleClientSecret}
-                      onChange={(event) =>
-                        setMailForm((current) =>
-                          current ? { ...current, googleClientSecret: event.target.value } : current
-                        )
-                      }
-                      autoComplete="new-password"
-                      placeholder={
-                        settings?.mailRelay.googleClientSecretSet
-                          ? "Nieuwe secret (leeg laten = ongewijzigd)"
-                          : "Plak hier de client secret"
-                      }
-                    />
-                  </label>
-                  {settings?.mailRelay.googleClientSecretSet && settings.mailRelay.googleOAuthSource !== "env" ? (
-                    <div className="ta-oauth-clear">
-                      <strong>Secret wissen</strong>
-                      <p className="ta-seo-hint" style={{ margin: 0 }}>
-                        Mag nooit per ongeluk. Drie keer bevestigen, daarna exact <code>{CLEAR_CONFIRM_WORD}</code> typen.
-                        Andere tekst wordt niet geaccepteerd.
-                      </p>
-                      <div className="ta-oauth-clear-steps">
-                        {[1, 2, 3].map((step) => (
-                          <button
-                            key={step}
-                            type="button"
-                            className={`ta-btn ta-btn-ghost${clearSecretStep >= step ? " is-done" : ""}`}
-                            disabled={clearSecretStep !== step - 1 || clearingSecret}
-                            onClick={() => setClearSecretStep(step)}
-                          >
-                            Bevestig {step}/3
-                          </button>
-                        ))}
-                      </div>
-                      {clearSecretStep >= 3 ? (
-                        <label className="ta-field">
-                          <span>
-                            Typ <code>{CLEAR_CONFIRM_WORD}</code>
-                          </span>
-                          <input
-                            value={clearSecretConfirm}
-                            onChange={(event) => setClearSecretConfirm(event.target.value)}
-                            autoComplete="off"
-                            placeholder={CLEAR_CONFIRM_WORD}
-                          />
-                          <button
-                            type="button"
-                            className="ta-btn"
-                            style={{ marginTop: 8 }}
-                            disabled={clearSecretConfirm !== CLEAR_CONFIRM_WORD || clearingSecret}
-                            onClick={() => void clearGoogleSecret()}
-                          >
-                            {clearingSecret ? "Wissen..." : "Secret definitief verwijderen"}
-                          </button>
-                        </label>
-                      ) : null}
-                      {clearSecretStep > 0 ? (
-                        <button
-                          type="button"
-                          className="ta-btn ta-btn-ghost"
-                          onClick={() => {
-                            setClearSecretStep(0);
-                            setClearSecretConfirm("");
-                          }}
-                        >
-                          Annuleren
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
               </div>
 
               {!settings?.mailRelay.googleOAuthConfigured ? (
-                <p className="ta-seo-hint">Sla Client ID en Secret op, daarna kun je per categorie inloggen.</p>
-              ) : (
-                <p className="ta-seo-hint">
-                  Per categorie: Inloggen → Google-account kiezen → toestemming geven. Het gekozen account wordt de
-                  koppeling (adressen hieronder zijn alleen hint, geen vooraf gekozen login).
+                <p className="ta-error" style={{ margin: 0 }}>
+                  Techniek nog niet klaar. Vraag de beheerder om de Google-app-instellingen open te klappen en op te
+                  slaan. Of kies tijdelijk Google SMTP.
                 </p>
-              )}
+              ) : null}
 
               <div className="ta-integrations-categories">
                 {CATEGORY_META.map((category) => {
@@ -781,38 +719,38 @@ export function IntegrationsPanel({
                         </div>
                         <StatusBadge active={connected.connected} />
                       </header>
-                      <label className="ta-field">
-                        <span>Google-account</span>
-                        <input
-                          type="email"
-                          value={connected.connected ? connected.email : ""}
-                          placeholder={category.placeholder}
-                          readOnly
-                          autoComplete="off"
-                        />
-                      </label>
+                      {connected.connected ? (
+                        <p className="ta-oauth-echo">
+                          Ingelogd als <strong>{connected.email}</strong>
+                        </p>
+                      ) : (
+                        <p className="ta-seo-hint" style={{ margin: 0 }}>
+                          Nog niet gekoppeld — log in met het Google-adres voor {category.label.toLowerCase()}.
+                        </p>
+                      )}
                       <div className="ta-integrations-category-actions">
                         {connected.connected ? (
-                          <>
-                            <span className="ta-seo-hint">Gekoppeld als {connected.email}</span>
-                            <EntraCommands>
-                              <EntraCommand
-                                onClick={() => void sendTestMail(category.id)}
-                                disabled={testingTarget !== null}
-                              >
-                                {testingTarget === category.id ? "Testen..." : "Testmail"}
-                              </EntraCommand>
-                              <EntraCommand
-                                onClick={() => void connectGoogleMail(category.id)}
-                                disabled={!settings?.mailRelay.googleOAuthConfigured || connectingCategory === category.id || testingTarget !== null}
-                              >
-                                {connectingCategory === category.id ? "Bezig..." : "Opnieuw"}
-                              </EntraCommand>
-                              <EntraCommand danger onClick={() => void disconnectGoogleCategory(category.id)}>
-                                Ontkoppelen
-                              </EntraCommand>
-                            </EntraCommands>
-                          </>
+                          <EntraCommands>
+                            <EntraCommand
+                              onClick={() => void sendTestMail(category.id)}
+                              disabled={testingTarget !== null}
+                            >
+                              {testingTarget === category.id ? "Testen..." : "Testmail"}
+                            </EntraCommand>
+                            <EntraCommand
+                              onClick={() => void connectGoogleMail(category.id)}
+                              disabled={
+                                !settings?.mailRelay.googleOAuthConfigured ||
+                                connectingCategory === category.id ||
+                                testingTarget !== null
+                              }
+                            >
+                              {connectingCategory === category.id ? "Bezig..." : "Opnieuw inloggen"}
+                            </EntraCommand>
+                            <EntraCommand danger onClick={() => void disconnectGoogleCategory(category.id)}>
+                              Ontkoppelen
+                            </EntraCommand>
+                          </EntraCommands>
                         ) : (
                           <button
                             type="button"
@@ -829,21 +767,212 @@ export function IntegrationsPanel({
                   );
                 })}
               </div>
+
+              <div className={`ta-oauth-creds${oauthExpanded ? " is-open" : ""}`}>
+                <button
+                  type="button"
+                  className="ta-oauth-creds-toggle"
+                  aria-expanded={oauthExpanded}
+                  onClick={() => setOauthExpanded((open) => !open)}
+                >
+                  <strong>Technische Google-instellingen</strong>
+                  <span className="ta-seo-hint">
+                    {settings?.mailRelay.googleOAuthConfigured ? "Gekoppeld · alleen voor beheerder" : "Nog niet compleet"}
+                  </span>
+                  <span className="ta-provider-caret" aria-hidden="true">
+                    {oauthExpanded ? "▴" : "▾"}
+                  </span>
+                </button>
+
+                {oauthExpanded ? (
+                  <div className="ta-oauth-creds-body">
+                    <p className="ta-seo-hint" style={{ margin: 0 }}>
+                      Alleen nodig bij eerste setup. Mailbox-eigenaren hoeven dit niet te wijzigen. Tijdelijk zonder
+                      OAuth? Kies{" "}
+                      <button
+                        type="button"
+                        className="ta-btn ta-btn-ghost"
+                        style={{ display: "inline", padding: "2px 8px", verticalAlign: "baseline" }}
+                        onClick={() => {
+                          setMailForm((current) => (current ? applySmtpPreset(current, "google") : current));
+                        }}
+                      >
+                        Google SMTP
+                      </button>
+                      .
+                    </p>
+
+                    {settings?.mailRelay.googleOAuthConfigured && !editingOauth ? (
+                      <>
+                        <div className="ta-oauth-echo-grid">
+                          <div>
+                            <span className="ta-seo-hint">Redirect URI</span>
+                            <p className="ta-oauth-echo">
+                              {settings.mailRelay.googleRedirectUri ||
+                                "https://tresamigos.nl/api/integrations/mailrelay/google/callback"}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="ta-seo-hint">Client ID</span>
+                            <p className="ta-oauth-echo">{settings.mailRelay.googleClientId || mailForm.googleClientId}</p>
+                          </div>
+                          <div>
+                            <span className="ta-seo-hint">Client Secret</span>
+                            <p className="ta-oauth-echo">
+                              {settings.mailRelay.googleClientSecretMasked || "••••••••"}
+                              {settings.mailRelay.googleOAuthSource === "env" ? " (via .env)" : " (opgeslagen)"}
+                            </p>
+                          </div>
+                        </div>
+                        <EntraCommands>
+                          <EntraCommand
+                            onClick={() => {
+                              setEditingOauth(true);
+                              setMailForm((current) =>
+                                current
+                                  ? { ...current, googleClientId: settings.mailRelay.googleClientId || "", googleClientSecret: "" }
+                                  : current
+                              );
+                            }}
+                          >
+                            Wijzigen
+                          </EntraCommand>
+                          {settings.mailRelay.googleOAuthSource !== "env" ? (
+                            <EntraCommand danger disabled={clearingSecret} onClick={() => void clearGoogleSecret()}>
+                              {clearingSecret ? "Wissen..." : "Secret wissen"}
+                            </EntraCommand>
+                          ) : null}
+                        </EntraCommands>
+                      </>
+                    ) : (
+                      <>
+                        <label className="ta-field">
+                          <span>Redirect URI (kopieer naar Google Cloud)</span>
+                          <input
+                            readOnly
+                            value={
+                              settings?.mailRelay.googleRedirectUri ||
+                              "https://tresamigos.nl/api/integrations/mailrelay/google/callback"
+                            }
+                            onFocus={(event) => event.currentTarget.select()}
+                          />
+                        </label>
+                        <label className="ta-field">
+                          <span>Client ID</span>
+                          <input
+                            value={mailForm.googleClientId}
+                            onChange={(event) =>
+                              setMailForm((current) =>
+                                current ? { ...current, googleClientId: event.target.value } : current
+                              )
+                            }
+                            autoComplete="off"
+                            placeholder="xxxxx.apps.googleusercontent.com"
+                          />
+                        </label>
+                        <label className="ta-field">
+                          <span>Client Secret</span>
+                          {settings?.mailRelay.googleClientSecretSet ? (
+                            <p className="ta-oauth-secret-masked">
+                              Nu: {settings.mailRelay.googleClientSecretMasked || "••••••••"} — leeg laten = behouden
+                            </p>
+                          ) : null}
+                          <input
+                            type="password"
+                            value={mailForm.googleClientSecret}
+                            onChange={(event) =>
+                              setMailForm((current) =>
+                                current ? { ...current, googleClientSecret: event.target.value } : current
+                              )
+                            }
+                            autoComplete="new-password"
+                            placeholder={
+                              settings?.mailRelay.googleClientSecretSet
+                                ? "Nieuwe secret (leeg = ongewijzigd)"
+                                : "Plak hier de client secret"
+                            }
+                          />
+                        </label>
+                        {editingOauth ? (
+                          <EntraCommand
+                            onClick={() => {
+                              setEditingOauth(false);
+                              setMailForm((current) => (current ? { ...current, googleClientSecret: "" } : current));
+                            }}
+                          >
+                            Annuleren wijzigen
+                          </EntraCommand>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                ) : null}
+              </div>
             </>
           ) : (
             <div className="ta-grid">
+              <div className="ta-grid-wide ta-smtp-presets">
+                <span className="ta-provider-label">SMTP-preset</span>
+                <div className="ta-smtp-preset-row">
+                  <button
+                    type="button"
+                    className={detectSmtpPreset(mailForm.host, mailForm.provider) === "google" ? "is-active" : ""}
+                    onClick={() => setMailForm((current) => (current ? applySmtpPreset(current, "google") : current))}
+                  >
+                    <ProviderIcon provider="google" />
+                    Google Workspace
+                  </button>
+                  <button
+                    type="button"
+                    className={mailForm.provider === "outlook" ? "is-active" : ""}
+                    onClick={() => setMailForm((current) => (current ? applySmtpPreset(current, "outlook") : current))}
+                  >
+                    <ProviderIcon provider="outlook" />
+                    Outlook 365
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      mailForm.provider === "smtp" && detectSmtpPreset(mailForm.host, "smtp") === "custom" ? "is-active" : ""
+                    }
+                    onClick={() => setMailForm((current) => (current ? applySmtpPreset(current, "custom") : current))}
+                  >
+                    Eigen
+                  </button>
+                </div>
+              </div>
+
               {mailForm.provider === "outlook" ? (
                 <p className="ta-seo-hint ta-grid-wide">
-                  Outlook gebruikt SMTP (smtp.office365.com). Vul gebruikersnaam en app-wachtwoord in, plus de inbox per
+                  Outlook: host <code>smtp.office365.com</code>, poort <code>587</code>, SSL uit. Gebruikersnaam = mailbox,
+                  wachtwoord = app-wachtwoord of accountwachtwoord (afhankelijk van tenant).
+                </p>
+              ) : detectSmtpPreset(mailForm.host, "smtp") === "google" ? (
+                <p className="ta-seo-hint ta-grid-wide">
+                  Google Workspace / Gmail via SMTP (tijdelijk tot OAuth klaar is). Host{" "}
+                  <code>smtp.gmail.com</code>, poort <code>465</code>, SSL aan. In Google-account: 2FA aan →{" "}
+                  <strong>App-wachtwoord</strong> maken → dat plakken bij wachtwoord (niet het normale wachtwoord).
+                  Gebruiker en afzender = het Workspace-adres (bijv. <code>info@bedrijf.nl</code>).
+                </p>
+              ) : (
+                <p className="ta-seo-hint ta-grid-wide">
+                  Vul host, poort, SSL, gebruiker en wachtwoord van je mailprovider in. Daarna inbox-adressen per
                   categorie.
                 </p>
-              ) : null}
+              )}
+
               <label className="ta-field">
                 <span>SMTP host</span>
                 <input
                   value={mailForm.host}
                   onChange={(event) => setMailForm((current) => (current ? { ...current, host: event.target.value } : current))}
-                  placeholder={mailForm.provider === "outlook" ? "smtp.office365.com" : "smtp.provider.nl"}
+                  placeholder={
+                    mailForm.provider === "outlook"
+                      ? "smtp.office365.com"
+                      : detectSmtpPreset(mailForm.host, "smtp") === "google"
+                        ? "smtp.gmail.com"
+                        : "smtp.provider.nl"
+                  }
                 />
               </label>
               <label className="ta-field">
@@ -852,7 +981,7 @@ export function IntegrationsPanel({
                   value={mailForm.port}
                   onChange={(event) => setMailForm((current) => (current ? { ...current, port: event.target.value } : current))}
                   inputMode="numeric"
-                  placeholder="587"
+                  placeholder={mailForm.provider === "outlook" ? "587" : "465"}
                 />
               </label>
               <label className="ta-check" style={{ alignSelf: "end" }}>
@@ -863,25 +992,41 @@ export function IntegrationsPanel({
                     setMailForm((current) => (current ? { ...current, secure: event.target.checked } : current))
                   }
                 />
-                <span>SSL direct</span>
+                <span>SSL / TLS direct (poort 465)</span>
               </label>
               <label className="ta-field">
-                <span>Gebruiker</span>
+                <span>Gebruiker (e-mailadres)</span>
                 <input
                   value={mailForm.username}
                   onChange={(event) => setMailForm((current) => (current ? { ...current, username: event.target.value } : current))}
                   autoComplete="off"
-                  placeholder={mailForm.provider === "outlook" ? "naam@tresamigos.nl" : ""}
+                  placeholder={
+                    mailForm.provider === "outlook" || detectSmtpPreset(mailForm.host, "smtp") === "google"
+                      ? "naam@bedrijf.nl"
+                      : "smtp-gebruiker"
+                  }
                 />
               </label>
               <label className="ta-field">
-                <span>Wachtwoord</span>
+                <span>
+                  {detectSmtpPreset(mailForm.host, mailForm.provider) === "google"
+                    ? "App-wachtwoord"
+                    : mailForm.provider === "outlook"
+                      ? "Wachtwoord / app-wachtwoord"
+                      : "Wachtwoord"}
+                </span>
                 <input
                   type="password"
                   value={mailForm.password}
                   onChange={(event) => setMailForm((current) => (current ? { ...current, password: event.target.value } : current))}
                   autoComplete="new-password"
-                  placeholder={settings?.mailRelay.passwordSet ? "•••••••• (blijft behouden)" : ""}
+                  placeholder={
+                    settings?.mailRelay.passwordSet
+                      ? "•••••••• (blijft behouden als je leeg laat)"
+                      : detectSmtpPreset(mailForm.host, mailForm.provider) === "google"
+                        ? "16 tekens uit Google App-wachtwoorden"
+                        : ""
+                  }
                 />
               </label>
               <label className="ta-field">
@@ -892,6 +1037,10 @@ export function IntegrationsPanel({
                   placeholder="no-reply@tresamigos.nl"
                 />
               </label>
+
+              <p className="ta-seo-hint ta-grid-wide" style={{ margin: "8px 0 0" }}>
+                Inbox per categorie (waar notificaties naartoe gaan). Mag hetzelfde adres zijn als de SMTP-gebruiker.
+              </p>
               {CATEGORY_META.map((category) => (
                 <label className="ta-field" key={category.id}>
                   <span>{category.label}</span>
@@ -939,7 +1088,9 @@ export function IntegrationsPanel({
             <p className="ta-seo-hint" style={{ margin: "6px 0 0" }}>
               {mailForm.provider === "google"
                 ? "Elke gekoppelde categorie heeft een eigen testmail. Leeg laten stuurt naar dat Google-account zelf."
-                : "Elke categorie hierboven heeft een testmail via deze SMTP-koppeling. Leeg laten stuurt naar het adres van die categorie."}
+                : detectSmtpPreset(mailForm.host, mailForm.provider) === "google"
+                  ? "Test via Google SMTP (app-wachtwoord). Leeg laten stuurt naar het inbox-adres van die categorie."
+                  : "Elke categorie hierboven heeft een testmail via deze SMTP-koppeling. Leeg laten stuurt naar het adres van die categorie."}
             </p>
             <div className="ta-grid" style={{ marginTop: 8 }}>
               <label className="ta-field">

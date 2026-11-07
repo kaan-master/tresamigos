@@ -1,5 +1,6 @@
 import type {
   Application,
+  ApplicationStatus,
   CateringCartLine,
   CateringCategoryConfig,
   CateringCategoryId,
@@ -26,7 +27,7 @@ import type {
   VacancyRoleConfig,
   WeekDay
 } from "@tresamigos/types";
-import { SEO_PAGE_KEYS, WEEK_DAYS, formatStoreCode } from "@tresamigos/types";
+import { APPLICATION_STATUSES, SEO_PAGE_KEYS, WEEK_DAYS, formatStoreCode } from "@tresamigos/types";
 import { DEFAULT_CATERING_SETTINGS } from "./cateringDefaults";
 import { sanitizeCateringFulfillmentSettings } from "./cateringHours";
 import { DEFAULT_NAV_SETTINGS, sanitizeNavSettings } from "./navDefaults";
@@ -828,6 +829,13 @@ function isAllowedApplicationAttachment(name: string, data: string) {
   return APPLICATION_ATTACHMENT_DATA_PREFIXES.some((prefix) => data.startsWith(prefix));
 }
 
+function sanitizeApplicationStatus(value: unknown): ApplicationStatus {
+  const status = cleanText(value, "nieuw", 40);
+  return (APPLICATION_STATUSES as readonly string[]).includes(status)
+    ? (status as ApplicationStatus)
+    : "nieuw";
+}
+
 export function sanitizeApplication(input: CreateApplicationInput | Application): Application {
   const pdf = input?.pdf && typeof input.pdf === "object" ? input.pdf : null;
   const pdfName = cleanText(pdf?.name, "", 180);
@@ -836,7 +844,7 @@ export function sanitizeApplication(input: CreateApplicationInput | Application)
   return {
     id: cleanText(input?.id, newId(), 80),
     createdAt: cleanText(input?.createdAt, new Date().toISOString(), 80),
-    status: cleanText(input?.status, "nieuw", 40),
+    status: sanitizeApplicationStatus(input?.status),
     role: cleanText(input?.role, "", 160),
     name: cleanText(input?.name, "", 160),
     email: cleanText(input?.email, "", 180),

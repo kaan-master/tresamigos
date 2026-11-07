@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
-import type { CreateApplicationInput } from "@tresamigos/types";
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import type { CreateApplicationInput, UpdateApplicationStatusInput } from "@tresamigos/types";
 import { AdminGuard } from "../auth/admin.guard";
 import { PermissionsGuard } from "../auth/permissions.guard";
 import { RequirePermissions } from "../auth/permissions.decorator";
@@ -24,5 +24,11 @@ export class AdminApplicationsController {
   @RequirePermissions("applications")
   list() {
     return this.applicationsService.list();
+  }
+
+  @Patch("applications/:id/status")
+  @RequirePermissions("applications")
+  updateStatus(@Param("id") id: string, @Body() body: UpdateApplicationStatusInput) {
+    return this.applicationsService.updateStatus(id, body);
   }
 }
