@@ -282,7 +282,7 @@ export class IntegrationsService {
   ) {
     try {
       const url = await this.mailService.createGoogleOAuthUrl(requestOrigin, options);
-      return { url };
+      return { url, redirectUri: this.mailService.googleRedirectUri(requestOrigin) };
     } catch (error) {
       throw new BadRequestException({
         message: error instanceof Error ? error.message : "Google login starten mislukt."

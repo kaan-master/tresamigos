@@ -160,11 +160,26 @@ export class MailService {
   googleRedirectUri(requestOrigin?: string) {
     const configured = String(process.env.GOOGLE_MAIL_REDIRECT_URI || "").trim();
     if (configured) return canonicalizeGoogleRedirectUri(configured);
+
     const base = String(process.env.API_PUBLIC_URL || process.env.PUBLIC_API_URL || "").trim();
     if (base) return canonicalizeGoogleRedirectUri(`${base.replace(/\/$/, "")}/api/integrations/mailrelay/google/callback`);
-    if (requestOrigin) {
-      return canonicalizeGoogleRedirectUri(`${requestOrigin.replace(/\/$/, "")}/api/integrations/mailrelay/google/callback`);
+
+    // Alleen lokaal de browser-origin gebruiken. Op de server altijd de vaste
+    // productie-URI — anders stuurt een verkeerde X-Forwarded-Host iets anders
+    // naar Google en krijg je redirect_uri_mismatch.
+    const origin = String(requestOrigin || "").trim();
+    if (origin) {
+      try {
+        const host = new URL(origin).hostname.toLowerCase();
+        const local = host === "localhost" || host === "127.0.0.1" || host === "::1";
+        if (local) {
+          return canonicalizeGoogleRedirectUri(`${origin.replace(/\/$/, "")}/api/integrations/mailrelay/google/callback`);
+        }
+      } catch {
+        /* val terug op productie */
+      }
     }
+
     return PRODUCTION_GOOGLE_REDIRECT_URI;
   }
 

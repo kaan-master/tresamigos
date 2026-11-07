@@ -847,7 +847,7 @@ export function IntegrationsPanel({
                     ) : (
                       <>
                         <label className="ta-field">
-                          <span>Redirect URI (kopieer naar Google Cloud)</span>
+                          <span>Redirect URI (exact in Google Cloud → Authorized redirect URIs)</span>
                           <input
                             readOnly
                             value={
@@ -857,6 +857,10 @@ export function IntegrationsPanel({
                             onFocus={(event) => event.currentTarget.select()}
                           />
                         </label>
+                        <p className="ta-seo-hint">
+                          Zonder deze URI exact (geen www, geen slash aan het eind) krijg je Error 400 redirect_uri_mismatch.
+                          De URI hoort bij dezelfde OAuth-client als het Client ID hieronder.
+                        </p>
                         <label className="ta-field">
                           <span>Client ID</span>
                           <input
