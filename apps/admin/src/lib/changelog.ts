@@ -1,10 +1,6 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
-<<<<<<< Updated upstream
-export const ADMIN_APP_VERSION = "0.3.4";
-=======
 export const ADMIN_APP_VERSION = "0.3.5";
->>>>>>> Stashed changes
 
 export type ChangelogEntry = {
   version: string;
@@ -15,27 +11,21 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
-<<<<<<< Updated upstream
-    version: "0.3.4",
-    date: "27 oktober 2026",
-    current: true,
-    changes: [
-      "Loyalty: Registreren opent het Leat-formulier. Inloggen opent het Leat-portaal."
-=======
     version: "0.3.5",
     date: "7 november 2026",
     current: true,
     changes: [
       "E-mail Google: mailbox-eigenaren zien alleen Inloggen met Google. Technische OAuth-velden staan ingeklapt; bij een bestaande sleutel zie je een echo, geen bevestig-ritueel.",
-      "Sollicitaties hebben statussen: nieuw, contact opgenomen, in gesprek, aangenomen, afgewezen en ingetrokken."
+      "Sollicitaties hebben statussen: nieuw, contact opgenomen, in gesprek, aangenomen, afgewezen en ingetrokken.",
+      "Testmail per e-mailcategorie in Integraties."
     ]
   },
   {
     version: "0.3.4",
-    date: "20 oktober 2026",
+    date: "27 oktober 2026",
     changes: [
+      "Loyalty: Registreren opent het Leat-formulier. Inloggen opent het Leat-portaal.",
       "E-mail: Google SMTP met app-wachtwoord als tijdelijke optie naast OAuth. Presets voor Google Workspace, Outlook en eigen SMTP, met host, poort, SSL en inlog."
->>>>>>> Stashed changes
     ]
   },
   {
