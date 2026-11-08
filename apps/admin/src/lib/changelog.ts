@@ -1,7 +1,7 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
 /** Gelijk houden aan `apps/admin/package.json` → version. */
-export const ADMIN_APP_VERSION = "0.3.6";
+export const ADMIN_APP_VERSION = "0.3.7";
 
 export type ChangelogEntry = {
   version: string;
@@ -12,9 +12,16 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
-    version: "0.3.6",
+    version: "0.3.7",
     date: "8 november 2026",
     current: true,
+    changes: [
+      "Sollicitatiestatus: zoekbare dropdown, typen om te filteren, gekleurde statusdot per status."
+    ]
+  },
+  {
+    version: "0.3.6",
+    date: "8 november 2026",
     changes: [
       "Media: afbeeldingen selecteren en permanent van de server verwijderen (bibliotheek en mediakiezer).",
       "Vacatures tonen de functiefoto die je in Sollicitaties instelt, niet meer alleen het logo.",

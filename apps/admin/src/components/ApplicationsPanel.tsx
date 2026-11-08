@@ -8,6 +8,7 @@ import { createSlugId } from "../lib/id";
 import { mediaAssetUrl } from "../lib/media";
 import { api } from "../lib/api";
 import { useAdminFeedback } from "../context/AdminFeedbackContext";
+import { StatusChip, StatusCombo } from "./StatusCombo";
 import { EntraBlade, EntraCommand, EntraCommands, EntraSearch, EntraShell, type EntraNavItem } from "./telling/entraUi";
 
 interface Props extends PanelSaveProps {
@@ -124,8 +125,6 @@ function IncomingView({
     return [...options, ...orphans.map((role) => ({ value: role, label: role }))];
   }, [content.site.vacancy.jobs, sorted]);
 
-  const statusOptions = APPLICATION_STATUSES;
-
   async function updateStatus(next: ApplicationStatus) {
     if (!selected || savingStatus || selected.status === next) return;
     setSavingStatus(true);
@@ -206,14 +205,12 @@ function IncomingView({
             </option>
           ))}
         </select>
-        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-          <option value="">Alle statussen</option>
-          {statusOptions.map((status) => (
-            <option value={status} key={status}>
-              {statusLabel(status)}
-            </option>
-          ))}
-        </select>
+        <StatusCombo
+          compact
+          value={statusFilter}
+          emptyLabel="Alle statussen"
+          onChange={setStatusFilter}
+        />
         <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
         <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
         <span className="entra-count">
@@ -250,9 +247,7 @@ function IncomingView({
                 <td>{application.phone || "—"}</td>
                 <td>{new Date(application.createdAt).toLocaleString("nl-NL")}</td>
                 <td>
-                  <span className={`entra-pill${application.status === "nieuw" ? " is-on" : ""}`}>
-                    {statusLabel(application.status)}
-                  </span>
+                  <StatusChip status={application.status} />
                 </td>
               </tr>
             ))}
@@ -274,17 +269,13 @@ function IncomingView({
           </p>
           <label>
             Status
-            <select
+            <StatusCombo
               value={selected.status}
               disabled={savingStatus}
-              onChange={(event) => void updateStatus(event.target.value as ApplicationStatus)}
-            >
-              {APPLICATION_STATUSES.map((status) => (
-                <option value={status} key={status}>
-                  {APPLICATION_STATUS_LABELS[status]}
-                </option>
-              ))}
-            </select>
+              onChange={(next) => {
+                if (next) void updateStatus(next as ApplicationStatus);
+              }}
+            />
           </label>
           <label>
             Functie

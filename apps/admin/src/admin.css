@@ -2521,31 +2521,32 @@ select {
 
 .ta-media-select {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 3;
+  top: 8px;
+  left: 8px;
+  right: auto;
+  z-index: 5;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid var(--ta-line);
-  box-shadow: 0 6px 14px rgba(31, 22, 11, 0.12);
+  background: #fff;
+  border: 2px solid #242424;
+  box-shadow: 0 4px 12px rgba(31, 22, 11, 0.2);
   cursor: pointer;
 }
 
 .ta-media-select input {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   margin: 0;
+  accent-color: #1a73e8;
   cursor: pointer;
 }
 
 .ta-media-select-picker {
   top: 8px;
   left: 8px;
-  right: auto;
 }
 
 .ta-media-card.is-skeleton .ta-media-preview {
@@ -2569,8 +2570,10 @@ select {
 
 .ta-media-kind {
   position: absolute;
-  top: 10px;
+  top: auto;
   left: 10px;
+  bottom: 10px;
+  z-index: 2;
   padding: 5px 10px;
   border-radius: 999px;
   font-size: 11px;
@@ -2593,14 +2596,20 @@ select {
 .ta-media-hover {
   position: absolute;
   inset: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px;
+  padding: 44px 12px 12px;
   background: rgba(20, 14, 8, 0.52);
   opacity: 0;
+  pointer-events: none;
   transition: opacity 220ms ease;
+}
+
+.ta-media-hover .ta-btn {
+  pointer-events: auto;
 }
 
 .ta-media-card:hover .ta-media-hover {
@@ -4965,6 +4974,22 @@ body.admin-tablet-mode .ta-action-dock {
 .entra-table-compact td{padding:6px 10px;font-size:12px}
 .entra-link{border:0;background:none;padding:0;font:inherit;color:#0056d7;font-weight:650;cursor:pointer;text-align:left}
 .entra-link:hover{text-decoration:underline}
+.status-dot{display:inline-block;width:8px;height:8px;flex:0 0 8px;border-radius:50%}
+.status-dot.is-empty{background:#d1d1d1;box-shadow:none}
+.status-chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#242424;white-space:nowrap}
+.status-combo{position:relative;display:flex;align-items:center;min-width:200px}
+.status-combo.has-dot input{padding-left:28px}
+.entra-blade-body .status-combo input{height:34px;padding:0 28px 0 10px}
+.entra-blade-body .status-combo.has-dot input{padding-left:28px}
+.status-combo > .status-dot{position:absolute;left:10px;z-index:1;pointer-events:none}
+.status-combo input{width:100%;height:34px;border:1px solid #d1d1d1;border-radius:4px;padding:0 28px 0 10px;font:inherit;font-size:14px;color:#242424;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23616161' d='M1 1l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 10px center;cursor:text}
+.status-combo.is-compact{min-width:180px}
+.status-combo.is-compact input{height:32px;font-size:13px}
+.status-combo-list{position:fixed;z-index:120;margin:0;padding:6px;list-style:none;background:#fff;border:1px solid #e6e6e6;border-radius:8px;box-shadow:0 12px 32px rgba(0,0,0,.16);overflow:auto}
+.status-combo-list button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;padding:8px 10px;border-radius:6px;font:inherit;font-size:14px;font-weight:650;color:#242424;text-align:left;cursor:pointer}
+.status-combo-list button:hover,.status-combo-list button.is-active{background:#f3f2f1}
+.status-combo-list button.is-selected{background:#eef4fb}
+.status-combo-empty{padding:10px 12px;color:#616161;font-size:13px}
 .entra-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;background:#f3f2f1;font-size:12px;font-weight:700}
 .entra-pill.is-on{background:#dff6dd;color:#0e700e}
 .entra-empty{color:#616161;padding:18px;text-align:center}
