@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { OrderProcessFlow } from "./OrderProcessFlow";
 import type {
   FranchiseAccount,
   FranchiseShopOrder,
@@ -64,6 +65,7 @@ export function FranchiseShopPanel({ content, view }: Props) {
   });
   const [orderStatus, setOrderStatus] = useState<FranchiseShopOrderStatus>("nieuw");
   const [orderNotes, setOrderNotes] = useState("");
+  const [showProcess, setShowProcess] = useState(false);
 
   const locations = content.locations;
 
@@ -472,17 +474,36 @@ export function FranchiseShopPanel({ content, view }: Props) {
                   title={item.orderNumber}
                   meta={`${item.locationCode} ${item.locationName} · ${formatEuro(item.subtotalCents)}`}
                   badge={STATUS_LABELS[item.status]}
-                  active={item.id === selectedOrderId}
-                  onClick={() => setSelectedOrderId(item.id)}
+                  active={item.id === selectedOrderId && !showProcess}
+                  onClick={() => {
+                    setSelectedOrderId(item.id);
+                    setShowProcess(false);
+                  }}
                 />
               ))}
             </div>
           </div>
-          {selectedOrder ? (
+          {showProcess || !selectedOrder ? (
+            <div className="ta-detail-pane order-flow-pane">
+              <div className="ta-toolbar ta-toolbar-spread">
+                <h3 className="ta-section-title">Werkwijze bestellingen</h3>
+                {selectedOrder ? (
+                  <button className="ta-btn ta-btn-ghost" type="button" onClick={() => setShowProcess(false)}>
+                    Terug naar bestelling
+                  </button>
+                ) : null}
+              </div>
+              <p className="ta-seo-hint">Van binnenkomst tot ontvangst op de vestiging.</p>
+              <OrderProcessFlow />
+            </div>
+          ) : selectedOrder ? (
             <div className="ta-detail-pane">
               <div className="ta-toolbar ta-toolbar-spread">
                 <h3 className="ta-section-title">{selectedOrder.orderNumber}</h3>
                 <div className="ta-toolbar">
+                  <button className="ta-btn ta-btn-ghost" type="button" onClick={() => setShowProcess(true)}>
+                    Werkwijze
+                  </button>
                   <button className="ta-btn ta-btn-ghost" type="button" onClick={() => void downloadInvoice(selectedOrder)}>
                     <IconPdf width={16} height={16} />
                     Factuur PDF
