@@ -2513,6 +2513,41 @@ select {
   border-color: rgba(252, 185, 42, 0.35);
 }
 
+.ta-media-card.is-selected,
+.ta-media-picker-item-wrap.is-selected .ta-media-picker-item {
+  border-color: rgba(252, 185, 42, 0.85);
+  box-shadow: 0 0 0 2px rgba(252, 185, 42, 0.35);
+}
+
+.ta-media-select {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--ta-line);
+  box-shadow: 0 6px 14px rgba(31, 22, 11, 0.12);
+  cursor: pointer;
+}
+
+.ta-media-select input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.ta-media-select-picker {
+  top: 8px;
+  left: 8px;
+  right: auto;
+}
+
 .ta-media-card.is-skeleton .ta-media-preview {
   background: linear-gradient(90deg, #f3ede0 25%, #fff8eb 50%, #f3ede0 75%);
   background-size: 200% 100%;

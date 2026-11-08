@@ -1,6 +1,7 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
-export const ADMIN_APP_VERSION = "0.3.5";
+/** Gelijk houden aan `apps/admin/package.json` → version. */
+export const ADMIN_APP_VERSION = "0.3.6";
 
 export type ChangelogEntry = {
   version: string;
@@ -11,9 +12,18 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.3.6",
+    date: "8 november 2026",
+    current: true,
+    changes: [
+      "Media: afbeeldingen selecteren en permanent van de server verwijderen (bibliotheek en mediakiezer).",
+      "Vacatures tonen de functiefoto die je in Sollicitaties instelt, niet meer alleen het logo.",
+      "E-mail: Google SMTP als aanbevolen Workspace-route; OAuth-redirect-URI duidelijker bij mismatch."
+    ]
+  },
+  {
     version: "0.3.5",
     date: "7 november 2026",
-    current: true,
     changes: [
       "E-mail Google: mailbox-eigenaren zien alleen Inloggen met Google. Technische OAuth-velden staan ingeklapt; bij een bestaande sleutel zie je een echo, geen bevestig-ritueel.",
       "Sollicitaties hebben statussen: nieuw, contact opgenomen, in gesprek, aangenomen, afgewezen en ingetrokken.",

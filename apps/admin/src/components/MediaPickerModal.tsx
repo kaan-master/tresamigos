@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import type { MediaAsset } from "@tresamigos/types";
-import { deleteMedia, listMedia, uploadMedia } from "../lib/api";
+import { deleteMedia, deleteMediaMany, listMedia, uploadMedia } from "../lib/api";
 import { mediaAssetUrl } from "../lib/media";
 import { AdminButton } from "./AdminButton";
 import { IconTrash, IconUpload } from "./AdminIcons";
@@ -25,6 +25,8 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
   async function loadAssets() {
@@ -33,6 +35,7 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
     try {
       const data = await listMedia();
       setAssets(data.assets);
+      setSelected((current) => current.filter((url) => data.assets.some((asset) => asset.url === url)));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Media laden mislukt.");
       setAssets([]);
@@ -45,6 +48,7 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
     if (!open) return;
     setQuery("");
     setSection("all");
+    setSelected([]);
     void loadAssets();
   }, [open]);
 
@@ -58,6 +62,16 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
       return `${asset.filename} ${asset.url} ${asset.section} ${asset.label || ""}`.toLowerCase().includes(normalized);
     });
   }, [assets, query, filter, section]);
+
+  const selectedSet = useMemo(() => new Set(selected), [selected]);
+  const selectedRemovable = useMemo(
+    () => filtered.filter((asset) => asset.removable && selectedSet.has(asset.url)),
+    [filtered, selectedSet]
+  );
+
+  function toggleSelected(url: string) {
+    setSelected((current) => (current.includes(url) ? current.filter((item) => item !== url) : [...current, url]));
+  }
 
   async function handleUpload(files: FileList | null) {
     if (!files?.length) return;
@@ -83,13 +97,37 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
   async function handleDelete(asset: MediaAsset, event: MouseEvent) {
     event.stopPropagation();
     if (!asset.removable) return;
-    if (!window.confirm(`Verwijder ${asset.filename}?`)) return;
+    if (!window.confirm(`${asset.filename} permanent van de server verwijderen? Dit kan niet ongedaan worden.`)) return;
     setError("");
     try {
       await deleteMedia(asset.url);
+      setSelected((current) => current.filter((url) => url !== asset.url));
       await loadAssets();
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "Verwijderen mislukt.");
+    }
+  }
+
+  async function handleDeleteSelected() {
+    if (!selectedRemovable.length || deleting) return;
+    const count = selectedRemovable.length;
+    if (
+      !window.confirm(
+        `${count} bestand(en) permanent van de server verwijderen? Dit kan niet ongedaan worden gemaakt.`
+      )
+    ) {
+      return;
+    }
+    setDeleting(true);
+    setError("");
+    try {
+      await deleteMediaMany(selectedRemovable.map((asset) => asset.url));
+      setSelected([]);
+      await loadAssets();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Verwijderen mislukt.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -102,11 +140,24 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
         <header className="ta-media-modal-head">
           <div>
             <h3>Media plaza</h3>
-            <p>Kies uit de bibliotheek of upload direct een nieuw bestand.</p>
+            <p>Klik om te kiezen. Vink aan en verwijder uploads permanent van de server.</p>
           </div>
-          <button className="ta-btn ta-btn-ghost" type="button" onClick={onClose}>
-            Sluiten
-          </button>
+          <div className="ta-toolbar-actions">
+            {selectedRemovable.length ? (
+              <AdminButton
+                variant="danger"
+                icon={<IconTrash width={14} height={14} />}
+                loading={deleting}
+                loadingText="Verwijderen..."
+                onClick={() => void handleDeleteSelected()}
+              >
+                Verwijder {selectedRemovable.length} permanent
+              </AdminButton>
+            ) : null}
+            <button className="ta-btn ta-btn-ghost" type="button" onClick={onClose}>
+              Sluiten
+            </button>
+          </div>
         </header>
 
         <div
@@ -164,7 +215,20 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
         ) : filtered.length ? (
           <div className="ta-media-picker-grid">
             {filtered.map((asset) => (
-              <div className="ta-media-picker-item-wrap" key={asset.url}>
+              <div className={`ta-media-picker-item-wrap${selectedSet.has(asset.url) ? " is-selected" : ""}`} key={asset.url}>
+                {asset.removable ? (
+                  <label
+                    className="ta-media-select ta-media-select-picker"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedSet.has(asset.url)}
+                      onChange={() => toggleSelected(asset.url)}
+                      aria-label={`${asset.filename} selecteren`}
+                    />
+                  </label>
+                ) : null}
                 <button
                   className="ta-media-picker-item"
                   type="button"
@@ -185,7 +249,7 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
                     className="ta-media-picker-delete"
                     type="button"
                     aria-label={`${asset.filename} verwijderen`}
-                    title="Verwijderen"
+                    title="Permanent verwijderen"
                     onClick={(event) => void handleDelete(asset, event)}
                   >
                     <IconTrash width={14} height={14} />
@@ -225,7 +289,7 @@ export function MediaField({ label, value, onChange, placeholder, filter = "imag
           </button>
           {value ? (
             <button className="ta-btn ta-btn-ghost" type="button" onClick={() => onChange("")}>
-              Verwijderen
+              Veld leegmaken
             </button>
           ) : null}
         </div>

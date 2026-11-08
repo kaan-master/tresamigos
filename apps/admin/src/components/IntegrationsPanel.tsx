@@ -258,6 +258,18 @@ export function IntegrationsPanel({
     () => CATEGORY_META.filter((item) => googleByCategory[item.id].connected).length,
     [googleByCategory]
   );
+  const googleRedirectUri =
+    settings?.mailRelay.googleRedirectUri || "https://tresamigos.nl/api/integrations/mailrelay/google/callback";
+
+  async function copyGoogleRedirectUri() {
+    try {
+      await navigator.clipboard.writeText(googleRedirectUri);
+      setMessage("Redirect URI gekopieerd. Plak die exact in Google Cloud → Authorized redirect URIs.");
+      setError("");
+    } catch {
+      setError("Kopiëren mislukt. Selecteer de URI handmatig.");
+    }
+  }
 
   async function loadSettings() {
     setLoading(true);
@@ -629,7 +641,7 @@ export function IntegrationsPanel({
                     <ProviderIcon provider="google" />
                     <span>
                       <strong>Google OAuth</strong>
-                      <small>Inloggen met Workspace — later, na Google-verificatie</small>
+                      <small>Per mailbox inloggen — alleen als de redirect-URI in Google Cloud staat</small>
                     </span>
                   </button>
                   <button
@@ -643,7 +655,7 @@ export function IntegrationsPanel({
                     <ProviderIcon provider="google" />
                     <span>
                       <strong>Google SMTP</strong>
-                      <small>Tijdelijk · smtp.gmail.com + app-wachtwoord</small>
+                      <small>Aanbevolen voor Workspace · smtp.gmail.com + app-wachtwoord</small>
                     </span>
                   </button>
                   <button type="button" className={mailForm.provider === "outlook" ? "is-active" : ""} onClick={() => chooseProvider("outlook")}>
@@ -686,8 +698,27 @@ export function IntegrationsPanel({
               <div className="ta-mail-owner-help">
                 <strong>Mailbox koppelen</strong>
                 <p>
-                  Klik hieronder op <em>Inloggen met Google</em> bij jouw categorie. Kies het Google-adres van die mailbox
-                  en geef toestemming. Klaar — mails gaan daarna vanaf dat adres.
+                  Dit is geen handige dagelijkse route. Google eist dat deze URI <em>exact</em> in de Cloud Console
+                  staat, anders krijg je <code>redirect_uri_mismatch</code>. Voor Tres Amigos (Google Workspace) is{" "}
+                  <strong>Google SMTP + app-wachtwoord</strong> meestal sneller en stabieler.
+                </p>
+                <label className="ta-field" style={{ marginTop: 10 }}>
+                  <span>Authorized redirect URI (exact plakken in Google Cloud)</span>
+                  <input readOnly value={googleRedirectUri} onFocus={(event) => event.currentTarget.select()} />
+                </label>
+                <EntraCommands>
+                  <EntraCommand onClick={() => void copyGoogleRedirectUri()}>URI kopiëren</EntraCommand>
+                  <EntraCommand
+                    onClick={() => {
+                      setMailForm((current) => (current ? applySmtpPreset(current, "google") : current));
+                    }}
+                  >
+                    Liever Google SMTP
+                  </EntraCommand>
+                </EntraCommands>
+                <p>
+                  Daarna: Google Cloud → APIs &amp; Services → Credentials → deze OAuth-client (Web application) →
+                  Authorized redirect URIs. Geen www, geen slash aan het eind. Gmail API moet aan staan.
                 </p>
               </div>
 
@@ -953,10 +984,11 @@ export function IntegrationsPanel({
                 </p>
               ) : detectSmtpPreset(mailForm.host, "smtp") === "google" ? (
                 <p className="ta-seo-hint ta-grid-wide">
-                  Google Workspace / Gmail via SMTP (tijdelijk tot OAuth klaar is). Host{" "}
-                  <code>smtp.gmail.com</code>, poort <code>465</code>, SSL aan. In Google-account: 2FA aan →{" "}
-                  <strong>App-wachtwoord</strong> maken → dat plakken bij wachtwoord (niet het normale wachtwoord).
-                  Gebruiker en afzender = het Workspace-adres (bijv. <code>info@bedrijf.nl</code>).
+                  Aanbevolen voor Tres Amigos: Google Workspace via SMTP. Host <code>smtp.gmail.com</code>, poort{" "}
+                  <code>465</code>, SSL aan. In het Google-account: 2FA aan → <strong>App-wachtwoord</strong> maken →
+                  dat 16-teken wachtwoord plakken (niet het gewone wachtwoord). Gebruiker en afzender = het
+                  Workspace-adres, bijvoorbeeld <code>info@tresamigos.nl</code>. Inbox per categorie mag daarna hetzelfde
+                  of een ander @tresamigos.nl-adres zijn.
                 </p>
               ) : (
                 <p className="ta-seo-hint ta-grid-wide">

@@ -119,12 +119,20 @@ export class MediaService {
     };
   }
 
-  async delete(url: string) {
-    if (!DELETABLE_PREFIXES.some((prefix) => url.startsWith(prefix))) {
+  private assertDeletableUrl(url: string) {
+    const cleaned = String(url || "").trim();
+    if (!cleaned || cleaned.includes("\0") || cleaned.includes("..")) {
+      throw new BadRequestException("Ongeldig mediapad.");
+    }
+    if (!DELETABLE_PREFIXES.some((prefix) => cleaned.startsWith(prefix))) {
       throw new BadRequestException("Alleen uploads en cateringbestanden kunnen worden verwijderd.");
     }
+    return cleaned;
+  }
 
-    const relativePath = url.replace(/^\/assets\//, "");
+  async delete(url: string) {
+    const cleaned = this.assertDeletableUrl(url);
+    const relativePath = cleaned.replace(/^\/assets\//, "");
     const candidates = [join(ASSETS_ROOT, relativePath), join(PUBLIC_ASSETS_ROOT, relativePath)];
     let removed = false;
 
@@ -142,6 +150,37 @@ export class MediaService {
     }
 
     return { message: "Bestand verwijderd." };
+  }
+
+  async deleteMany(urls: string[]) {
+    const unique = [...new Set(urls.map((item) => String(item || "").trim()).filter(Boolean))].slice(0, 200);
+    if (!unique.length) {
+      throw new BadRequestException("Geen bestanden geselecteerd.");
+    }
+
+    let deleted = 0;
+    const failed: string[] = [];
+    for (const url of unique) {
+      try {
+        await this.delete(url);
+        deleted += 1;
+      } catch {
+        failed.push(url);
+      }
+    }
+
+    if (!deleted) {
+      throw new BadRequestException("Geen bestanden verwijderd. Alleen uploads en cateringbestanden kunnen weg.");
+    }
+
+    return {
+      message:
+        failed.length > 0
+          ? `${deleted} bestand(en) permanent verwijderd, ${failed.length} overgeslagen.`
+          : `${deleted} bestand(en) permanent verwijderd.`,
+      deleted,
+      failed
+    };
   }
 
   getUploadsDir() {

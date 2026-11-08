@@ -127,6 +127,13 @@ export async function deleteMedia(url: string) {
   });
 }
 
+export async function deleteMediaMany(urls: string[]) {
+  return api<{ message: string; deleted: number; failed: string[] }>("/api/admin/media", {
+    method: "DELETE",
+    body: JSON.stringify({ urls })
+  });
+}
+
 export async function listMedia() {
   return api<{ assets: import("@tresamigos/types").MediaAsset[] }>("/api/admin/media");
 }

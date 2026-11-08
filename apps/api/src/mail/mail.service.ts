@@ -286,16 +286,26 @@ export class MailService {
         const byCategory = this.parseGoogleByCategory(row.mailRelayGoogleByCategory);
         const account = byCategory[category];
         if (account?.refreshToken) {
-          const accessToken = await this.ensureStoredGoogleAccessToken(category, account, byCategory, row.mailRelayFromName);
-          return {
-            kind: "google",
-            email: account.email,
-            accessToken,
-            refreshToken: account.refreshToken,
-            fromEmail: account.email,
-            fromName: row.mailRelayFromName || "Tres Amigos",
-            source: "db"
-          };
+          try {
+            const accessToken = await this.ensureStoredGoogleAccessToken(category, account, byCategory, row.mailRelayFromName);
+            return {
+              kind: "google",
+              email: account.email,
+              accessToken,
+              refreshToken: account.refreshToken,
+              fromEmail: account.email,
+              fromName: row.mailRelayFromName || "Tres Amigos",
+              source: "db"
+            };
+          } catch (error) {
+            const detail = error instanceof Error ? error.message : "onbekend";
+            throw new Error(
+              `Google-login voor deze mailbox is verlopen of ongeldig. Klik op Opnieuw inloggen. (${detail})`
+            );
+          }
+        }
+        if (row.mailRelayProvider === "google") {
+          return null;
         }
       }
 
@@ -330,7 +340,9 @@ export class MailService {
         return this.cachedConfig;
       }
     } catch (error) {
-      this.logger.warn(`Integratie-SMTP laden mislukt: ${error instanceof Error ? error.message : "onbekend"}`);
+      const message = error instanceof Error ? error.message : "onbekend";
+      this.logger.warn(`Integratie-SMTP laden mislukt: ${message}`);
+      if (message.includes("Google-login voor deze mailbox")) throw error;
     }
 
     if (!category) {
@@ -573,11 +585,25 @@ export class MailService {
     };
     try {
       const category = input.category && isMailNotifyCategory(input.category) ? input.category : undefined;
+      if (category) {
+        const row = await this.prisma.integrationSettings.findUnique({ where: { id: "primary" } });
+        if (row?.mailRelayEnabled && row.mailRelayProvider === "google") {
+          const account = this.parseGoogleByCategory(row.mailRelayGoogleByCategory)[category];
+          if (!account?.refreshToken) {
+            return {
+              ok: false,
+              message: `Koppel eerst een Google-account voor ${labels[category]} via Inloggen met Google.`
+            };
+          }
+        }
+      }
       const config = await this.resolveConfig(category);
       if (!config) {
         return {
           ok: false,
-          message: "Mail is niet geconfigureerd. Kies Google (inloggen) of vul SMTP in, of zet SMTP_* in .env."
+          message: category
+            ? `Mail voor ${labels[category]} is niet klaar. Koppel Google of kies Google SMTP met een app-wachtwoord.`
+            : "Mail is niet geconfigureerd. Voor Workspace is Google SMTP (app-wachtwoord) het snelst; OAuth kan daarna."
         };
       }
 

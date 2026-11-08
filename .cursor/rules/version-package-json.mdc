@@ -1,0 +1,15 @@
+---
+description: Bij elke functionele wijziging package.json-versie en changelog bijwerken
+alwaysApply: true
+---
+
+# Versiebeheer (package.json)
+
+Na elke functionele wijziging aan de admin, website of API:
+
+1. Verhoog `apps/admin/package.json` → `version` (semver patch, tenzij het een grotere release is).
+2. Zet `ADMIN_APP_VERSION` in `apps/admin/src/lib/changelog.ts` op **exact hetzelfde** nummer.
+3. Voeg bovenaan `ADMIN_CHANGELOG` een entry toe: `current: true`, Nederlandse bullets, datum van vandaag. Haal `current` van de vorige entry.
+4. Werk niet alleen de changelog bij zonder `package.json`, en andersom ook niet.
+
+Voorbeeld: `0.3.5` → `0.3.6` bij een gewone fix of feature.

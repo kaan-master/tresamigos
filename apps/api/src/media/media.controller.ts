@@ -51,10 +51,14 @@ export class MediaController {
   }
 
   @Delete()
-  remove(@Body() body: { url?: string }) {
-    if (!body?.url) {
+  remove(@Body() body: { url?: string; urls?: string[] }) {
+    const urls = Array.isArray(body?.urls) ? body.urls : body?.url ? [body.url] : [];
+    if (!urls.length) {
       throw new BadRequestException("URL is verplicht.");
     }
-    return this.mediaService.delete(body.url);
+    if (urls.length === 1) {
+      return this.mediaService.delete(urls[0] || "");
+    }
+    return this.mediaService.deleteMany(urls);
   }
 }

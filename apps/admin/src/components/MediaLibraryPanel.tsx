@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { MediaAsset, SiteContent } from "@tresamigos/types";
 import { useAdminFeedback } from "../context/AdminFeedbackContext";
-import { deleteMedia, listMedia, uploadMedia } from "../lib/api";
+import { deleteMedia, deleteMediaMany, listMedia, uploadMedia } from "../lib/api";
 import { mediaAssetUrl } from "../lib/media";
 import { AdminButton } from "./AdminButton";
 import { IconCopy, IconRefresh, IconTrash, IconUpload } from "./AdminIcons";
@@ -91,6 +91,8 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"info" | "success" | "error">("info");
 
@@ -101,9 +103,20 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
       const merged = [...cmsVideoAssets(content), ...cmsImageAssets(content), ...data.assets];
       const unique = new Map<string, MediaAsset>();
       for (const asset of merged) {
-        unique.set(asset.url, asset);
+        const previous = unique.get(asset.url);
+        unique.set(
+          asset.url,
+          previous
+            ? {
+                ...asset,
+                removable: previous.removable || asset.removable,
+                label: previous.label || asset.label
+              }
+            : asset
+        );
       }
       setAssets([...unique.values()]);
+      setSelected((current) => current.filter((url) => unique.has(url)));
     } catch (error) {
       setMessageTone("error");
       setMessage(error instanceof Error ? error.message : "Mediabibliotheek laden mislukt.");
@@ -138,6 +151,21 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
     return { total: assets.length, videos, images };
   }, [assets]);
 
+  const removableFiltered = useMemo(() => filtered.filter((asset) => asset.removable), [filtered]);
+  const selectedSet = useMemo(() => new Set(selected), [selected]);
+  const selectedRemovable = useMemo(
+    () => removableFiltered.filter((asset) => selectedSet.has(asset.url)),
+    [removableFiltered, selectedSet]
+  );
+
+  function toggleSelected(url: string) {
+    setSelected((current) => (current.includes(url) ? current.filter((item) => item !== url) : [...current, url]));
+  }
+
+  function selectAllVisible() {
+    setSelected(removableFiltered.map((asset) => asset.url));
+  }
+
   async function handleUpload(files: FileList | null) {
     if (!files?.length) return;
     setUploading(true);
@@ -166,7 +194,7 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
 
   async function handleDelete(asset: MediaAsset) {
     if (!asset.removable) return;
-    if (!window.confirm(`Verwijder ${asset.filename}?`)) return;
+    if (!window.confirm(`${asset.filename} permanent van de server verwijderen? Dit kan niet ongedaan worden.`)) return;
     try {
       await runSave(
         async () => {
@@ -174,12 +202,44 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
         },
         {
           refresh: loadAssets,
-          successMessage: "Bestand verwijderd en bibliotheek vernieuwd."
+          successMessage: "Bestand permanent verwijderd."
         }
       );
+      setSelected((current) => current.filter((url) => url !== asset.url));
     } catch (error) {
       setMessageTone("error");
       setMessage(error instanceof Error ? error.message : "Verwijderen mislukt.");
+    }
+  }
+
+  async function handleDeleteSelected() {
+    if (!selectedRemovable.length || deleting) return;
+    const count = selectedRemovable.length;
+    if (
+      !window.confirm(
+        `${count} bestand(en) permanent van de server verwijderen? Dit kan niet ongedaan worden gemaakt.`
+      )
+    ) {
+      return;
+    }
+    setDeleting(true);
+    setMessage("");
+    try {
+      await runSave(
+        async () => {
+          await deleteMediaMany(selectedRemovable.map((asset) => asset.url));
+        },
+        {
+          refresh: loadAssets,
+          successMessage: `${count} bestand(en) permanent verwijderd.`
+        }
+      );
+      setSelected([]);
+    } catch (error) {
+      setMessageTone("error");
+      setMessage(error instanceof Error ? error.message : "Verwijderen mislukt.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -308,11 +368,36 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
 
       <div className="ta-toolbar ta-toolbar-spread">
         <p className="ta-toolbar-note">
-          {filtered.length} resultaten · CMS-video&apos;s beheer je onder Homepage video&apos;s
+          {filtered.length} resultaten
+          {selectedRemovable.length ? ` · ${selectedRemovable.length} geselecteerd` : ""}
+          {" · "}
+          vink uploads/catering aan en verwijder ze permanent van de server
         </p>
-        <AdminButton variant="ghost" icon={<IconRefresh width={16} height={16} />} onClick={() => void loadAssets()}>
-          Ververs
-        </AdminButton>
+        <div className="ta-toolbar-actions">
+          {removableFiltered.length ? (
+            <AdminButton variant="ghost" onClick={selectAllVisible}>
+              Alles selecteren
+            </AdminButton>
+          ) : null}
+          {selected.length ? (
+            <AdminButton variant="ghost" onClick={() => setSelected([])}>
+              Selectie opheffen
+            </AdminButton>
+          ) : null}
+          <AdminButton
+            variant="danger"
+            icon={<IconTrash width={16} height={16} />}
+            disabled={!selectedRemovable.length}
+            loading={deleting}
+            loadingText="Verwijderen..."
+            onClick={() => void handleDeleteSelected()}
+          >
+            Verwijder permanent
+          </AdminButton>
+          <AdminButton variant="ghost" icon={<IconRefresh width={16} height={16} />} onClick={() => void loadAssets()}>
+            Ververs
+          </AdminButton>
+        </div>
       </div>
 
       {message ? <p className={`ta-inline-toast is-${messageTone}`}>{message}</p> : null}
@@ -332,8 +417,18 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
       ) : filtered.length ? (
         <div className="ta-media-grid">
           {filtered.map((asset) => (
-            <article className="ta-media-card" key={asset.url}>
+            <article className={`ta-media-card${selectedSet.has(asset.url) ? " is-selected" : ""}`} key={asset.url}>
               <div className="ta-media-preview">
+                {asset.removable ? (
+                  <label className="ta-media-select">
+                    <input
+                      type="checkbox"
+                      checked={selectedSet.has(asset.url)}
+                      onChange={() => toggleSelected(asset.url)}
+                      aria-label={`${asset.filename} selecteren`}
+                    />
+                  </label>
+                ) : null}
                 {asset.kind === "video" ? (
                   <video src={mediaAssetUrl(asset.url)} muted playsInline preload="metadata" />
                 ) : (
@@ -346,7 +441,7 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
                   </AdminButton>
                   {asset.removable ? (
                     <AdminButton variant="danger" icon={<IconTrash width={14} height={14} />} onClick={() => void handleDelete(asset)}>
-                      Verwijder
+                      Permanent
                     </AdminButton>
                   ) : null}
                 </div>
