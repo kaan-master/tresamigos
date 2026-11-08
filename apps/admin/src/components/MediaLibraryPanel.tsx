@@ -151,19 +151,19 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
     return { total: assets.length, videos, images };
   }, [assets]);
 
-  const removableFiltered = useMemo(() => filtered.filter((asset) => asset.removable), [filtered]);
   const selectedSet = useMemo(() => new Set(selected), [selected]);
-  const selectedRemovable = useMemo(
-    () => removableFiltered.filter((asset) => selectedSet.has(asset.url)),
-    [removableFiltered, selectedSet]
+  const selectedAssets = useMemo(
+    () => filtered.filter((asset) => selectedSet.has(asset.url)),
+    [filtered, selectedSet]
   );
+  const selectedRemovable = useMemo(() => selectedAssets.filter((asset) => asset.removable), [selectedAssets]);
 
   function toggleSelected(url: string) {
     setSelected((current) => (current.includes(url) ? current.filter((item) => item !== url) : [...current, url]));
   }
 
   function selectAllVisible() {
-    setSelected(removableFiltered.map((asset) => asset.url));
+    setSelected(filtered.map((asset) => asset.url));
   }
 
   async function handleUpload(files: FileList | null) {
@@ -374,7 +374,7 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
           vink uploads/catering aan en verwijder ze permanent van de server
         </p>
         <div className="ta-toolbar-actions">
-          {removableFiltered.length ? (
+          {filtered.length ? (
             <AdminButton variant="ghost" onClick={selectAllVisible}>
               Alles selecteren
             </AdminButton>
@@ -419,16 +419,14 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
           {filtered.map((asset) => (
             <article className={`ta-media-card${selectedSet.has(asset.url) ? " is-selected" : ""}`} key={asset.url}>
               <div className="ta-media-preview">
-                {asset.removable ? (
-                  <label className="ta-media-select">
-                    <input
-                      type="checkbox"
-                      checked={selectedSet.has(asset.url)}
-                      onChange={() => toggleSelected(asset.url)}
-                      aria-label={`${asset.filename} selecteren`}
-                    />
-                  </label>
-                ) : null}
+                <label className="ta-media-select">
+                  <input
+                    type="checkbox"
+                    checked={selectedSet.has(asset.url)}
+                    onChange={() => toggleSelected(asset.url)}
+                    aria-label={`${asset.filename} selecteren`}
+                  />
+                </label>
                 {asset.kind === "video" ? (
                   <video src={mediaAssetUrl(asset.url)} muted playsInline preload="metadata" />
                 ) : (

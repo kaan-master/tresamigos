@@ -216,19 +216,17 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
           <div className="ta-media-picker-grid">
             {filtered.map((asset) => (
               <div className={`ta-media-picker-item-wrap${selectedSet.has(asset.url) ? " is-selected" : ""}`} key={asset.url}>
-                {asset.removable ? (
-                  <label
-                    className="ta-media-select ta-media-select-picker"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedSet.has(asset.url)}
-                      onChange={() => toggleSelected(asset.url)}
-                      aria-label={`${asset.filename} selecteren`}
-                    />
-                  </label>
-                ) : null}
+                <label
+                  className="ta-media-select ta-media-select-picker"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedSet.has(asset.url)}
+                    onChange={() => toggleSelected(asset.url)}
+                    aria-label={`${asset.filename} selecteren`}
+                  />
+                </label>
                 <button
                   className="ta-media-picker-item"
                   type="button"
