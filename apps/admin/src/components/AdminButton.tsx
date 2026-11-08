@@ -17,6 +17,7 @@ export function AdminButton({
   className = "",
   children,
   disabled,
+  type = "button",
   ...props
 }: Props) {
   const variantClass =
@@ -24,6 +25,7 @@ export function AdminButton({
 
   return (
     <button
+      type={type}
       className={`ta-btn ${variantClass}${block ? " ta-btn-block" : ""}${loading ? " is-loading" : ""} ${className}`.trim()}
       disabled={disabled || loading}
       {...props}

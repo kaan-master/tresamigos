@@ -109,7 +109,11 @@ export function assetUrl(path: string) {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  return import.meta.env.DEV ? normalized : buildApiUrl(normalized, base);
+  const encoded = normalized
+    .split("/")
+    .map((segment, index) => (index === 0 && segment === "" ? "" : encodeURIComponent(segment)))
+    .join("/");
+  return import.meta.env.DEV ? encoded : buildApiUrl(encoded, base);
 }
 
 export function pageUrl(path: string) {

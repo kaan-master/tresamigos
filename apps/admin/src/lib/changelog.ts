@@ -1,7 +1,7 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
 /** Gelijk houden aan `apps/admin/package.json` → version. */
-export const ADMIN_APP_VERSION = "0.3.8";
+export const ADMIN_APP_VERSION = "0.3.10";
 
 export type ChangelogEntry = {
   version: string;
@@ -12,9 +12,23 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
-    version: "0.3.8",
+    version: "0.3.10",
     date: "8 november 2026",
     current: true,
+    changes: [
+      "Media: video's met # of emoji in de bestandsnaam laden weer; ongebruikte brand-video's kun je verwijderen zonder wachtcursor."
+    ]
+  },
+  {
+    version: "0.3.9",
+    date: "8 november 2026",
+    changes: [
+      "Media: vinkje selecteert alleen, de pagina slaat niet meer automatisch op en ververst niet."
+    ]
+  },
+  {
+    version: "0.3.8",
+    date: "8 november 2026",
     changes: [
       "Media: selectievak linksboven bij hover, boven de overlay, ook op video's."
     ]

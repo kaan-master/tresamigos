@@ -17,7 +17,12 @@ const MEDIA_EXTENSIONS = new Set([
   ".ico"
 ]);
 
-const DELETABLE_PREFIXES = ["/assets/uploads/", "/assets/catering/"];
+const DELETABLE_PREFIXES = ["/assets/uploads/", "/assets/catering/", "/assets/brand/"];
+const PROTECTED_BRAND = /(tres-amigos-logo|streetfood-secret\.mp4|best-in-amsterdam\.mp4|mega-burrito\.mp4|catering-event\.mp4)/i;
+
+function isProtectedMedia(filename: string) {
+  return PROTECTED_BRAND.test(filename);
+}
 
 @Injectable()
 export class MediaService {
@@ -49,13 +54,14 @@ export class MediaService {
         if (!MEDIA_EXTENSIONS.has(ext)) continue;
 
         const relativePath = relative(assetsRoot, fullPath).replace(/\\/g, "/");
+        const canRemove = section === "brand" ? !isProtectedMedia(entry) : removable;
         assets.push({
           url: `/assets/${relativePath}`,
           filename: entry,
           size: info.size,
           section,
           kind: [".mp4", ".webm", ".mov"].includes(ext) ? "video" : "image",
-          removable
+          removable: canRemove
         });
       }
     }
@@ -120,12 +126,21 @@ export class MediaService {
   }
 
   private assertDeletableUrl(url: string) {
-    const cleaned = String(url || "").trim();
+    let cleaned = String(url || "").trim();
+    try {
+      cleaned = decodeURIComponent(cleaned);
+    } catch {
+      /* al decoded */
+    }
     if (!cleaned || cleaned.includes("\0") || cleaned.includes("..")) {
       throw new BadRequestException("Ongeldig mediapad.");
     }
     if (!DELETABLE_PREFIXES.some((prefix) => cleaned.startsWith(prefix))) {
-      throw new BadRequestException("Alleen uploads en cateringbestanden kunnen worden verwijderd.");
+      throw new BadRequestException("Alleen uploads, catering- en ongebruikte brandbestanden kunnen worden verwijderd.");
+    }
+    const filename = cleaned.split("/").pop() || "";
+    if (isProtectedMedia(filename)) {
+      throw new BadRequestException("Dit bestand is in gebruik op de site en kan niet verwijderd worden.");
     }
     return cleaned;
   }

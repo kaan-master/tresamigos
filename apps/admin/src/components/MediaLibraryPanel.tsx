@@ -193,22 +193,21 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
   }
 
   async function handleDelete(asset: MediaAsset) {
-    if (!asset.removable) return;
+    if (!asset.removable || deleting) return;
     if (!window.confirm(`${asset.filename} permanent van de server verwijderen? Dit kan niet ongedaan worden.`)) return;
+    setDeleting(true);
+    setMessage("");
     try {
-      await runSave(
-        async () => {
-          await deleteMedia(asset.url);
-        },
-        {
-          refresh: loadAssets,
-          successMessage: "Bestand permanent verwijderd."
-        }
-      );
+      await deleteMedia(asset.url);
       setSelected((current) => current.filter((url) => url !== asset.url));
+      await loadAssets();
+      setMessageTone("success");
+      setMessage("Bestand permanent verwijderd.");
     } catch (error) {
       setMessageTone("error");
       setMessage(error instanceof Error ? error.message : "Verwijderen mislukt.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -225,16 +224,11 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
     setDeleting(true);
     setMessage("");
     try {
-      await runSave(
-        async () => {
-          await deleteMediaMany(selectedRemovable.map((asset) => asset.url));
-        },
-        {
-          refresh: loadAssets,
-          successMessage: `${count} bestand(en) permanent verwijderd.`
-        }
-      );
+      await deleteMediaMany(selectedRemovable.map((asset) => asset.url));
       setSelected([]);
+      await loadAssets();
+      setMessageTone("success");
+      setMessage(`${count} bestand(en) permanent verwijderd.`);
     } catch (error) {
       setMessageTone("error");
       setMessage(error instanceof Error ? error.message : "Verwijderen mislukt.");
@@ -419,11 +413,18 @@ export function MediaLibraryPanel({ content, onChange, onSave, saving }: Props) 
           {filtered.map((asset) => (
             <article className={`ta-media-card${selectedSet.has(asset.url) ? " is-selected" : ""}`} key={asset.url}>
               <div className="ta-media-preview">
-                <label className="ta-media-select">
+                <label
+                  className="ta-media-select"
+                  data-quiet-skip=""
+                  onClick={(event) => event.stopPropagation()}
+                >
                   <input
                     type="checkbox"
                     checked={selectedSet.has(asset.url)}
-                    onChange={() => toggleSelected(asset.url)}
+                    onChange={(event) => {
+                      event.stopPropagation();
+                      toggleSelected(asset.url);
+                    }}
                     aria-label={`${asset.filename} selecteren`}
                   />
                 </label>

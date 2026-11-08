@@ -218,6 +218,7 @@ export function MediaPickerModal({ open, onClose, onSelect, filter = "image" }: 
               <div className={`ta-media-picker-item-wrap${selectedSet.has(asset.url) ? " is-selected" : ""}`} key={asset.url}>
                 <label
                   className="ta-media-select ta-media-select-picker"
+                  data-quiet-skip=""
                   onClick={(event) => event.stopPropagation()}
                 >
                   <input

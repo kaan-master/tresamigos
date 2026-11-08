@@ -145,6 +145,7 @@ export function StatusCombo({
   return (
     <div
       className={`status-combo${compact ? " is-compact" : ""}${open ? " is-open" : ""}${!open && selected ? " has-dot" : ""}`}
+      data-quiet-skip=""
       ref={box}
     >
       {!open && selected ? <StatusDot color={selected.color} label={selected.label} /> : null}
