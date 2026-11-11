@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put, Query, Req, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, ForbiddenException, Get, Post, Put, Query, Req, Res, UseGuards } from "@nestjs/common";
 import type { Response } from "express";
 import type {
   ClearGoogleOAuthSecretInput,
@@ -20,14 +20,16 @@ export class AdminIntegrationsController {
 
   @Get("integrations")
   @RequirePermissions("integrations")
-  get() {
-    return this.integrationsService.getSettings().then((integrations) => ({ integrations }));
+  get(@Req() req: { adminSession?: { role?: string } }) {
+    const canManageOutgoing = req.adminSession?.role === "master";
+    return this.integrationsService.getSettings({ canManageOutgoing }).then((integrations) => ({ integrations }));
   }
 
   @Put("integrations/mailrelay")
   @RequirePermissions("integrations")
-  updateMailRelay(@Body() body: UpdateIntegrationMailRelayInput) {
-    return this.integrationsService.updateMailRelay(body).then((integrations) => ({ integrations }));
+  updateMailRelay(@Body() body: UpdateIntegrationMailRelayInput, @Req() req: { adminSession?: { role?: string } }) {
+    const canManageOutgoing = req.adminSession?.role === "master";
+    return this.integrationsService.updateMailRelay(body, { canManageOutgoing }).then((integrations) => ({ integrations }));
   }
 
   @Post("integrations/mailrelay/google/clear-secret")
@@ -50,16 +52,22 @@ export class AdminIntegrationsController {
 
   @Post("integrations/mailrelay/test")
   @RequirePermissions("integrations")
-  testMailRelay(@Body() body: IntegrationTestMailInput) {
-    return this.integrationsService.testMailRelay(body);
+  testMailRelay(@Body() body: IntegrationTestMailInput, @Req() req: { adminSession?: { role?: string } }) {
+    const canManageOutgoing = req.adminSession?.role === "master";
+    return this.integrationsService.testMailRelay(body, { canManageOutgoing });
   }
 
   @Get("integrations/mailrelay/google/start")
   @RequirePermissions("integrations")
   startGoogle(
     @Query("category") category: string | undefined,
-    @Req() req: { headers: Record<string, string | string[] | undefined>; protocol?: string }
+    @Query("purpose") purpose: string | undefined,
+    @Req() req: { headers: Record<string, string | string[] | undefined>; protocol?: string; adminSession?: { role?: string } }
   ) {
+    const isOutbox = purpose === "outbox" || (!category && purpose !== "inbox");
+    if (isOutbox && req.adminSession?.role !== "master") {
+      throw new ForbiddenException({ message: "Alleen de beheerder kan de uitgaande mailbox koppelen." });
+    }
     const proto = String(req.headers["x-forwarded-proto"] || req.protocol || "http");
     const host = String(req.headers["x-forwarded-host"] || req.headers.host || "");
     const origin = host ? `${proto}://${host}` : undefined;
@@ -68,6 +76,7 @@ export class AdminIntegrationsController {
         ? category
         : undefined;
     return this.integrationsService.startGoogleOAuth(origin, {
+      purpose: normalizedCategory ? "inbox" : "outbox",
       category: normalizedCategory
     });
   }

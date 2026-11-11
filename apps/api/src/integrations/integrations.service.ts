@@ -86,40 +86,52 @@ export class IntegrationsService {
     return `${trimmed.slice(0, 4)}••••${trimmed.slice(-4)}`;
   }
 
-  async getSettings() {
+  async getSettings(options?: { canManageOutgoing?: boolean }) {
+    const canManageOutgoing = options?.canManageOutgoing ?? true;
     const row = await this.getOrCreate();
     const oauth = await this.mailService.resolveGoogleOAuthCreds();
     const dbSecret = String(row.mailRelayGoogleClientSecret || "").trim();
     const dbClientId = String(row.mailRelayGoogleClientId || "").trim();
+    const outgoingReady = Boolean(row.mailRelayGoogleRefreshToken && row.mailRelayGoogleEmail);
     return {
       mailRelay: {
         enabled: row.mailRelayEnabled,
         provider: this.normalizeProvider(row.mailRelayProvider),
-        host: row.mailRelayHost,
-        port: row.mailRelayPort,
-        secure: row.mailRelaySecure,
-        username: row.mailRelayUsername,
-        passwordSet: Boolean(row.mailRelayPassword),
-        fromEmail: row.mailRelayFromEmail,
+        host: canManageOutgoing ? row.mailRelayHost : "",
+        port: canManageOutgoing ? row.mailRelayPort : 587,
+        secure: canManageOutgoing ? row.mailRelaySecure : false,
+        username: canManageOutgoing ? row.mailRelayUsername : "",
+        passwordSet: canManageOutgoing ? Boolean(row.mailRelayPassword) : false,
+        fromEmail: canManageOutgoing ? row.mailRelayFromEmail : "",
         fromName: row.mailRelayFromName,
         lastTestAt: row.mailRelayLastTestAt?.toISOString() ?? null,
         lastStatus: row.mailRelayLastStatus,
-        lastMessage: row.mailRelayLastMessage,
-        envFallbackConfigured: this.mailService.isEnvConfigured(),
-        googleConnected: Boolean(row.mailRelayGoogleRefreshToken && row.mailRelayGoogleEmail),
-        googleEmail: row.mailRelayGoogleEmail,
+        lastMessage: canManageOutgoing
+          ? row.mailRelayLastMessage
+          : row.mailRelayLastStatus === "success"
+            ? "Laatste mailactie geslaagd."
+            : row.mailRelayLastStatus === "error"
+              ? "Laatste mailactie mislukt. Vraag de beheerder."
+              : "",
+        envFallbackConfigured: canManageOutgoing ? this.mailService.isEnvConfigured() : false,
+        googleConnected: outgoingReady,
+        googleEmail: canManageOutgoing ? row.mailRelayGoogleEmail : "",
         googleOAuthConfigured: Boolean(oauth.clientId && oauth.clientSecret),
-        googleOAuthSource: oauth.source,
-        googleClientId: dbClientId || (oauth.source === "env" ? oauth.clientId : ""),
-        googleClientSecretSet: Boolean(dbSecret) || oauth.source === "env",
-        googleClientSecretMasked: dbSecret
-          ? this.maskSecret(dbSecret)
-          : oauth.source === "env"
-            ? "•••••••• (env)"
-            : "",
-        googleRedirectUri: this.mailService.googleRedirectUri(),
+        googleOAuthSource: canManageOutgoing ? oauth.source : "none",
+        googleClientId: canManageOutgoing ? dbClientId || (oauth.source === "env" ? oauth.clientId : "") : "",
+        googleClientSecretSet: canManageOutgoing ? Boolean(dbSecret) || oauth.source === "env" : false,
+        googleClientSecretMasked: canManageOutgoing
+          ? dbSecret
+            ? this.maskSecret(dbSecret)
+            : oauth.source === "env"
+              ? "•••••••• (env)"
+              : ""
+          : "",
+        googleRedirectUri: canManageOutgoing ? this.mailService.googleRedirectUri() : "",
         googleByCategory: this.mailService.publicGoogleByCategory(row.mailRelayGoogleByCategory) as IntegrationGoogleByCategory,
-        notifications: this.notificationsFromRow(row)
+        notifications: this.notificationsFromRow(row),
+        canManageOutgoing,
+        outgoingReady
       },
       googleAds: {
         enabled: row.googleAdsEnabled,
@@ -142,7 +154,8 @@ export class IntegrationsService {
     };
   }
 
-  async updateMailRelay(input: UpdateIntegrationMailRelayInput) {
+  async updateMailRelay(input: UpdateIntegrationMailRelayInput, options?: { canManageOutgoing?: boolean }) {
+    const canManageOutgoing = options?.canManageOutgoing === true;
     const current = await this.getOrCreate();
     const provider = input.provider
       ? this.normalizeProvider(input.provider)
@@ -150,13 +163,16 @@ export class IntegrationsService {
     const hostDefault = provider === "outlook" ? "smtp.office365.com" : provider === "google" ? "smtp.gmail.com" : current.mailRelayHost;
 
     if (input.disconnectGoogle) {
+      if (!canManageOutgoing) {
+        throw new BadRequestException({ message: "Alleen de beheerder kan de uitgaande mailbox ontkoppelen." });
+      }
       await this.mailService.disconnectGoogle();
-      return this.getSettings();
+      return this.getSettings({ canManageOutgoing });
     }
 
     if (input.disconnectGoogleCategory) {
       await this.mailService.disconnectGoogleCategory(input.disconnectGoogleCategory);
-      return this.getSettings();
+      return this.getSettings({ canManageOutgoing });
     }
 
     const data: Record<string, unknown> = {
@@ -211,17 +227,27 @@ export class IntegrationsService {
       );
     }
 
-    if (input.googleClientId !== undefined) {
+    if (canManageOutgoing && input.googleClientId !== undefined) {
       data.mailRelayGoogleClientId = cleanText(input.googleClientId, "", 300);
     }
 
-    // Secret mag hier ALLEEN gezet/overschreven worden met een niet-lege waarde.
-    // Leeg laten of clearen via PUT wordt bewust genegeerd — alleen clearGoogleOAuthSecret.
-    if (input.googleClientSecret !== undefined) {
+    if (canManageOutgoing && input.googleClientSecret !== undefined) {
       const secret = String(input.googleClientSecret || "").trim();
       if (secret) {
         data.mailRelayGoogleClientSecret = secret;
       }
+    }
+
+    if (!canManageOutgoing) {
+      delete data.mailRelayProvider;
+      delete data.mailRelayHost;
+      delete data.mailRelayPort;
+      delete data.mailRelaySecure;
+      delete data.mailRelayUsername;
+      delete data.mailRelayFromEmail;
+      delete data.mailRelayPassword;
+      delete data.mailRelayGoogleClientId;
+      delete data.mailRelayGoogleClientSecret;
     }
 
     await this.prisma.integrationSettings.update({
@@ -230,7 +256,7 @@ export class IntegrationsService {
     });
 
     this.mailService.invalidateCache();
-    return this.getSettings();
+    return this.getSettings({ canManageOutgoing });
   }
 
   async clearGoogleOAuthSecret(_input?: ClearGoogleOAuthSecretInput) {
@@ -239,7 +265,7 @@ export class IntegrationsService {
       data: { mailRelayGoogleClientSecret: "" }
     });
     this.mailService.invalidateCache();
-    return this.getSettings();
+    return this.getSettings({ canManageOutgoing: true });
   }
 
   async updateGoogleAds(input: UpdateIntegrationGoogleAdsInput) {
@@ -278,7 +304,7 @@ export class IntegrationsService {
 
   async startGoogleOAuth(
     requestOrigin?: string,
-    options?: { category?: MailNotifyCategory }
+    options?: { purpose?: "inbox" | "outbox"; category?: MailNotifyCategory }
   ) {
     try {
       const url = await this.mailService.createGoogleOAuthUrl(requestOrigin, options);
@@ -298,7 +324,7 @@ export class IntegrationsService {
     return `${adminBase}${path}?tab=siteSettings&view=integrations&sub=mail&googleMail=connected&email=${encodeURIComponent(result.email)}${category}`;
   }
 
-  async testMailRelay(input: IntegrationTestMailInput) {
+  async testMailRelay(input: IntegrationTestMailInput, options?: { canManageOutgoing?: boolean }) {
     const to = cleanText(input?.to, "", 180).toLowerCase();
     if (to && !to.includes("@")) {
       throw new BadRequestException({ message: "Vul een geldig e-mailadres in voor de testmail." });
@@ -333,7 +359,7 @@ export class IntegrationsService {
 
     return {
       message: result.message,
-      integrations: await this.getSettings()
+      integrations: await this.getSettings({ canManageOutgoing: options?.canManageOutgoing ?? true })
     };
   }
 }

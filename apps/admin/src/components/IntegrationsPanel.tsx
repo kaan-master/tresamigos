@@ -426,7 +426,7 @@ export function IntegrationsPanel({
     setError("");
     try {
       // Geen login_hint: Google toont accountkiezer; gekozen account = koppeling.
-      const query = new URLSearchParams({ category });
+      const query = new URLSearchParams({ purpose: "inbox", category });
       const result = await api<{ url: string }>(`/api/admin/integrations/mailrelay/google/start?${query.toString()}`);
       window.location.href = result.url;
     } catch (connectError) {
@@ -540,7 +540,7 @@ export function IntegrationsPanel({
     try {
       const result = await api<{ message: string; integrations: IntegrationSettingsPublic }>(
         "/api/admin/integrations/mailrelay/test",
-        { method: "POST", body: JSON.stringify({ to: testRecipient, category }) }
+        { method: "POST", body: JSON.stringify({ to: testRecipient, category }), timeoutMs: 25_000 }
       );
       applySettings(result.integrations);
       setMessage(result.message);

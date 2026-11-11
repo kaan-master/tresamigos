@@ -50,7 +50,10 @@ type StoredGoogleAccount = {
 
 type GoogleByCategoryStore = Partial<Record<MailNotifyCategory, StoredGoogleAccount>>;
 
+type GoogleMailOAuthPurpose = "inbox" | "outbox";
+
 type OAuthStatePayload = {
+  purpose?: GoogleMailOAuthPurpose;
   category?: MailNotifyCategory;
   redirectUri?: string;
 };
@@ -68,6 +71,72 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 const GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
+const GMAIL_SEND_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
+const NETWORK_TIMEOUT_MS = 12_000;
+
+async function fetchWithTimeout(url: string, init: RequestInit = {}, ms = NETWORK_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Google reageerde niet op tijd. Probeer het opnieuw of kies Google SMTP.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function withDeadline<T>(promise: Promise<T>, ms: number, message: string) {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
+function googleAuthErrorText(error: unknown) {
+  if (!(error instanceof Error)) return "onbekend";
+  return `${error.message} ${error.cause instanceof Error ? error.cause.message : ""}`.toLowerCase();
+}
+
+function isDeadGoogleGrant(error: unknown) {
+  const text = googleAuthErrorText(error);
+  return (
+    text.includes("invalid_grant") ||
+    text.includes("unauthorized_client") ||
+    text.includes("invalid_client") ||
+    text.includes("unauthorized")
+  );
+}
+
+function describeGoogleAuthError(error: unknown) {
+  const text = googleAuthErrorText(error);
+  if (text.includes("invalid_client") || text.includes("unauthorized_client") || text.includes("unauthorized")) {
+    return "Client ID of Secret klopt niet, of deze mailbox is gekoppeld aan een oude Google-app. Controleer de sleutels en log opnieuw in.";
+  }
+  if (text.includes("invalid_grant")) {
+    return "De Google-toestemming is ingetrokken of verlopen. In testmodus gebeurt dat na 7 dagen. Log opnieuw in.";
+  }
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return "Google weigerde de token.";
+}
+
+function rfc2047(value: string) {
+  if (/^[\x20-\x7E]*$/.test(value)) return value;
+  return `=?UTF-8?B?${Buffer.from(value, "utf8").toString("base64")}?=`;
+}
+
 const USERINFO_SCOPE = "https://www.googleapis.com/auth/userinfo.email";
 const PRODUCTION_GOOGLE_REDIRECT_URI = "https://tresamigos.nl/api/integrations/mailrelay/google/callback";
 
@@ -282,67 +351,82 @@ export class MailService {
 
     try {
       const row = await this.prisma.integrationSettings.findUnique({ where: { id: "primary" } });
-      if (row?.mailRelayEnabled && category) {
-        const byCategory = this.parseGoogleByCategory(row.mailRelayGoogleByCategory);
-        const account = byCategory[category];
-        if (account?.refreshToken) {
+      if (row?.mailRelayEnabled) {
+        if (row.mailRelayGoogleRefreshToken) {
           try {
-            const accessToken = await this.ensureStoredGoogleAccessToken(category, account, byCategory, row.mailRelayFromName);
-            return {
+            const accessToken = await this.ensureGoogleAccessToken(row);
+            const googleConfig: GoogleConfig = {
               kind: "google",
-              email: account.email,
+              email: row.mailRelayGoogleEmail || row.mailRelayFromEmail || row.mailRelayUsername,
               accessToken,
-              refreshToken: account.refreshToken,
-              fromEmail: account.email,
+              refreshToken: row.mailRelayGoogleRefreshToken,
+              fromEmail: row.mailRelayFromEmail || row.mailRelayGoogleEmail || row.mailRelayUsername,
               fromName: row.mailRelayFromName || "Tres Amigos",
               source: "db"
             };
+            if (!category) {
+              this.cachedConfig = googleConfig;
+              this.cacheAt = now;
+            }
+            return googleConfig;
           } catch (error) {
-            const detail = error instanceof Error ? error.message : "onbekend";
-            throw new Error(
-              `Google-login voor deze mailbox is verlopen of ongeldig. Klik op Opnieuw inloggen. (${detail})`
+            this.logger.warn(
+              `Uitgaande Google-mailbox tijdelijk overgeslagen (accounts blijven bewaard): ${describeGoogleAuthError(error)}`
             );
           }
         }
-        if (row.mailRelayProvider === "google") {
-          return null;
+
+        if (category) {
+          const byCategory = this.parseGoogleByCategory(row.mailRelayGoogleByCategory);
+          const account = byCategory[category];
+          if (account?.refreshToken) {
+            try {
+              const accessToken = await this.ensureStoredGoogleAccessToken(
+                category,
+                account,
+                byCategory,
+                row.mailRelayFromName
+              );
+              return {
+                kind: "google",
+                email: account.email,
+                accessToken,
+                refreshToken: account.refreshToken,
+                fromEmail: account.email,
+                fromName: row.mailRelayFromName || "Tres Amigos",
+                source: "db"
+              };
+            } catch (error) {
+              this.logger.warn(
+                `Google-inbox ${category} tijdelijk overgeslagen (account blijft bewaard): ${describeGoogleAuthError(error)}`
+              );
+            }
+          }
         }
-      }
 
-      if (row?.mailRelayEnabled && row.mailRelayProvider === "google" && row.mailRelayGoogleRefreshToken) {
-        const accessToken = await this.ensureGoogleAccessToken(row);
-        this.cachedConfig = {
-          kind: "google",
-          email: row.mailRelayGoogleEmail || row.mailRelayFromEmail || row.mailRelayUsername,
-          accessToken,
-          refreshToken: row.mailRelayGoogleRefreshToken,
-          fromEmail: row.mailRelayFromEmail || row.mailRelayGoogleEmail || row.mailRelayUsername,
-          fromName: row.mailRelayFromName || "Tres Amigos",
-          source: "db"
-        };
-        this.cacheAt = now;
-        return this.cachedConfig;
-      }
-
-      if (row?.mailRelayEnabled && row.mailRelayHost && row.mailRelayUsername && row.mailRelayPassword) {
-        this.cachedConfig = {
-          kind: "smtp",
-          host: row.mailRelayHost,
-          port: row.mailRelayPort || 587,
-          secure: row.mailRelaySecure || row.mailRelayPort === 465,
-          user: row.mailRelayUsername,
-          pass: row.mailRelayPassword,
-          fromEmail: row.mailRelayFromEmail || row.mailRelayUsername,
-          fromName: row.mailRelayFromName || "Tres Amigos",
-          source: "db"
-        };
-        this.cacheAt = now;
-        return this.cachedConfig;
+        if (row.mailRelayHost && row.mailRelayUsername && row.mailRelayPassword) {
+          const smtpConfig: SmtpConfig = {
+            kind: "smtp",
+            host: row.mailRelayHost,
+            port: row.mailRelayPort || 587,
+            secure: row.mailRelaySecure || row.mailRelayPort === 465,
+            user: row.mailRelayUsername,
+            pass: row.mailRelayPassword,
+            fromEmail: row.mailRelayFromEmail || row.mailRelayUsername,
+            fromName: row.mailRelayFromName || "Tres Amigos",
+            source: "db"
+          };
+          if (!category) {
+            this.cachedConfig = smtpConfig;
+            this.cacheAt = now;
+          }
+          return smtpConfig;
+        }
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "onbekend";
-      this.logger.warn(`Integratie-SMTP laden mislukt: ${message}`);
-      if (message.includes("Google-login voor deze mailbox")) throw error;
+      this.logger.warn(`Integratie-mail laden mislukt: ${message}`);
+      if (message.includes("reageerde niet op tijd") || message.includes("niet op tijd")) throw error;
     }
 
     if (!category) {
@@ -406,25 +490,30 @@ export class MailService {
 
   private async refreshGoogleToken(refreshToken: string) {
     const creds = await this.resolveGoogleOAuthCreds();
+    if (!creds.clientId || !creds.clientSecret) {
+      throw new Error("Google Client ID of Secret ontbreekt bij Koppelingen → E-mail.");
+    }
     const body = new URLSearchParams({
       client_id: creds.clientId,
       client_secret: creds.clientSecret,
       refresh_token: refreshToken,
       grant_type: "refresh_token"
     });
-    const response = await fetch(GOOGLE_TOKEN_URL, {
+    const response = await fetchWithTimeout(GOOGLE_TOKEN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body
     });
-    const data = (await response.json()) as {
+    const data = (await response.json().catch(() => ({}))) as {
       access_token?: string;
       expires_in?: number;
       error?: string;
       error_description?: string;
     };
     if (!response.ok || !data.access_token) {
-      throw new Error(data.error_description || data.error || "Google token vernieuwen mislukt.");
+      const detail = data.error_description || data.error || `HTTP ${response.status}`;
+      this.logger.warn(`Google token vernieuwen mislukt: ${detail}`);
+      throw new Error(detail);
     }
     return {
       accessToken: data.access_token,
@@ -432,11 +521,59 @@ export class MailService {
     };
   }
 
+  private async sendViaGmailApi(
+    config: GoogleConfig,
+    input: {
+      to: string;
+      fromName: string;
+      fromEmail?: string;
+      replyTo?: string;
+      subject: string;
+      text: string;
+    }
+  ) {
+    const fromAddress = input.fromEmail || config.fromEmail;
+    const fromName = input.fromName || config.fromName;
+    const lines = [
+      `From: ${rfc2047(fromName)} <${fromAddress}>`,
+      `To: ${input.to}`,
+      `Subject: ${rfc2047(input.subject)}`,
+      `Reply-To: ${input.replyTo || fromAddress}`,
+      "MIME-Version: 1.0",
+      "Content-Type: text/plain; charset=UTF-8",
+      "Content-Transfer-Encoding: base64",
+      "",
+      Buffer.from(input.text, "utf8").toString("base64")
+    ];
+    const raw = Buffer.from(lines.join("\r\n")).toString("base64url");
+    const response = await fetchWithTimeout(GMAIL_SEND_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.accessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ raw })
+    });
+    const data = (await response.json().catch(() => ({}))) as { error?: { message?: string; status?: string } };
+    if (!response.ok) {
+      const status = data.error?.status || "";
+      const message = data.error?.message || `Gmail versturen mislukt (HTTP ${response.status}).`;
+      if (response.status === 401 || status === "UNAUTHENTICATED") {
+        throw new Error(`Unauthorized: ${message}`);
+      }
+      throw new Error(message);
+    }
+    return true;
+  }
+
   private createSmtpTransport(config: SmtpConfig) {
     const options: SMTPTransport.Options = {
       host: config.host,
       port: config.port,
       secure: config.secure,
+      connectionTimeout: NETWORK_TIMEOUT_MS,
+      greetingTimeout: NETWORK_TIMEOUT_MS,
+      socketTimeout: 20_000,
       auth: {
         user: config.user,
         pass: config.pass
@@ -449,6 +586,9 @@ export class MailService {
     const creds = await this.resolveGoogleOAuthCreds();
     const options: SMTPTransport.Options = {
       service: "gmail",
+      connectionTimeout: NETWORK_TIMEOUT_MS,
+      greetingTimeout: NETWORK_TIMEOUT_MS,
+      socketTimeout: 20_000,
       auth: {
         type: "OAuth2",
         user: config.email,
@@ -462,10 +602,9 @@ export class MailService {
   }
 
   private async withTransport<T>(
-    fn: (transport: nodemailer.Transporter, config: MailConfig) => Promise<T>,
-    category?: MailNotifyCategory
+    fn: (transport: nodemailer.Transporter, config: MailConfig) => Promise<T>
   ) {
-    const config = await this.resolveConfig(category);
+    const config = await this.resolveConfig();
     if (!config) {
       this.logger.warn("SMTP/Gmail niet geconfigureerd — mail niet verstuurd.");
       return null;
@@ -484,17 +623,32 @@ export class MailService {
     text: string;
     category?: MailNotifyCategory;
   }) {
-    return this.withTransport(async (transport, config) => {
-      const fromAddress = input.fromEmail || config.fromEmail;
-      await transport.sendMail({
+    const config = await this.resolveConfig(input.category);
+    if (!config) {
+      this.logger.warn("SMTP/Gmail niet geconfigureerd — mail niet verstuurd.");
+      return null;
+    }
+    if (config.kind === "google") {
+      return withDeadline(
+        this.sendViaGmailApi(config, input),
+        20_000,
+        "Gmail API reageerde niet op tijd."
+      );
+    }
+    const transport = this.createSmtpTransport(config);
+    const fromAddress = input.fromEmail || config.fromEmail;
+    await withDeadline(
+      transport.sendMail({
         from: `"${input.fromName || config.fromName}" <${fromAddress}>`,
         to: input.to,
         replyTo: input.replyTo || fromAddress,
         subject: input.subject,
         text: input.text
-      });
-      return true;
-    }, input.category);
+      }),
+      20_000,
+      "SMTP reageerde niet op tijd. Controleer host, poort en firewall."
+    );
+    return true;
   }
 
   async sendPromoEmail(input: PromoMailInput) {
@@ -585,34 +739,13 @@ export class MailService {
     };
     try {
       const category = input.category && isMailNotifyCategory(input.category) ? input.category : undefined;
-      if (category) {
-        const row = await this.prisma.integrationSettings.findUnique({ where: { id: "primary" } });
-        if (row?.mailRelayEnabled && row.mailRelayProvider === "google") {
-          const account = this.parseGoogleByCategory(row.mailRelayGoogleByCategory)[category];
-          if (!account?.refreshToken) {
-            return {
-              ok: false,
-              message: `Koppel eerst een Google-account voor ${labels[category]} via Inloggen met Google.`
-            };
-          }
-        }
-      }
       const config = await this.resolveConfig(category);
       if (!config) {
         return {
           ok: false,
-          message: category
-            ? `Mail voor ${labels[category]} is niet klaar. Koppel Google of kies Google SMTP met een app-wachtwoord.`
-            : "Mail is niet geconfigureerd. Voor Workspace is Google SMTP (app-wachtwoord) het snelst; OAuth kan daarna."
+          message:
+            "Mail is niet klaar om te versturen. Koppel de uitgaande mailbox (beheerder) of vul SMTP in."
         };
-      }
-
-      if (category && config.kind === "google") {
-        const row = await this.prisma.integrationSettings.findUnique({ where: { id: "primary" } });
-        const account = this.parseGoogleByCategory(row?.mailRelayGoogleByCategory)[category];
-        if (!account?.refreshToken || account.email.toLowerCase() !== config.email.toLowerCase()) {
-          return { ok: false, message: `Koppel eerst een Google-account voor ${labels[category]}.` };
-        }
       }
 
       const requested = String(input.to || "").trim().toLowerCase();
@@ -624,8 +757,8 @@ export class MailService {
 
       const detail =
         config.kind === "google"
-          ? `Bron: Google Gmail (${config.email})`
-          : `Bron: ${config.source === "db" ? "Integraties (mailrelay)" : "Omgevingsvariabelen (.env)"}\nHost: ${config.host}:${config.port}`;
+          ? "Bron: uitgaande mailbox via Gmail API"
+          : `Bron: ${config.source === "db" ? "SMTP" : "Omgevingsvariabelen (.env)"}`;
       const categoryLine = category ? `Categorie: ${labels[category]}` : "Categorie: algemene mailrelay";
 
       await this.sendRaw({
@@ -643,7 +776,7 @@ export class MailService {
         category
       });
 
-      return { ok: true, message: `Testmail verstuurd van ${config.fromEmail} naar ${to}.` };
+      return { ok: true, message: `Testmail verstuurd naar ${to}.` };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Testmail mislukt.";
       this.logger.error(`Testmail mislukt: ${message}`);
@@ -657,19 +790,29 @@ export class MailService {
 
   async createGoogleOAuthUrl(
     requestOrigin?: string,
-    options?: { category?: MailNotifyCategory }
+    options?: { purpose?: GoogleMailOAuthPurpose; category?: MailNotifyCategory }
   ) {
     if (!(await this.isGoogleOAuthConfigured())) {
       throw new Error(
-        "Google OAuth ontbreekt. Vul Client ID en Secret in bij Koppelingen → E-mail, of zet GOOGLE_MAIL_CLIENT_ID/SECRET in .env."
+        "Google-app is nog niet klaar. Vraag de beheerder om Client ID en Secret in te stellen."
       );
+    }
+    const purpose: GoogleMailOAuthPurpose =
+      options?.purpose === "inbox" || (options?.category && isMailNotifyCategory(options.category))
+        ? "inbox"
+        : "outbox";
+    const category =
+      purpose === "inbox" && options?.category && isMailNotifyCategory(options.category) ? options.category : undefined;
+    if (purpose === "inbox" && !category) {
+      throw new Error("Kies eerst een ontvangstcategorie.");
     }
     const creds = await this.resolveGoogleOAuthCreds();
     const state = createHash("sha256").update(randomBytes(32)).digest("hex");
     const key = this.oauthStateKey(state);
     const redirectUri = this.googleRedirectUri(requestOrigin);
     const payload: OAuthStatePayload = {
-      category: options?.category && isMailNotifyCategory(options.category) ? options.category : undefined,
+      purpose,
+      category,
       redirectUri
     };
     const payloadJson = JSON.stringify(payload);
@@ -680,12 +823,12 @@ export class MailService {
       this.oauthPayloadMemory.set(state, payload);
     }
 
-    // select_account: altijd account kiezen op Google's pagina (geen vooraf geforceerd adres).
+    const scope = purpose === "outbox" ? `${GMAIL_SEND_SCOPE} ${USERINFO_SCOPE}` : USERINFO_SCOPE;
     const params = new URLSearchParams({
       client_id: creds.clientId,
       redirect_uri: redirectUri,
       response_type: "code",
-      scope: `${GMAIL_SEND_SCOPE} ${USERINFO_SCOPE}`,
+      scope,
       access_type: "offline",
       prompt: "select_account consent",
       include_granted_scopes: "true",
@@ -739,7 +882,7 @@ export class MailService {
       redirect_uri: redirectUri,
       grant_type: "authorization_code"
     });
-    const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
+    const tokenResponse = await fetchWithTimeout(GOOGLE_TOKEN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: tokenBody
@@ -755,7 +898,7 @@ export class MailService {
       throw new Error(tokens.error_description || tokens.error || "Google tokens ophalen mislukt.");
     }
 
-    const profileResponse = await fetch(GOOGLE_USERINFO_URL, {
+    const profileResponse = await fetchWithTimeout(GOOGLE_USERINFO_URL, {
       headers: { Authorization: `Bearer ${tokens.access_token}` }
     });
     const profile = (await profileResponse.json()) as { email?: string };
@@ -763,14 +906,16 @@ export class MailService {
     if (!email) throw new Error("Kon Google e-mailadres niet ophalen.");
 
     const existing = await this.prisma.integrationSettings.findUnique({ where: { id: "primary" } });
-    const category = statePayload.category;
+    const category =
+      statePayload.category && isMailNotifyCategory(statePayload.category) ? statePayload.category : undefined;
+    const purpose: GoogleMailOAuthPurpose =
+      statePayload.purpose === "inbox" || category ? "inbox" : "outbox";
     const byCategory = this.parseGoogleByCategory(existing?.mailRelayGoogleByCategory);
-    const existingCategoryRefresh = category ? byCategory[category]?.refreshToken || "" : "";
-    const refreshToken =
-      tokens.refresh_token ||
-      existingCategoryRefresh ||
-      existing?.mailRelayGoogleRefreshToken ||
-      "";
+    const existingRefresh =
+      purpose === "inbox" && category
+        ? byCategory[category]?.refreshToken || ""
+        : existing?.mailRelayGoogleRefreshToken || "";
+    const refreshToken = tokens.refresh_token || existingRefresh || "";
     if (!refreshToken) {
       throw new Error(
         "Geen refresh token ontvangen. Disconnect de app in Google Account → Beveiliging → Apps en probeer opnieuw."
@@ -779,7 +924,7 @@ export class MailService {
 
     const expiry = new Date(Date.now() + (tokens.expires_in || 3600) * 1000);
     const notifyPatch: Record<string, string> = {};
-    if (category) {
+    if (purpose === "inbox" && category) {
       byCategory[category] = {
         email,
         refreshToken,
@@ -797,49 +942,64 @@ export class MailService {
       notifyPatch[notifyField] = email;
     }
 
+    const outboxCreate =
+      purpose === "outbox"
+        ? {
+            mailRelayGoogleEmail: email,
+            mailRelayGoogleAccessToken: tokens.access_token,
+            mailRelayGoogleRefreshToken: refreshToken,
+            mailRelayGoogleTokenExpiry: expiry,
+            mailRelayFromEmail: email
+          }
+        : {};
+    const outboxUpdate =
+      purpose === "outbox"
+        ? {
+            mailRelayGoogleEmail: email,
+            mailRelayGoogleAccessToken: tokens.access_token,
+            mailRelayGoogleRefreshToken: refreshToken,
+            mailRelayGoogleTokenExpiry: expiry,
+            mailRelayFromEmail: email
+          }
+        : {};
+
     await this.prisma.integrationSettings.upsert({
       where: { id: "primary" },
       create: {
         id: "primary",
         mailRelayEnabled: true,
         mailRelayProvider: "google",
-        mailRelayGoogleEmail: email,
-        mailRelayGoogleAccessToken: tokens.access_token,
-        mailRelayGoogleRefreshToken: refreshToken,
-        mailRelayGoogleTokenExpiry: expiry,
         mailRelayGoogleByCategory: byCategory,
-        mailRelayFromEmail: email,
         mailRelayFromName: "Tres Amigos",
         mailRelayLastStatus: "success",
-        mailRelayLastMessage: category
-          ? `Google gekoppeld voor ${category}: ${email}`
-          : `Google gekoppeld: ${email}`,
+        mailRelayLastMessage:
+          purpose === "inbox" && category
+            ? `Ontvangstadres gekoppeld voor ${category}: ${email}`
+            : `Uitgaande mailbox gekoppeld.`,
         mailRelayLastTestAt: new Date(),
         mailNotifyApplications: notifyPatch.mailNotifyApplications || DEFAULT_NOTIFY.applications,
         mailNotifyCatering: notifyPatch.mailNotifyCatering || DEFAULT_NOTIFY.catering,
         mailNotifyFranchise: notifyPatch.mailNotifyFranchise || DEFAULT_NOTIFY.franchise,
-        mailNotifyOther: notifyPatch.mailNotifyOther || DEFAULT_NOTIFY.other
+        mailNotifyOther: notifyPatch.mailNotifyOther || DEFAULT_NOTIFY.other,
+        ...outboxCreate
       },
       update: {
         mailRelayEnabled: true,
         mailRelayProvider: "google",
-        mailRelayGoogleEmail: email,
-        mailRelayGoogleAccessToken: tokens.access_token,
-        mailRelayGoogleRefreshToken: refreshToken,
-        mailRelayGoogleTokenExpiry: expiry,
         mailRelayGoogleByCategory: byCategory,
-        mailRelayFromEmail: email,
         mailRelayLastStatus: "success",
-        mailRelayLastMessage: category
-          ? `Google gekoppeld voor ${category}: ${email}`
-          : `Google gekoppeld: ${email}`,
+        mailRelayLastMessage:
+          purpose === "inbox" && category
+            ? `Ontvangstadres gekoppeld voor ${category}: ${email}`
+            : `Uitgaande mailbox gekoppeld.`,
         mailRelayLastTestAt: new Date(),
-        ...notifyPatch
+        ...notifyPatch,
+        ...outboxUpdate
       }
     });
 
     this.invalidateCache();
-    return { email, category };
+    return { email, category, purpose };
   }
 
   async disconnectGoogle() {
@@ -850,10 +1010,8 @@ export class MailService {
         mailRelayGoogleAccessToken: "",
         mailRelayGoogleTokenExpiry: null,
         mailRelayGoogleEmail: "",
-        mailRelayGoogleByCategory: {},
-        mailRelayProvider: "smtp",
         mailRelayLastStatus: "",
-        mailRelayLastMessage: "Google ontkoppeld."
+        mailRelayLastMessage: "Uitgaande mailbox ontkoppeld."
       }
     });
     this.invalidateCache();

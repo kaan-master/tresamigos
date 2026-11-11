@@ -1,7 +1,7 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
 /** Gelijk houden aan `apps/admin/package.json` → version. */
-export const ADMIN_APP_VERSION = "0.3.10";
+export const ADMIN_APP_VERSION = "0.3.11";
 
 export type ChangelogEntry = {
   version: string;
@@ -12,9 +12,16 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.3.11",
+    date: "11 november 2026",
+    current: true,
+    changes: [
+      "Google-mail: verlopen koppeling vraagt om opnieuw inloggen; mail gaat via Gmail API in plaats van SMTP."
+    ]
+  },
+  {
     version: "0.3.10",
     date: "8 november 2026",
-    current: true,
     changes: [
       "Media: video's met # of emoji in de bestandsnaam laden weer; ongebruikte brand-video's kun je verwijderen zonder wachtcursor."
     ]

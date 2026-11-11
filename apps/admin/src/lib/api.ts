@@ -26,16 +26,32 @@ function apiUrl(path: string) {
   return buildApiUrl(path, base);
 }
 
-export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function api<T>(path: string, options: RequestInit & { timeoutMs?: number } = {}): Promise<T> {
   const headers = new Headers(options.headers || {});
   headers.set("Content-Type", "application/json");
   const token = getToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(apiUrl(path), { ...options, headers });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.message || "Request mislukt.");
-  return data as T;
+  const { timeoutMs, ...fetchOptions } = options;
+  const controller = timeoutMs ? new AbortController() : null;
+  const timer = timeoutMs ? window.setTimeout(() => controller?.abort(), timeoutMs) : null;
+  try {
+    const response = await fetch(apiUrl(path), {
+      ...fetchOptions,
+      headers,
+      signal: fetchOptions.signal || controller?.signal
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || "Request mislukt.");
+    return data as T;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("De server reageerde niet op tijd. Controleer of de API draait.");
+    }
+    throw error;
+  } finally {
+    if (timer) window.clearTimeout(timer);
+  }
 }
 
 export async function login(email: string, password: string) {

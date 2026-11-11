@@ -785,6 +785,8 @@ export interface IntegrationMailRelaySettings {
   googleRedirectUri: string;
   googleByCategory: IntegrationGoogleByCategory;
   notifications: IntegrationMailNotifications;
+  canManageOutgoing: boolean;
+  outgoingReady: boolean;
 }
 
 export interface IntegrationGoogleAdsSettings {
@@ -845,6 +847,8 @@ export interface UpdateIntegrationNewsletterInput {
   showHome?: boolean;
   showPages?: boolean;
 }
+
+export type MailGoogleOAuthPurpose = "inbox" | "outbox";
 
 export interface IntegrationTestMailInput {
   to?: string;
