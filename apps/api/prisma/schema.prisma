@@ -410,7 +410,9 @@ model FranchiseShopOrder {
   orderNumber    String                   @unique
   createdAt      DateTime                 @default(now())
   updatedAt      DateTime                 @updatedAt
-  status         String                   @default("nieuw")
+  status         String                   @default("in_afwachting")
+  channel        String                   @default("portaal")
+  flow           Json                     @default("{}")
   accountId      String
   account        FranchiseAccount         @relation(fields: [accountId], references: [id], onDelete: Restrict)
   locationId     String

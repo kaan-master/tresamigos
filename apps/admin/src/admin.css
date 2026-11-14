@@ -1451,6 +1451,30 @@ select {
   line-height: 1.4;
 }
 
+.ta-list-row-badge {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 46%;
+}
+
+.ta-list-row-badge .status-chip {
+  font-size: 12px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ta-list-pane .status-combo {
+  width: 100%;
+  min-width: 0;
+  margin: 0 0 10px;
+}
+
+.ta-field .status-combo {
+  width: 100%;
+  min-width: 0;
+}
+
 .ta-filter-chips {
   display: flex;
   gap: 8px;
@@ -1615,6 +1639,18 @@ select {
   margin-bottom: 16px;
 }
 
+.ta-visitor-calendar-body {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(220px, 280px);
+  gap: 22px;
+  align-items: start;
+}
+
+.ta-visitor-calendar-side {
+  display: grid;
+  gap: 12px;
+}
+
 .ta-visitor-calendar-pill {
   display: grid;
   gap: 2px;
@@ -1636,14 +1672,66 @@ select {
   color: var(--ta-label);
 }
 
+.ta-visitor-calendar-pill small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #8a4b00;
+}
+
+.ta-peak-hours {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  border-radius: 16px;
+  border: 1px solid var(--ta-line);
+  background: linear-gradient(180deg, #fff, #fffaf3);
+}
+
+.ta-peak-hours-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.ta-peak-hours-head strong {
+  font-size: 13px;
+}
+
+.ta-peak-hours-head span,
+.ta-peak-hours small {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ta-muted);
+}
+
+.ta-peak-hours-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ta-peak-grid {
+  stroke: rgba(31, 22, 11, 0.08);
+  stroke-width: 1;
+}
+
+.ta-peak-tick {
+  font-size: 8px;
+  font-weight: 700;
+  fill: #8a7a68;
+}
+
 .ta-visitor-calendar .rdp-root {
-  --rdp-accent-color: var(--ta-corn);
-  --rdp-accent-background-color: #fff4d8;
+  --rdp-accent-color: #8a4b00;
+  --rdp-accent-background-color: transparent;
   --rdp-day-height: 46px;
   --rdp-day-width: 46px;
   --rdp-day_button-height: 42px;
   --rdp-day_button-width: 42px;
-  --rdp-selected-border: 2px solid var(--ta-mole);
+  --rdp-selected-border: 2px solid #3d2208;
 }
 
 .ta-cal-day {
@@ -1651,32 +1739,36 @@ select {
   gap: 1px;
   place-items: center;
   font-weight: 800;
+  border-radius: 12px;
 }
 
 .ta-cal-day-count {
   font-style: normal;
   font-size: 9px;
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1;
-  color: var(--ta-mole);
-  background: var(--ta-corn);
-  border-radius: 999px;
-  padding: 2px 5px;
+  color: inherit;
+  opacity: 0.85;
 }
 
-.ta-cal-has-visitors .ta-cal-day {
-  background: #fff8e8;
-  border-radius: 12px;
-}
+.ta-cal-heat-1 { background: #fff6e4; color: #5c3d12; }
+.ta-cal-heat-2 { background: #ffe3a3; color: #5c3d12; }
+.ta-cal-heat-3 { background: #fcb92a; color: #3d2208; }
+.ta-cal-heat-4 { background: #c47a0a; color: #fff8e8; }
+.ta-cal-heat-5 { background: #6b3500; color: #fff8e8; }
 
 .ta-visitor-calendar .rdp-selected .ta-cal-day {
-  background: var(--ta-corn);
-  border-radius: 12px;
-  box-shadow: 0 8px 18px rgba(252, 185, 42, 0.35);
+  box-shadow: 0 0 0 2px #3d2208, 0 8px 18px rgba(107, 53, 0, 0.28);
 }
 
-.ta-visitor-calendar .rdp-selected .ta-cal-day-count {
-  background: #fff;
+.ta-visitor-calendar .rdp-today:not(.rdp-selected) .ta-cal-day {
+  box-shadow: inset 0 0 0 1.5px rgba(61, 34, 8, 0.45);
+}
+
+@media (max-width: 860px) {
+  .ta-visitor-calendar-body {
+    grid-template-columns: 1fr;
+  }
 }
 
 @keyframes ta-live-pulse {
@@ -5636,5 +5728,118 @@ body.admin-tablet-mode .ta-action-dock {
   .order-flow-fork {
     grid-template-columns: 1fr;
   }
+}
+
+.order-workflow {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.order-workflow-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.order-workflow-channel {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f3f2f1;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.order-workflow-path {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.order-workflow-path-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid #e6e6e6;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  color: #616161;
+}
+
+.order-workflow-path-step.is-done {
+  background: #edf8ef;
+  border-color: #b9dfc8;
+  color: #176a3a;
+}
+
+.order-workflow-path-step.is-active {
+  background: #fff9ea;
+  border-color: #efd596;
+  color: #242424;
+}
+
+.order-workflow-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--ta-line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.order-workflow-question {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.order-workflow-note {
+  margin: 0;
+  font-size: 13px;
+  color: #5b4210;
+  background: #fff4d4;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.order-workflow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.order-workflow-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.order-workflow-log li {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-left: 3px solid #efd596;
+  background: #fafafa;
+  font-size: 12px;
+}
+
+.order-workflow-log span {
+  color: #616161;
+}
+
+.order-workflow-log em {
+  font-style: normal;
+  color: #5b4210;
 }
 

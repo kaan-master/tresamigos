@@ -499,12 +499,18 @@ export interface AnalyticsDailyEntry {
   visitors: number;
 }
 
+export interface AnalyticsHourlyEntry {
+  hour: number;
+  visitors: number;
+}
+
 export interface AnalyticsSnapshot {
   liveNow: number;
   viewsToday: number;
   viewsWeek: number;
   topPages: { path: string; views: number }[];
   dailyLog: AnalyticsDailyEntry[];
+  hourlyBusyAverage: AnalyticsHourlyEntry[];
   updatedAt: string;
 }
 
@@ -1289,8 +1295,419 @@ export interface CountCategoryStat {
 }
 
 /** Franchise shop — producten, prijzen per vestiging, bestellingen */
-export const FRANCHISE_SHOP_ORDER_STATUSES = ["nieuw", "bevestigd", "verzonden", "afgerond", "geannuleerd"] as const;
+export const FRANCHISE_SHOP_ORDER_STATUSES = [
+  "registratie_onvolledig",
+  "in_afwachting",
+  "actie_vereist",
+  "bevestigd",
+  "in_behandeling",
+  "gereed_voor_verzending",
+  "onderweg",
+  "controle_bij_ontvangst",
+  "afwijking",
+  "nalevering_gepland",
+  "afgerond",
+  "geannuleerd"
+] as const;
 export type FranchiseShopOrderStatus = (typeof FRANCHISE_SHOP_ORDER_STATUSES)[number];
+
+export const FRANCHISE_SHOP_ORDER_STATUS_LABELS: Record<FranchiseShopOrderStatus, string> = {
+  registratie_onvolledig: "Registratie onvolledig",
+  in_afwachting: "In afwachting",
+  actie_vereist: "Actie vereist",
+  bevestigd: "Bevestigd",
+  in_behandeling: "In behandeling",
+  gereed_voor_verzending: "Gereed voor verzending",
+  onderweg: "Onderweg",
+  controle_bij_ontvangst: "Controle bij ontvangst",
+  afwijking: "Afwijking",
+  nalevering_gepland: "Nalevering gepland",
+  afgerond: "Afgerond",
+  geannuleerd: "Geannuleerd"
+};
+
+export const FRANCHISE_SHOP_ORDER_STATUS_COLORS: Record<FranchiseShopOrderStatus, string> = {
+  registratie_onvolledig: "#d66b36",
+  in_afwachting: "#0078d4",
+  actie_vereist: "#ca5010",
+  bevestigd: "#5c2d91",
+  in_behandeling: "#c19c00",
+  gereed_voor_verzending: "#038387",
+  onderweg: "#004e8c",
+  controle_bij_ontvangst: "#8764b8",
+  afwijking: "#d13438",
+  nalevering_gepland: "#c45911",
+  afgerond: "#107c10",
+  geannuleerd: "#8a8886"
+};
+
+const FRANCHISE_SHOP_ORDER_STATUS_ALIASES: Record<string, FranchiseShopOrderStatus> = {
+  nieuw: "in_afwachting",
+  verzonden: "onderweg"
+};
+
+export function normalizeFranchiseShopOrderStatus(status: string): FranchiseShopOrderStatus {
+  const mapped = FRANCHISE_SHOP_ORDER_STATUS_ALIASES[status] ?? status;
+  return (FRANCHISE_SHOP_ORDER_STATUSES as readonly string[]).includes(mapped)
+    ? (mapped as FranchiseShopOrderStatus)
+    : "in_afwachting";
+}
+
+export const FRANCHISE_SHOP_ORDER_CHANNELS = ["portaal", "whatsapp", "email", "overig"] as const;
+export type FranchiseShopOrderChannel = (typeof FRANCHISE_SHOP_ORDER_CHANNELS)[number];
+
+export const FRANCHISE_SHOP_ORDER_CHANNEL_LABELS: Record<FranchiseShopOrderChannel, string> = {
+  portaal: "Portaal",
+  whatsapp: "WhatsApp",
+  email: "E-mail",
+  overig: "Overig"
+};
+
+export const FRANCHISE_SHOP_ORDER_HAPPY_PATH = [
+  "in_afwachting",
+  "bevestigd",
+  "in_behandeling",
+  "gereed_voor_verzending",
+  "onderweg",
+  "controle_bij_ontvangst",
+  "afgerond"
+] as const satisfies readonly FranchiseShopOrderStatus[];
+
+export const FRANCHISE_SHOP_DEVIATION_KINDS = ["tekort", "schade", "fout"] as const;
+export type FranchiseShopDeviationKind = (typeof FRANCHISE_SHOP_DEVIATION_KINDS)[number];
+
+export const FRANCHISE_SHOP_DEVIATION_KIND_LABELS: Record<FranchiseShopDeviationKind, string> = {
+  tekort: "Tekort",
+  schade: "Schade",
+  fout: "Fout"
+};
+
+export const FRANCHISE_SHOP_ORDER_ACTIONS = [
+  "mark_incomplete",
+  "request_missing_data",
+  "complete_registration",
+  "confirm_order",
+  "require_action",
+  "resolve_action",
+  "start_processing",
+  "mark_ready",
+  "mark_shipped",
+  "mark_arrived",
+  "confirm_complete_receipt",
+  "report_deviation",
+  "plan_nalevering",
+  "accept_with_deviation",
+  "process_nalevering",
+  "update_stock",
+  "cancel"
+] as const;
+export type FranchiseShopOrderAction = (typeof FRANCHISE_SHOP_ORDER_ACTIONS)[number];
+
+export type FranchiseShopOrderActionTone = "yes" | "no" | "next" | "danger" | "neutral";
+
+export interface FranchiseShopOrderActionDef {
+  id: FranchiseShopOrderAction;
+  label: string;
+  description: string;
+  toStatus: FranchiseShopOrderStatus;
+  tone: FranchiseShopOrderActionTone;
+  stay?: boolean;
+  noteLabel?: string;
+  noteRequired?: boolean;
+  notify?: boolean;
+  extra?: "deviation" | "nalevering" | "stock";
+}
+
+export interface FranchiseShopOrderFlowEvent {
+  at: string;
+  action: FranchiseShopOrderAction | "registered";
+  fromStatus: FranchiseShopOrderStatus | "";
+  toStatus: FranchiseShopOrderStatus;
+  note?: string;
+  notified?: boolean;
+}
+
+export interface FranchiseShopOrderFlow {
+  channel: FranchiseShopOrderChannel;
+  missingData: string;
+  kitchenNote: string;
+  deviationKind: FranchiseShopDeviationKind | "";
+  deviationNote: string;
+  naleveringNote: string;
+  receivedComplete: boolean | null;
+  stockUpdatedAt: string | null;
+  events: FranchiseShopOrderFlowEvent[];
+}
+
+export function emptyFranchiseShopOrderFlow(
+  channel: FranchiseShopOrderChannel = "portaal"
+): FranchiseShopOrderFlow {
+  return {
+    channel,
+    missingData: "",
+    kitchenNote: "",
+    deviationKind: "",
+    deviationNote: "",
+    naleveringNote: "",
+    receivedComplete: null,
+    stockUpdatedAt: null,
+    events: []
+  };
+}
+
+function asChannel(value: unknown, fallback: FranchiseShopOrderChannel = "portaal"): FranchiseShopOrderChannel {
+  return (FRANCHISE_SHOP_ORDER_CHANNELS as readonly string[]).includes(String(value || ""))
+    ? (value as FranchiseShopOrderChannel)
+    : fallback;
+}
+
+export function parseFranchiseShopOrderFlow(
+  raw: unknown,
+  fallbackChannel: FranchiseShopOrderChannel = "portaal"
+): FranchiseShopOrderFlow {
+  const source = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const events = Array.isArray(source.events)
+    ? source.events
+        .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+        .map((item) => ({
+          at: String(item.at || ""),
+          action: String(item.action || "registered") as FranchiseShopOrderFlowEvent["action"],
+          fromStatus: String(item.fromStatus || "") as FranchiseShopOrderFlowEvent["fromStatus"],
+          toStatus: normalizeFranchiseShopOrderStatus(String(item.toStatus || "in_afwachting")),
+          note: item.note ? String(item.note) : undefined,
+          notified: item.notified === true ? true : item.notified === false ? false : undefined
+        }))
+    : [];
+  const kind = String(source.deviationKind || "");
+  return {
+    channel: asChannel(source.channel, fallbackChannel),
+    missingData: String(source.missingData || ""),
+    kitchenNote: String(source.kitchenNote || ""),
+    deviationKind: (FRANCHISE_SHOP_DEVIATION_KINDS as readonly string[]).includes(kind)
+      ? (kind as FranchiseShopDeviationKind)
+      : "",
+    deviationNote: String(source.deviationNote || ""),
+    naleveringNote: String(source.naleveringNote || ""),
+    receivedComplete: source.receivedComplete === true ? true : source.receivedComplete === false ? false : null,
+    stockUpdatedAt: source.stockUpdatedAt ? String(source.stockUpdatedAt) : null,
+    events
+  };
+}
+
+const ACTION_BY_STATUS: Record<FranchiseShopOrderStatus, FranchiseShopOrderActionDef[]> = {
+  registratie_onvolledig: [
+    {
+      id: "request_missing_data",
+      label: "Vraag ontbrekende gegevens op",
+      description: "Stuur de vestiging wat er nog ontbreekt en blijf in registratie onvolledig.",
+      toStatus: "registratie_onvolledig",
+      stay: true,
+      tone: "no",
+      noteLabel: "Ontbrekende gegevens",
+      noteRequired: true,
+      notify: true
+    },
+    {
+      id: "complete_registration",
+      label: "Registratie is compleet",
+      description: "Alle gegevens staan erin. De productiekeuken kan controleren.",
+      toStatus: "in_afwachting",
+      tone: "yes"
+    }
+  ],
+  in_afwachting: [
+    {
+      id: "confirm_order",
+      label: "Bestelling bevestigen",
+      description: "De productiekeuken keurt de bestelling goed.",
+      toStatus: "bevestigd",
+      tone: "yes",
+      notify: true
+    },
+    {
+      id: "require_action",
+      label: "Actie vereist",
+      description: "Stem een wijziging, tekort of alternatief af met de vestiging.",
+      toStatus: "actie_vereist",
+      tone: "no",
+      noteLabel: "Wijziging, tekort of alternatief",
+      noteRequired: true,
+      notify: true
+    },
+    {
+      id: "mark_incomplete",
+      label: "Registratie onvolledig",
+      description: "Er ontbreken nog gegevens voordat de keuken kan bevestigen.",
+      toStatus: "registratie_onvolledig",
+      tone: "neutral",
+      noteLabel: "Wat ontbreekt er?"
+    }
+  ],
+  actie_vereist: [
+    {
+      id: "resolve_action",
+      label: "Afgestemd, opnieuw controleren",
+      description: "Terug naar de productiekeuken voor een nieuwe check.",
+      toStatus: "in_afwachting",
+      tone: "yes",
+      noteLabel: "Afspraak"
+    }
+  ],
+  bevestigd: [
+    {
+      id: "start_processing",
+      label: "Start behandeling",
+      description: "Producten produceren of verzamelen.",
+      toStatus: "in_behandeling",
+      tone: "next"
+    }
+  ],
+  in_behandeling: [
+    {
+      id: "mark_ready",
+      label: "Gereed voor verzending",
+      description: "Alles is geproduceerd of verzameld.",
+      toStatus: "gereed_voor_verzending",
+      tone: "next"
+    }
+  ],
+  gereed_voor_verzending: [
+    {
+      id: "mark_shipped",
+      label: "Onderweg zetten",
+      description: "De levering is vertrokken naar de vestiging.",
+      toStatus: "onderweg",
+      tone: "next",
+      notify: true
+    }
+  ],
+  onderweg: [
+    {
+      id: "mark_arrived",
+      label: "Vestiging ontvangt levering",
+      description: "Start de controle bij ontvangst.",
+      toStatus: "controle_bij_ontvangst",
+      tone: "next"
+    }
+  ],
+  controle_bij_ontvangst: [
+    {
+      id: "confirm_complete_receipt",
+      label: "Volledige ontvangst bevestigen",
+      description: "Levering is compleet en correct.",
+      toStatus: "afgerond",
+      tone: "yes"
+    },
+    {
+      id: "report_deviation",
+      label: "Afwijking registreren",
+      description: "Registreer tekort, schade of fout.",
+      toStatus: "afwijking",
+      tone: "no",
+      extra: "deviation",
+      noteLabel: "Toelichting",
+      noteRequired: true
+    }
+  ],
+  afwijking: [
+    {
+      id: "plan_nalevering",
+      label: "Nalevering plannen",
+      description: "Plan een correctie of nalevering.",
+      toStatus: "nalevering_gepland",
+      tone: "yes",
+      extra: "nalevering",
+      noteLabel: "Nalevering",
+      noteRequired: true
+    },
+    {
+      id: "accept_with_deviation",
+      label: "Ontvangst met afwijking",
+      description: "Geen nalevering nodig. Werk bestelling en voorraad bij.",
+      toStatus: "afgerond",
+      tone: "no"
+    }
+  ],
+  nalevering_gepland: [
+    {
+      id: "process_nalevering",
+      label: "Nalevering verwerken",
+      description: "Terug naar ontvangstcontrole op de vestiging.",
+      toStatus: "controle_bij_ontvangst",
+      tone: "next"
+    }
+  ],
+  afgerond: [
+    {
+      id: "update_stock",
+      label: "Voorraad en prognose bijwerken",
+      description: "Zet in de CMS dat tellingen/prognose zijn meegenomen. Tellingen zelf staan onder Tellingen.",
+      toStatus: "afgerond",
+      stay: true,
+      tone: "next",
+      extra: "stock",
+      noteLabel: "Toelichting voorraad"
+    }
+  ],
+  geannuleerd: []
+};
+
+export function franchiseShopOrderActions(status: FranchiseShopOrderStatus): FranchiseShopOrderActionDef[] {
+  const actions = [...(ACTION_BY_STATUS[status] || [])];
+  if (
+    status !== "afgerond" &&
+    status !== "geannuleerd" &&
+    status !== "onderweg" &&
+    status !== "controle_bij_ontvangst" &&
+    status !== "afwijking" &&
+    status !== "nalevering_gepland"
+  ) {
+    actions.push({
+      id: "cancel",
+      label: "Annuleren",
+      description: "Bestelling stopzetten.",
+      toStatus: "geannuleerd",
+      tone: "danger"
+    });
+  }
+  return actions;
+}
+
+export function franchiseShopOrderActionDef(
+  status: FranchiseShopOrderStatus,
+  action: string
+): FranchiseShopOrderActionDef | undefined {
+  return franchiseShopOrderActions(status).find((item) => item.id === action);
+}
+
+export function franchiseShopOrderQuestion(status: FranchiseShopOrderStatus): string {
+  switch (status) {
+    case "registratie_onvolledig":
+      return "Is de bestelling volledig geregistreerd?";
+    case "in_afwachting":
+      return "Heeft de productiekeuken de bestelling bevestigd?";
+    case "actie_vereist":
+      return "Is de wijziging, het tekort of het alternatief afgestemd?";
+    case "bevestigd":
+      return "Klaar om producten te produceren of te verzamelen?";
+    case "in_behandeling":
+      return "Zijn de producten gereed voor verzending?";
+    case "gereed_voor_verzending":
+      return "Is de levering onderweg?";
+    case "onderweg":
+      return "Heeft de vestiging de levering ontvangen?";
+    case "controle_bij_ontvangst":
+      return "Is de levering compleet en correct?";
+    case "afwijking":
+      return "Is nalevering nodig?";
+    case "nalevering_gepland":
+      return "Is de nalevering verwerkt?";
+    case "afgerond":
+      return "Voorraad en prognose bijwerken?";
+    default:
+      return "Deze bestelling is geannuleerd.";
+  }
+}
 
 export interface FranchiseAccount {
   id: string;
@@ -1378,6 +1795,7 @@ export interface FranchiseShopOrder {
   createdAt: string;
   updatedAt: string;
   status: FranchiseShopOrderStatus;
+  channel: FranchiseShopOrderChannel;
   accountId: string;
   accountName: string;
   accountEmail: string;
@@ -1391,6 +1809,9 @@ export interface FranchiseShopOrder {
   adminNotes: string;
   subtotalCents: number;
   items: FranchiseShopOrderItem[];
+  flow: FranchiseShopOrderFlow;
+  nextActions: FranchiseShopOrderActionDef[];
+  question: string;
 }
 
 export interface CreateFranchiseShopOrderInput {
@@ -1398,9 +1819,26 @@ export interface CreateFranchiseShopOrderInput {
   notes?: string;
 }
 
+export interface AdminCreateFranchiseShopOrderInput {
+  accountId: string;
+  channel?: FranchiseShopOrderChannel;
+  notes?: string;
+  incomplete?: boolean;
+  missingData?: string;
+  items?: Array<{ productId: string; quantity: number }>;
+}
+
+export interface ApplyFranchiseShopOrderActionInput {
+  action: FranchiseShopOrderAction;
+  note?: string;
+  deviationKind?: FranchiseShopDeviationKind | "";
+  notify?: boolean;
+}
+
 export interface UpdateFranchiseShopOrderInput {
   status?: FranchiseShopOrderStatus;
   adminNotes?: string;
+  items?: Array<{ productId: string; quantity: number }>;
 }
 
 export interface FranchiseShopCatalogProduct {

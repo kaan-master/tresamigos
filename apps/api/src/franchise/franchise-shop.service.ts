@@ -1,12 +1,27 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import {
+  FRANCHISE_SHOP_ORDER_CHANNELS,
+  FRANCHISE_SHOP_ORDER_CHANNEL_LABELS,
   FRANCHISE_SHOP_ORDER_STATUSES,
+  FRANCHISE_SHOP_ORDER_STATUS_LABELS,
+  emptyFranchiseShopOrderFlow,
+  franchiseShopOrderActionDef,
+  franchiseShopOrderActions,
+  franchiseShopOrderQuestion,
+  normalizeFranchiseShopOrderStatus,
+  parseFranchiseShopOrderFlow,
+  type AdminCreateFranchiseShopOrderInput,
+  type ApplyFranchiseShopOrderActionInput,
   type CreateFranchiseAccountInput,
   type CreateFranchiseShopOrderInput,
   type CreateFranchiseShopProductInput,
   type FranchiseAccount,
   type FranchiseShopCatalogProduct,
   type FranchiseShopOrder,
+  type FranchiseShopOrderAction,
+  type FranchiseShopOrderChannel,
+  type FranchiseShopOrderFlow,
   type FranchiseShopOrderStatus,
   type FranchiseShopProduct,
   type UpdateFranchiseAccountInput,
@@ -14,6 +29,7 @@ import {
   type UpdateFranchiseShopProductInput
 } from "@tresamigos/types";
 import { buildOrderPdf, pdfFilename, type PdfDocKind } from "../documents/order-pdf";
+import { MailService } from "../mail/mail.service";
 import { FranchiseShopAuthService, type FranchiseShopSessionPayload } from "./franchise-shop-auth.service";
 import { PrismaService } from "../prisma/prisma.module";
 
@@ -28,11 +44,18 @@ function moneyCents(value: unknown) {
   return Math.max(0, Math.min(10_000_000, number));
 }
 
+function asChannel(value: unknown): FranchiseShopOrderChannel {
+  return (FRANCHISE_SHOP_ORDER_CHANNELS as readonly string[]).includes(String(value || ""))
+    ? (value as FranchiseShopOrderChannel)
+    : "portaal";
+}
+
 @Injectable()
 export class FranchiseShopService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly auth: FranchiseShopAuthService
+    private readonly auth: FranchiseShopAuthService,
+    private readonly mail: MailService
   ) {}
 
   private toAccountDto(record: {
@@ -97,6 +120,8 @@ export class FranchiseShopService {
     createdAt: Date;
     updatedAt: Date;
     status: string;
+    channel?: string;
+    flow?: unknown;
     accountId: string;
     locationId: string;
     locationName: string;
@@ -115,9 +140,10 @@ export class FranchiseShopService {
       sortOrder: number;
     }>;
   }): FranchiseShopOrder {
-    const status = FRANCHISE_SHOP_ORDER_STATUSES.includes(record.status as FranchiseShopOrderStatus)
-      ? (record.status as FranchiseShopOrderStatus)
-      : "nieuw";
+    const status = normalizeFranchiseShopOrderStatus(record.status);
+    const channel = asChannel(record.channel);
+    const flow = parseFranchiseShopOrderFlow(record.flow, channel);
+    flow.channel = channel;
     return {
       id: record.id,
       orderNumber: record.orderNumber,
@@ -125,6 +151,7 @@ export class FranchiseShopService {
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
       status,
+      channel,
       accountId: record.accountId,
       accountName: record.account.name,
       accountEmail: record.account.email,
@@ -146,8 +173,18 @@ export class FranchiseShopService {
           quantity: item.quantity,
           unitPriceCents: item.unitPriceCents,
           lineTotalCents: item.lineTotalCents
-        }))
+        })),
+      flow,
+      nextActions: franchiseShopOrderActions(status),
+      question: franchiseShopOrderQuestion(status)
     };
+  }
+
+  private appendFlowEvent(
+    flow: FranchiseShopOrderFlow,
+    event: FranchiseShopOrderFlow["events"][number]
+  ): FranchiseShopOrderFlow {
+    return { ...flow, events: [...flow.events, event].slice(-40) };
   }
 
   async listAccounts() {
@@ -335,18 +372,23 @@ export class FranchiseShopService {
     return `INV-${year}-${String(count + 1).padStart(4, "0")}`;
   }
 
-  async placeOrder(session: FranchiseShopSessionPayload, input: CreateFranchiseShopOrderInput) {
-    const notes = cleanText(input?.notes, "", 1000);
-    const lines = Array.isArray(input?.items) ? input.items.slice(0, 40) : [];
-    if (!lines.length) throw new BadRequestException({ message: "Winkelwagen is leeg." });
+  private async buildOrderItems(
+    locationId: string,
+    lines: Array<{ productId?: string; quantity?: number }>,
+    options?: { allowEmpty?: boolean }
+  ) {
+    const sliced = Array.isArray(lines) ? lines.slice(0, 40) : [];
+    if (!sliced.length) {
+      if (options?.allowEmpty) return [];
+      throw new BadRequestException({ message: "Winkelwagen is leeg." });
+    }
 
-    const productIds = [...new Set(lines.map((line) => cleanText(line.productId, "", 80)).filter(Boolean))];
+    const productIds = [...new Set(sliced.map((line) => cleanText(line.productId, "", 80)).filter(Boolean))];
     const products = await this.prisma.franchiseShopProduct.findMany({
       where: { id: { in: productIds }, active: true },
-      include: { prices: { where: { locationId: session.locationId } } }
+      include: { prices: { where: { locationId } } }
     });
     const byId = new Map(products.map((product) => [product.id, product]));
-
     const orderItems: Array<{
       productId: string;
       productName: string;
@@ -356,13 +398,13 @@ export class FranchiseShopService {
       sortOrder: number;
     }> = [];
 
-    for (const [index, line] of lines.entries()) {
+    for (const [index, line] of sliced.entries()) {
       const productId = cleanText(line.productId, "", 80);
       const quantity = Math.min(999, Math.max(1, Math.round(Number(line.quantity) || 0)));
       const product = byId.get(productId);
       const price = product?.prices[0];
       if (!product || !price) {
-        throw new BadRequestException({ message: `Geen prijs voor product in deze franchise.` });
+        throw new BadRequestException({ message: "Geen prijs voor product in deze franchise." });
       }
       orderItems.push({
         productId: product.id,
@@ -373,16 +415,35 @@ export class FranchiseShopService {
         sortOrder: index
       });
     }
+    return orderItems;
+  }
 
+  private initialFlow(channel: FranchiseShopOrderChannel, status: FranchiseShopOrderStatus, note?: string) {
+    const flow = emptyFranchiseShopOrderFlow(channel);
+    return this.appendFlowEvent(flow, {
+      at: new Date().toISOString(),
+      action: "registered",
+      fromStatus: "",
+      toStatus: status,
+      note
+    });
+  }
+
+  async placeOrder(session: FranchiseShopSessionPayload, input: CreateFranchiseShopOrderInput) {
+    const notes = cleanText(input?.notes, "", 1000);
+    const orderItems = await this.buildOrderItems(session.locationId, input?.items || []);
     const subtotalCents = orderItems.reduce((sum, item) => sum + item.lineTotalCents, 0);
     const orderNumber = await this.nextOrderNumber();
     const invoiceNumber = await this.nextInvoiceNumber();
+    const flow = this.initialFlow("portaal", "in_afwachting", notes || undefined);
 
     const record = await this.prisma.franchiseShopOrder.create({
       data: {
         orderNumber,
         invoiceNumber,
-        status: "nieuw",
+        status: "in_afwachting",
+        channel: "portaal",
+        flow: flow as unknown as Prisma.InputJsonValue,
         accountId: session.accountId,
         locationId: session.locationId,
         locationName: session.locationName,
@@ -395,6 +456,49 @@ export class FranchiseShopService {
     });
 
     return { order: this.toOrderDto(record), message: "Bestelling geplaatst." };
+  }
+
+  async createAdminOrder(input: AdminCreateFranchiseShopOrderInput) {
+    const account = await this.prisma.franchiseAccount.findUnique({
+      where: { id: cleanText(input?.accountId, "", 80) },
+      include: { location: true }
+    });
+    if (!account) throw new BadRequestException({ message: "Kies een franchise-account." });
+
+    const channel = asChannel(input?.channel);
+    const notes = cleanText(input?.notes, "", 1000);
+    const missingData = cleanText(input?.missingData, "", 2000);
+    const orderItems = await this.buildOrderItems(account.locationId, input?.items || [], { allowEmpty: true });
+    const incomplete = input?.incomplete === true || !orderItems.length;
+    const status: FranchiseShopOrderStatus = incomplete ? "registratie_onvolledig" : "in_afwachting";
+    const flow = this.initialFlow(channel, status, missingData || notes || undefined);
+    flow.missingData = missingData;
+    const subtotalCents = orderItems.reduce((sum, item) => sum + item.lineTotalCents, 0);
+    const orderNumber = await this.nextOrderNumber();
+    const invoiceNumber = orderItems.length ? await this.nextInvoiceNumber() : "";
+
+    const record = await this.prisma.franchiseShopOrder.create({
+      data: {
+        orderNumber,
+        invoiceNumber,
+        status,
+        channel,
+        flow: flow as unknown as Prisma.InputJsonValue,
+        accountId: account.id,
+        locationId: account.locationId,
+        locationName: account.location.name,
+        locationCode: account.location.code,
+        notes,
+        subtotalCents,
+        items: { create: orderItems }
+      },
+      include: { account: true, items: true }
+    });
+
+    return {
+      order: this.toOrderDto(record),
+      message: incomplete ? "Bestelling geregistreerd als onvolledig." : "Bestelling geregistreerd."
+    };
   }
 
   async listOrders() {
@@ -417,19 +521,184 @@ export class FranchiseShopService {
   }
 
   async updateOrder(id: string, input: UpdateFranchiseShopOrderInput) {
-    const existing = await this.prisma.franchiseShopOrder.findUnique({ where: { id } });
+    const existing = await this.prisma.franchiseShopOrder.findUnique({
+      where: { id },
+      include: { account: true, items: true }
+    });
     if (!existing) throw new NotFoundException({ message: "Bestelling niet gevonden." });
 
-    const status = cleanText(input?.status, "", 40);
+    const current = this.toOrderDto(existing);
+    const nextStatus = FRANCHISE_SHOP_ORDER_STATUSES.includes(cleanText(input?.status, "", 40) as FranchiseShopOrderStatus)
+      ? (cleanText(input.status, "", 40) as FranchiseShopOrderStatus)
+      : current.status;
+    const flow =
+      nextStatus !== current.status
+        ? this.appendFlowEvent(current.flow, {
+            at: new Date().toISOString(),
+            action: "registered",
+            fromStatus: current.status,
+            toStatus: nextStatus,
+            note: "Handmatige status"
+          })
+        : current.flow;
+
+    const nextItems = Array.isArray(input.items)
+      ? await this.buildOrderItems(existing.locationId, input.items, { allowEmpty: true })
+      : null;
+
     const record = await this.prisma.franchiseShopOrder.update({
       where: { id },
       data: {
-        status: FRANCHISE_SHOP_ORDER_STATUSES.includes(status as FranchiseShopOrderStatus) ? status : undefined,
-        adminNotes: input.adminNotes === undefined ? undefined : cleanText(input.adminNotes, "", 2000)
+        status: nextStatus,
+        adminNotes: input.adminNotes === undefined ? undefined : cleanText(input.adminNotes, "", 2000),
+        flow: flow as unknown as Prisma.InputJsonValue,
+        ...(nextItems
+          ? {
+              subtotalCents: nextItems.reduce((sum, item) => sum + item.lineTotalCents, 0),
+              items: { deleteMany: {}, create: nextItems }
+            }
+          : {})
       },
       include: { account: true, items: true }
     });
     return { order: this.toOrderDto(record) };
+  }
+
+  async applyOrderAction(id: string, input: ApplyFranchiseShopOrderActionInput) {
+    const existing = await this.prisma.franchiseShopOrder.findUnique({
+      where: { id },
+      include: { account: true, items: true }
+    });
+    if (!existing) throw new NotFoundException({ message: "Bestelling niet gevonden." });
+
+    const current = this.toOrderDto(existing);
+    const action = cleanText(input?.action, "", 40) as FranchiseShopOrderAction;
+    const def = franchiseShopOrderActionDef(current.status, action);
+    if (!def) {
+      throw new BadRequestException({
+        message: `Deze stap hoort niet bij status ${FRANCHISE_SHOP_ORDER_STATUS_LABELS[current.status]}.`
+      });
+    }
+
+    const note = cleanText(input?.note, "", 2000);
+    if (def.noteRequired && !note) {
+      throw new BadRequestException({ message: `${def.noteLabel || "Toelichting"} is verplicht.` });
+    }
+
+    const flow = { ...current.flow };
+    if (action === "request_missing_data" || action === "mark_incomplete") {
+      flow.missingData = note || flow.missingData;
+    }
+    if (action === "require_action" || action === "resolve_action") {
+      flow.kitchenNote = note || flow.kitchenNote;
+    }
+    if (action === "report_deviation") {
+      const kind = cleanText(input?.deviationKind, "", 20);
+      if (kind !== "tekort" && kind !== "schade" && kind !== "fout") {
+        throw new BadRequestException({ message: "Kies tekort, schade of fout." });
+      }
+      flow.deviationKind = kind;
+      flow.deviationNote = note;
+      flow.receivedComplete = false;
+    }
+    if (action === "plan_nalevering") {
+      flow.naleveringNote = note;
+    }
+    if (action === "confirm_complete_receipt") {
+      flow.receivedComplete = true;
+    }
+    if (action === "accept_with_deviation") {
+      flow.receivedComplete = false;
+    }
+    if (action === "update_stock") {
+      flow.stockUpdatedAt = new Date().toISOString();
+    }
+    if (action === "complete_registration") {
+      if (!current.items.length) {
+        throw new BadRequestException({ message: "Voeg eerst producten toe voordat de registratie compleet is." });
+      }
+      flow.missingData = "";
+    }
+
+    const shouldNotify = def.notify && input?.notify !== false;
+    let notified: boolean | undefined;
+    if (shouldNotify) {
+      notified = await this.notifyOrderAction(current, def.id, note);
+    }
+
+    const nextFlow = this.appendFlowEvent(flow, {
+      at: new Date().toISOString(),
+      action: def.id,
+      fromStatus: current.status,
+      toStatus: def.toStatus,
+      note: note || undefined,
+      notified
+    });
+
+    const record = await this.prisma.franchiseShopOrder.update({
+      where: { id },
+      data: {
+        status: def.toStatus,
+        channel: current.channel,
+        flow: nextFlow as unknown as Prisma.InputJsonValue,
+        adminNotes: note && def.tone === "danger" ? [current.adminNotes, note].filter(Boolean).join("\n") : undefined
+      },
+      include: { account: true, items: true }
+    });
+
+    const order = this.toOrderDto(record);
+    return {
+      order,
+      mailSent: notified,
+      message:
+        notified === false
+          ? `${def.label}. Mail naar de vestiging is niet verstuurd.`
+          : def.label
+    };
+  }
+
+  private async notifyOrderAction(
+    order: FranchiseShopOrder,
+    action: FranchiseShopOrderAction,
+    note: string
+  ): Promise<boolean> {
+    const to = order.accountEmail;
+    if (!to) return false;
+    const channel = FRANCHISE_SHOP_ORDER_CHANNEL_LABELS[order.channel];
+    const subjects: Partial<Record<FranchiseShopOrderAction, string>> = {
+      request_missing_data: `Ontbrekende gegevens voor ${order.orderNumber}`,
+      require_action: `Actie vereist voor ${order.orderNumber}`,
+      mark_shipped: `${order.orderNumber} is onderweg`,
+      confirm_order: `${order.orderNumber} is bevestigd`
+    };
+    const bodies: Partial<Record<FranchiseShopOrderAction, string>> = {
+      request_missing_data: [
+        `Voor bestelling ${order.orderNumber} (${channel}) ontbreken nog gegevens.`,
+        note ? `Wat we nodig hebben:\n${note}` : "",
+        "Reageer op deze mail of stuur de gegevens via WhatsApp."
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+      require_action: [
+        `De productiekeuken heeft een actie nodig voor ${order.orderNumber}.`,
+        note ? note : "Neem contact op over een wijziging, tekort of alternatief."
+      ].join("\n\n"),
+      mark_shipped: `Bestelling ${order.orderNumber} is onderweg naar ${order.locationCode} ${order.locationName}. Controleer de levering bij ontvangst.`,
+      confirm_order: `Bestelling ${order.orderNumber} is bevestigd door de productiekeuken.`
+    };
+    const subject = subjects[action];
+    const body = bodies[action];
+    if (!subject || !body) return false;
+    try {
+      return await this.mail.sendNotificationEmail({
+        to,
+        subject,
+        body,
+        category: "franchise"
+      });
+    } catch {
+      return false;
+    }
   }
 
   async getOrderDocument(id: string, kind: PdfDocKind) {
@@ -449,7 +718,7 @@ export class FranchiseShopService {
     }
 
     const order = this.toOrderDto({ ...record, invoiceNumber });
-    const statusLabel = order.status;
+    const statusLabel = FRANCHISE_SHOP_ORDER_STATUS_LABELS[order.status];
     const buffer = await buildOrderPdf({
       kind,
       channel: "franchise",

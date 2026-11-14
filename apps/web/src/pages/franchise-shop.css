@@ -481,12 +481,28 @@
 }
 
 .fs-order-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #fff4d4;
-  border: 1px solid #efd596;
+  background: #fff;
+  border: 1px solid #eadfd4;
   font-size: 12px;
   font-weight: 700;
+}
+
+.fs-order-status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+}
+
+.fs-order-next {
+  margin: 0 0 8px;
+  color: #6b5348;
+  font-size: 13px;
 }
 
 .fs-order-card ul {

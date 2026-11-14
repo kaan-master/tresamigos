@@ -25,7 +25,7 @@ const TITLES: Record<FranchiseView, { title: string; subtitle: string }> = {
   aanvragen: { title: "Aanvragen", subtitle: "Inkomende franchise-aanvragen van de website" },
   producten: { title: "Producten", subtitle: "Catalogus en prijzen per vestiging voor franchisehouders" },
   accounts: { title: "Accounts", subtitle: "Inlogaccounts voor de franchise shop (/franchise/login)" },
-  bestellingen: { title: "Bestellingen", subtitle: "Orders beheren volgens de werkwijze, inclusief factuur en pakbon" }
+  bestellingen: { title: "Bestellingen", subtitle: "Van registratie tot ontvangst, met de beslissingen uit de werkwijze" }
 };
 
 const SHOP_VIEW: Record<Exclude<FranchiseView, "aanvragen">, FranchiseShopView> = {

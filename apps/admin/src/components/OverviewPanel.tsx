@@ -109,7 +109,11 @@ export function OverviewPanel() {
         </article>
       </div>
 
-      <VisitorCalendar dailyLog={stats?.dailyLog ?? []} viewsToday={stats?.viewsToday ?? 0} />
+      <VisitorCalendar
+        dailyLog={stats?.dailyLog ?? []}
+        viewsToday={stats?.viewsToday ?? 0}
+        hourlyBusyAverage={stats?.hourlyBusyAverage ?? []}
+      />
 
       <section className="ta-analytics-charts">
         <article className="ta-chart-card">

@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 interface Props {
   value: string;
   onChange: (value: string) => void;
@@ -44,12 +46,13 @@ interface ListRowProps {
   meta?: string;
   badge?: string;
   badgeClassName?: string;
+  badgeNode?: ReactNode;
   thumb?: string;
   active?: boolean;
   onClick: () => void;
 }
 
-export function AdminListRow({ title, meta, badge, badgeClassName, thumb, active, onClick }: ListRowProps) {
+export function AdminListRow({ title, meta, badge, badgeClassName, badgeNode, thumb, active, onClick }: ListRowProps) {
   return (
     <button type="button" className={`ta-list-row${active ? " is-active" : ""}`} onClick={onClick}>
       {thumb ? (
@@ -61,7 +64,11 @@ export function AdminListRow({ title, meta, badge, badgeClassName, thumb, active
         <strong>{title}</strong>
         {meta ? <small>{meta}</small> : null}
       </span>
-      {badge ? <span className={`ta-status${badgeClassName ? ` ${badgeClassName}` : ""}`}>{badge}</span> : null}
+      {badgeNode ? (
+        <span className="ta-list-row-badge">{badgeNode}</span>
+      ) : badge ? (
+        <span className={`ta-status${badgeClassName ? ` ${badgeClassName}` : ""}`}>{badge}</span>
+      ) : null}
     </button>
   );
 }

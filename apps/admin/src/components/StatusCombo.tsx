@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ApplicationStatus } from "@tresamigos/types";
 import { APPLICATION_STATUSES, APPLICATION_STATUS_LABELS } from "@tresamigos/types";
@@ -30,15 +30,24 @@ export function StatusDot({ color, label }: { color: string; label?: string }) {
   );
 }
 
-export function StatusChip({ status }: { status: string }) {
-  const label =
-    (APPLICATION_STATUSES as readonly string[]).includes(status)
+export function StatusChip({
+  status,
+  label,
+  color
+}: {
+  status: string;
+  label?: string;
+  color?: string;
+}) {
+  const resolvedLabel =
+    label ||
+    ((APPLICATION_STATUSES as readonly string[]).includes(status)
       ? APPLICATION_STATUS_LABELS[status as ApplicationStatus]
-      : status;
+      : status);
   return (
     <span className="status-chip">
-      <StatusDot color={applicationStatusColor(status)} label={label} />
-      {label}
+      <StatusDot color={color || applicationStatusColor(status)} label={resolvedLabel} />
+      {resolvedLabel}
     </span>
   );
 }
@@ -91,6 +100,7 @@ export function StatusCombo({
   const box = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLUListElement>(null);
+  const listId = useId();
 
   const selected = options.find((item) => item.value === value) || null;
   const needle = query.trim().toLowerCase();
@@ -154,7 +164,7 @@ export function StatusCombo({
         role="combobox"
         aria-expanded={open}
         aria-autocomplete="list"
-        aria-controls="status-combo-list"
+        aria-controls={listId}
         disabled={disabled}
         placeholder={open ? placeholder : emptyLabel || placeholder}
         value={open ? query : selected?.label || emptyLabel || ""}
@@ -203,7 +213,7 @@ export function StatusCombo({
         ? createPortal(
             <ul
               ref={list}
-              id="status-combo-list"
+              id={listId}
               className="status-combo-list"
               role="listbox"
               style={{

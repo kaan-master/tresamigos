@@ -1,7 +1,7 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
 /** Gelijk houden aan `apps/admin/package.json` → version. */
-export const ADMIN_APP_VERSION = "0.3.11";
+export const ADMIN_APP_VERSION = "0.3.14";
 
 export type ChangelogEntry = {
   version: string;
@@ -12,9 +12,32 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.3.14",
+    date: "14 november 2026",
+    current: true,
+    changes: [
+      "Overzicht: bezoekerskalender als heatmap (donkerder bij meer bezoekers dan gebruikelijk).",
+      "Rechts onder Uniek: 24-uurs grafiek met piekuren van een gemiddelde drukke dag."
+    ]
+  },
+  {
+    version: "0.3.13",
+    date: "14 november 2026",
+    changes: [
+      "Franchise-bestellingen volgen de werkwijze: registreren via WhatsApp/e-mail, ja/nee-stappen, afwijking/nalevering en afronden.",
+      "Ontbrekende gegevens en ‘onderweg’ kunnen naar de vestiging gemaild worden. Voorraad blijft bij Tellingen."
+    ]
+  },
+  {
+    version: "0.3.12",
+    date: "14 november 2026",
+    changes: [
+      "Franchise-bestellingen: statussen uit de werkwijze, elk met eigen kleur en bolletje zoals bij sollicitaties."
+    ]
+  },
+  {
     version: "0.3.11",
     date: "11 november 2026",
-    current: true,
     changes: [
       "Google-mail: verlopen koppeling vraagt om opnieuw inloggen; mail gaat via Gmail API in plaats van SMTP."
     ]

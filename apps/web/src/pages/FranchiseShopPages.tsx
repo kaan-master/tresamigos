@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import type { FranchiseShopCatalogProduct, FranchiseShopOrder, FranchiseShopSessionUser } from "@tresamigos/types";
+import type { FranchiseShopCatalogProduct, FranchiseShopOrder, FranchiseShopOrderStatus, FranchiseShopSessionUser } from "@tresamigos/types";
+import { FRANCHISE_SHOP_ORDER_STATUS_COLORS, FRANCHISE_SHOP_ORDER_STATUS_LABELS } from "@tresamigos/types";
 import { assetUrl } from "../lib/api";
 import { dismissSiteBoot } from "../lib/waitForPageImages";
 import {
@@ -18,13 +19,13 @@ import "./franchise-shop.css";
 
 type ShopTab = "catalog" | "orders" | "checkout";
 
-const STATUS_LABELS: Record<string, string> = {
-  nieuw: "Nieuw",
-  bevestigd: "Bevestigd",
-  verzonden: "Verzonden",
-  afgerond: "Afgerond",
-  geannuleerd: "Geannuleerd"
-};
+function orderStatusLabel(status: string) {
+  return FRANCHISE_SHOP_ORDER_STATUS_LABELS[status as FranchiseShopOrderStatus] || status;
+}
+
+function orderStatusColor(status: string) {
+  return FRANCHISE_SHOP_ORDER_STATUS_COLORS[status as FranchiseShopOrderStatus] || "#8a8886";
+}
 
 function productImage(path?: string) {
   if (!path) return "/assets/site/tres-amigos-logo-new.png";
@@ -415,8 +416,19 @@ export function FranchiseShopPage() {
                       <strong>{order.orderNumber}</strong>
                       <span>{new Date(order.createdAt).toLocaleString("nl-NL")}</span>
                     </div>
-                    <span className="fs-order-status">{STATUS_LABELS[order.status] || order.status}</span>
+                    <span className="fs-order-status">
+                      <span
+                        className="fs-order-status-dot"
+                        style={{
+                          background: orderStatusColor(order.status),
+                          boxShadow: `0 0 0 3px ${orderStatusColor(order.status)}29`
+                        }}
+                        aria-hidden="true"
+                      />
+                      {orderStatusLabel(order.status)}
+                    </span>
                   </header>
+                  {order.question ? <p className="fs-order-next">{order.question}</p> : null}
                   <ul>
                     {order.items.map((item) => (
                       <li key={item.id}>

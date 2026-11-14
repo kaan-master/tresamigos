@@ -1,5 +1,11 @@
 import { Injectable } from "@nestjs/common";
-import type { AnalyticsDailyEntry, AnalyticsPingInput, AnalyticsSnapshot, PublicAnalyticsStats } from "@tresamigos/types";
+import type {
+  AnalyticsDailyEntry,
+  AnalyticsHourlyEntry,
+  AnalyticsPingInput,
+  AnalyticsSnapshot,
+  PublicAnalyticsStats
+} from "@tresamigos/types";
 import { RedisService } from "../redis/redis.module";
 
 /** Geen ping meer binnen dit venster → niet meer "live". (site pingt elke 3s) */
@@ -14,6 +20,7 @@ export class AnalyticsService {
   private memoryUniqueToday = new Set<string>();
   private memoryUniqueWeek = new Map<string, Set<string>>();
   private memoryUniquePages = new Map<string, Set<string>>();
+  private memoryUniqueHours = new Map<string, Set<string>>();
   private memoryDayKey = "";
 
   constructor(private readonly redis: RedisService) {}
@@ -24,6 +31,19 @@ export class AnalyticsService {
 
   private todayKey() {
     return this.dateKey();
+  }
+
+  private hourInZone(date = new Date()) {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: TIMEZONE,
+      hour: "2-digit",
+      hourCycle: "h23"
+    }).formatToParts(date);
+    return Number(parts.find((part) => part.type === "hour")?.value || 0);
+  }
+
+  private hourSetKey(date: string, hour: number) {
+    return `analytics:unique:hour:${date}:${hour}`;
   }
 
   private shiftDateKey(base: string, offsetDays: number) {
@@ -96,13 +116,16 @@ export class AnalyticsService {
         const client = this.redis.client;
         const uniqueDayKey = `analytics:unique:${today}`;
         const uniquePageKey = `analytics:unique:page:${today}:${path}`;
+        const uniqueHourKey = this.hourSetKey(today, this.hourInZone());
 
         await client.zadd("analytics:live", now, sessionId);
         await client.zremrangebyscore("analytics:live", 0, now - LIVE_WINDOW_MS);
         await client.sadd(uniqueDayKey, visitorId);
         await client.sadd(uniquePageKey, visitorId);
+        await client.sadd(uniqueHourKey, visitorId);
         await client.expire(uniqueDayKey, KEY_TTL_SECONDS);
         await client.expire(uniquePageKey, KEY_TTL_SECONDS);
+        await client.expire(uniqueHourKey, KEY_TTL_SECONDS);
         return { ok: true };
       } catch {
         // Redis hiccup — val terug op geheugen
@@ -118,6 +141,9 @@ export class AnalyticsService {
     this.memoryLive.set(sessionId, now);
     this.pruneMemoryLive(now);
     this.memoryUniqueToday.add(visitorId);
+    const hourKey = `${today}:${this.hourInZone()}`;
+    if (!this.memoryUniqueHours.has(hourKey)) this.memoryUniqueHours.set(hourKey, new Set());
+    this.memoryUniqueHours.get(hourKey)?.add(visitorId);
 
     if (!this.memoryUniqueWeek.has(today)) {
       this.memoryUniqueWeek.set(today, new Set());
@@ -184,6 +210,43 @@ export class AnalyticsService {
       .filter((entry) => entry.visitors > 0);
   }
 
+  private busyDates(dailyLog: AnalyticsDailyEntry[]) {
+    const withVisitors = dailyLog.filter((entry) => entry.visitors > 0);
+    if (!withVisitors.length) return [];
+    const mean = withVisitors.reduce((sum, entry) => sum + entry.visitors, 0) / withVisitors.length;
+    const busy = withVisitors.filter((entry) => entry.visitors >= mean);
+    return (busy.length ? busy : withVisitors).map((entry) => entry.date);
+  }
+
+  private emptyHourly(): AnalyticsHourlyEntry[] {
+    return Array.from({ length: 24 }, (_, hour) => ({ hour, visitors: 0 }));
+  }
+
+  private async hourlyBusyAverageRedis(dailyLog: AnalyticsDailyEntry[]): Promise<AnalyticsHourlyEntry[]> {
+    const dates = this.busyDates(dailyLog);
+    if (!dates.length) return this.emptyHourly();
+    const client = this.redis.client;
+    return Promise.all(
+      Array.from({ length: 24 }, async (_, hour) => {
+        const counts = await Promise.all(
+          dates.map(async (date) => Number(await client.scard(this.hourSetKey(date, hour))) || 0)
+        );
+        const visitors = counts.reduce((sum, count) => sum + count, 0) / dates.length;
+        return { hour, visitors: Math.round(visitors * 10) / 10 };
+      })
+    );
+  }
+
+  private hourlyBusyAverageMemory(dailyLog: AnalyticsDailyEntry[]): AnalyticsHourlyEntry[] {
+    const dates = this.busyDates(dailyLog);
+    if (!dates.length) return this.emptyHourly();
+    return Array.from({ length: 24 }, (_, hour) => {
+      const visitors =
+        dates.reduce((sum, date) => sum + (this.memoryUniqueHours.get(`${date}:${hour}`)?.size || 0), 0) / dates.length;
+      return { hour, visitors: Math.round(visitors * 10) / 10 };
+    });
+  }
+
   async getPublicStats(): Promise<PublicAnalyticsStats> {
     const today = this.todayKey();
     const now = Date.now();
@@ -225,6 +288,7 @@ export class AnalyticsService {
         client.keys(`analytics:unique:page:${today}:*`),
         this.dailyLogRedis()
       ]);
+      const hourlyBusyAverage = await this.hourlyBusyAverageRedis(dailyLog);
 
       const pageCounts = await Promise.all(
         pageKeys.map(async (key) => {
@@ -240,10 +304,12 @@ export class AnalyticsService {
         viewsWeek,
         topPages: pageCounts.sort((left, right) => right.views - left.views).slice(0, 8),
         dailyLog,
+        hourlyBusyAverage,
         updatedAt: new Date().toISOString()
       };
     }
 
+    const dailyLog = this.dailyLogMemory();
     return {
       liveNow: await this.countLiveSessions(now),
       viewsToday: this.memoryUniqueToday.size,
@@ -252,7 +318,8 @@ export class AnalyticsService {
         .map(([path, visitors]) => ({ path, views: visitors.size }))
         .sort((left, right) => right.views - left.views)
         .slice(0, 8),
-      dailyLog: this.dailyLogMemory(),
+      dailyLog,
+      hourlyBusyAverage: this.hourlyBusyAverageMemory(dailyLog),
       updatedAt: new Date().toISOString()
     };
   }

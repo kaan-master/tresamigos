@@ -1,6 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Res, UnauthorizedException, UseGuards } from "@nestjs/common";
 import type { Response } from "express";
 import type {
+  AdminCreateFranchiseShopOrderInput,
+  ApplyFranchiseShopOrderActionInput,
   CreateFranchiseAccountInput,
   CreateFranchiseShopOrderInput,
   CreateFranchiseShopProductInput,
@@ -122,6 +124,18 @@ export class AdminFranchiseShopController {
   @RequirePermissions("franchiseShop")
   listOrders() {
     return this.shop.listOrders();
+  }
+
+  @Post("orders")
+  @RequirePermissions("franchiseShop")
+  createOrder(@Body() body: AdminCreateFranchiseShopOrderInput) {
+    return this.shop.createAdminOrder(body);
+  }
+
+  @Post("orders/:id/actions")
+  @RequirePermissions("franchiseShop")
+  applyOrderAction(@Param("id") id: string, @Body() body: ApplyFranchiseShopOrderActionInput) {
+    return this.shop.applyOrderAction(id, body);
   }
 
   @Patch("orders/:id")
