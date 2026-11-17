@@ -9,10 +9,12 @@ import type {
   PublicIntegrationsSettings,
   UpdateIntegrationGoogleAdsInput,
   UpdateIntegrationMailRelayInput,
+  UpdateIntegrationMollieInput,
   UpdateIntegrationNewsletterInput
 } from "@tresamigos/types";
 import { cleanText } from "@tresamigos/utils";
 import { MailService } from "../mail/mail.service";
+import { MollieService } from "../mollie/mollie.service";
 import { PrismaService } from "../prisma/prisma.module";
 
 const PRIMARY_ID = "primary";
@@ -29,7 +31,8 @@ const DEFAULT_NOTIFICATIONS: IntegrationMailNotifications = {
 export class IntegrationsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mailService: MailService
+    private readonly mailService: MailService,
+    private readonly mollieService: MollieService
   ) {}
 
   private async getOrCreate() {
@@ -142,7 +145,40 @@ export class IntegrationsService {
         showFooter: row.newsletterShowFooter,
         showHome: row.newsletterShowHome,
         showPages: row.newsletterShowPages
-      }
+      },
+      mollie: this.molliePublic(row)
+    };
+  }
+
+  private molliePublic(row: {
+    mollieEnabled: boolean;
+    mollieMode: string;
+    mollieLiveApiKey: string;
+    mollieTestApiKey: string;
+    mollieProfileId: string;
+    mollieLastTestAt: Date | null;
+    mollieLastStatus: string;
+    mollieLastMessage: string;
+  }) {
+    const mode = this.mollieService.normalizeMode(row.mollieMode);
+    const liveSet = Boolean(row.mollieLiveApiKey?.trim());
+    const testSet = Boolean(row.mollieTestApiKey?.trim());
+    const urls = this.mollieService.endpointUrls();
+    return {
+      enabled: row.mollieEnabled,
+      mode,
+      liveApiKeySet: liveSet,
+      liveApiKeyMasked: liveSet ? this.mollieService.maskKey(row.mollieLiveApiKey) : "",
+      testApiKeySet: testSet,
+      testApiKeyMasked: testSet ? this.mollieService.maskKey(row.mollieTestApiKey) : "",
+      activeKeySet: mode === "live" ? liveSet : testSet,
+      profileId: row.mollieProfileId || "",
+      lastTestAt: row.mollieLastTestAt?.toISOString() ?? null,
+      lastStatus: row.mollieLastStatus || "",
+      lastMessage: row.mollieLastMessage || "",
+      webhookUrl: urls.webhookUrl,
+      createPaymentUrl: urls.createPaymentUrl,
+      statusUrl: urls.statusUrl
     };
   }
 
@@ -300,6 +336,100 @@ export class IntegrationsService {
     });
 
     return this.getSettings();
+  }
+
+  async updateMollie(input: UpdateIntegrationMollieInput) {
+    const current = await this.getOrCreate();
+    const data: {
+      mollieEnabled?: boolean;
+      mollieMode?: string;
+      mollieLiveApiKey?: string;
+      mollieTestApiKey?: string;
+    } = {};
+
+    if (input.enabled !== undefined) data.mollieEnabled = Boolean(input.enabled);
+    if (input.mode !== undefined) data.mollieMode = this.mollieService.normalizeMode(input.mode);
+
+    if (input.clearLiveApiKey) data.mollieLiveApiKey = "";
+    else if (input.liveApiKey !== undefined) {
+      try {
+        const next = this.mollieService.validateKey(String(input.liveApiKey || ""), "live");
+        if (next) data.mollieLiveApiKey = next;
+      } catch (error) {
+        throw new BadRequestException({
+          message: error instanceof Error ? error.message : "Ongeldige live-sleutel."
+        });
+      }
+    }
+
+    if (input.clearTestApiKey) data.mollieTestApiKey = "";
+    else if (input.testApiKey !== undefined) {
+      try {
+        const next = this.mollieService.validateKey(String(input.testApiKey || ""), "test");
+        if (next) data.mollieTestApiKey = next;
+      } catch (error) {
+        throw new BadRequestException({
+          message: error instanceof Error ? error.message : "Ongeldige test-sleutel."
+        });
+      }
+    }
+
+    const mode = this.mollieService.normalizeMode(data.mollieMode ?? current.mollieMode);
+    const liveKey = data.mollieLiveApiKey !== undefined ? data.mollieLiveApiKey : current.mollieLiveApiKey;
+    const testKey = data.mollieTestApiKey !== undefined ? data.mollieTestApiKey : current.mollieTestApiKey;
+    const enabled = data.mollieEnabled !== undefined ? data.mollieEnabled : current.mollieEnabled;
+    if (enabled) {
+      const active = mode === "live" ? liveKey : testKey;
+      if (!String(active || "").trim()) {
+        throw new BadRequestException({
+          message:
+            mode === "live"
+              ? "Zet eerst een live-sleutel (live_...) voordat je Mollie live activeert."
+              : "Zet eerst een test-sleutel (test_...) voordat je Mollie in testmodus activeert."
+        });
+      }
+    }
+
+    await this.prisma.integrationSettings.update({
+      where: { id: PRIMARY_ID },
+      data
+    });
+
+    return this.getSettings();
+  }
+
+  async testMollie() {
+    const current = await this.getOrCreate();
+    const mode = this.mollieService.normalizeMode(current.mollieMode);
+    const key = mode === "live" ? current.mollieLiveApiKey : current.mollieTestApiKey;
+    if (!String(key || "").trim()) {
+      throw new BadRequestException({
+        message:
+          mode === "live"
+            ? "Geen live-sleutel opgeslagen. Vul live_... in en sla op."
+            : "Geen test-sleutel opgeslagen. Vul test_... in en sla op."
+      });
+    }
+
+    const result = await this.mollieService.ping(key.trim());
+    await this.prisma.integrationSettings.update({
+      where: { id: PRIMARY_ID },
+      data: {
+        mollieLastTestAt: new Date(),
+        mollieLastStatus: result.ok ? "success" : "error",
+        mollieLastMessage: result.message,
+        ...(result.ok && result.profileId ? { mollieProfileId: result.profileId } : {})
+      }
+    });
+
+    if (!result.ok) {
+      throw new BadRequestException({ message: result.message });
+    }
+
+    return {
+      message: result.message,
+      integrations: await this.getSettings()
+    };
   }
 
   async startGoogleOAuth(

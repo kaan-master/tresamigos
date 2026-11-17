@@ -2,11 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import type {
   IntegrationGoogleByCategory,
   IntegrationMailNotifications,
+  IntegrationMollieSettings,
   IntegrationSettingsPublic,
   MailNotifyCategory,
   MailRelayProvider,
+  MollieMode,
   UpdateIntegrationGoogleAdsInput,
   UpdateIntegrationMailRelayInput,
+  UpdateIntegrationMollieInput,
   UpdateIntegrationNewsletterInput
 } from "@tresamigos/types";
 import {
@@ -21,7 +24,7 @@ import { useAdminFeedback } from "../context/AdminFeedbackContext";
 import { api } from "../lib/api";
 import { EntraCommand, EntraCommands } from "./telling/entraUi";
 
-type IntegrationsView = "overview" | "mail" | "googleAds" | "newsletter" | "extra";
+type IntegrationsView = "overview" | "mail" | "googleAds" | "newsletter" | "mollie" | "extra";
 
 type MailForm = {
   enabled: boolean;
@@ -48,6 +51,13 @@ type NewsletterForm = {
   showFooter: boolean;
   showHome: boolean;
   showPages: boolean;
+};
+
+type MollieForm = {
+  enabled: boolean;
+  mode: MollieMode;
+  liveApiKey: string;
+  testApiKey: string;
 };
 
 const REQUEST_EMAIL = "info@tresamigos.nl";
@@ -81,9 +91,25 @@ const CATEGORY_META: Array<{
 ];
 
 const AVAILABLE_INTEGRATIONS = [
-  { id: "mollie", title: "Mollie", description: "Online betalingen via Mollie." },
   { id: "postnl", title: "PostNL tracking", description: "Track & trace voor verzendingen." }
 ] as const;
+
+const EMPTY_MOLLIE: IntegrationMollieSettings = {
+  enabled: false,
+  mode: "test",
+  liveApiKeySet: false,
+  liveApiKeyMasked: "",
+  testApiKeySet: false,
+  testApiKeyMasked: "",
+  activeKeySet: false,
+  profileId: "",
+  lastTestAt: null,
+  lastStatus: "",
+  lastMessage: "",
+  webhookUrl: "https://tresamigos.nl/api/payments/mollie/webhook",
+  createPaymentUrl: "https://tresamigos.nl/api/payments/mollie/create",
+  statusUrl: "https://tresamigos.nl/api/payments/mollie/status"
+};
 
 type AvailableIntegration = (typeof AVAILABLE_INTEGRATIONS)[number];
 
@@ -95,8 +121,18 @@ const TITLES: Record<IntegrationsView, { title: string; subtitle: string }> = {
   },
   googleAds: { title: "Google Ads", subtitle: "gtag.js conversietag op de website" },
   newsletter: { title: "Nieuwsbrief", subtitle: "Waar het aanmeldformulier zichtbaar is" },
+  mollie: { title: "Mollie", subtitle: "Test- en live-sleutel voor online betalingen" },
   extra: { title: "Op aanvraag", subtitle: "Extra koppelingen aanvragen" }
 };
+
+function toMollieForm(settings: IntegrationMollieSettings): MollieForm {
+  return {
+    enabled: settings.enabled,
+    mode: settings.mode === "live" ? "live" : "test",
+    liveApiKey: "",
+    testApiKey: ""
+  };
+}
 
 type SmtpPreset = "google" | "outlook" | "custom";
 
@@ -223,6 +259,7 @@ export function IntegrationsPanel({
       initialSubView === "mail" ||
       initialSubView === "googleAds" ||
       initialSubView === "newsletter" ||
+      initialSubView === "mollie" ||
       initialSubView === "extra"
     ) {
       return initialSubView;
@@ -233,8 +270,10 @@ export function IntegrationsPanel({
   const [mailForm, setMailForm] = useState<MailForm | null>(null);
   const [googleForm, setGoogleForm] = useState<GoogleAdsForm | null>(null);
   const [newsletterForm, setNewsletterForm] = useState<NewsletterForm | null>(null);
+  const [mollieForm, setMollieForm] = useState<MollieForm | null>(null);
   const [loading, setLoading] = useState(true);
-  const [savingKey, setSavingKey] = useState<"mail" | "google" | "newsletter" | null>(null);
+  const [savingKey, setSavingKey] = useState<"mail" | "google" | "newsletter" | "mollie" | null>(null);
+  const [testingMollie, setTestingMollie] = useState(false);
   const [testingTarget, setTestingTarget] = useState<MailNotifyCategory | "relay" | null>(null);
   const [testRecipient, setTestRecipient] = useState("");
   const [message, setMessage] = useState("");
@@ -358,9 +397,20 @@ export function IntegrationsPanel({
           .join(" · ") || "Uit"
       },
       {
+        id: "mollie" as const,
+        label: "Mollie",
+        hint: "Online betalingen · test & live",
+        active: settings.mollie.enabled,
+        detail: settings.mollie.enabled
+          ? `${settings.mollie.mode === "live" ? "Live" : "Test"}${settings.mollie.activeKeySet ? "" : " · sleutel ontbreekt"}`
+          : settings.mollie.testApiKeySet || settings.mollie.liveApiKeySet
+            ? "Uit · sleutels opgeslagen"
+            : "Niet geconfigureerd"
+      },
+      {
         id: "extra" as const,
         label: "Meer koppelingen",
-        hint: "Mollie, PostNL en andere",
+        hint: "PostNL en andere",
         active: false,
         detail: "Op aanvraag"
       }
@@ -377,6 +427,7 @@ export function IntegrationsPanel({
       showHome: next.newsletter.showHome,
       showPages: next.newsletter.showPages
     });
+    setMollieForm(toMollieForm(next.mollie || EMPTY_MOLLIE));
   }
 
   async function saveMailRelay() {
@@ -528,6 +579,55 @@ export function IntegrationsPanel({
       setError(saveError instanceof Error ? saveError.message : "Opslaan mislukt.");
     } finally {
       setSavingKey(null);
+    }
+  }
+
+  async function saveMollie() {
+    if (!mollieForm || savingKey) return;
+    setSavingKey("mollie");
+    setMessage("");
+    setError("");
+    const payload: UpdateIntegrationMollieInput = {
+      enabled: mollieForm.enabled,
+      mode: mollieForm.mode,
+      ...(mollieForm.liveApiKey.trim() ? { liveApiKey: mollieForm.liveApiKey.trim() } : {}),
+      ...(mollieForm.testApiKey.trim() ? { testApiKey: mollieForm.testApiKey.trim() } : {})
+    };
+    try {
+      await runSave(
+        async () => {
+          const result = await api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations/mollie", {
+            method: "PUT",
+            body: JSON.stringify(payload)
+          });
+          applySettings(result.integrations);
+        },
+        { successMessage: "Mollie-instellingen opgeslagen." }
+      );
+      setMessage("Mollie-instellingen opgeslagen.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Opslaan mislukt.");
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function testMollieConnection() {
+    if (testingMollie) return;
+    setTestingMollie(true);
+    setMessage("");
+    setError("");
+    try {
+      const result = await api<{ message: string; integrations: IntegrationSettingsPublic }>(
+        "/api/admin/integrations/mollie/test",
+        { method: "POST", body: JSON.stringify({}) }
+      );
+      applySettings(result.integrations);
+      setMessage(result.message);
+    } catch (testError) {
+      setError(testError instanceof Error ? testError.message : "Mollie-test mislukt.");
+    } finally {
+      setTestingMollie(false);
     }
   }
 
@@ -1230,6 +1330,121 @@ export function IntegrationsPanel({
               {savingKey === "newsletter" ? "Opslaan..." : "Opslaan"}
             </EntraCommand>
           </EntraCommands>
+        </div>
+      ) : null}
+
+      {view === "mollie" && mollieForm ? (
+        <div className="ta-integrations-mollie">
+          <label className="ta-check">
+            <input
+              type="checkbox"
+              checked={mollieForm.enabled}
+              onChange={(event) => setMollieForm((current) => (current ? { ...current, enabled: event.target.checked } : current))}
+            />
+            <span>Mollie actief</span>
+          </label>
+
+          <div className="ta-provider-field" style={{ marginTop: 12 }}>
+            <span className="ta-provider-label">Modus</span>
+            <div className="ta-provider-select">
+              <button
+                type="button"
+                className={`ta-provider-trigger${mollieForm.mode === "test" ? " is-active" : ""}`}
+                onClick={() => setMollieForm((current) => (current ? { ...current, mode: "test" } : current))}
+              >
+                <span>Test</span>
+              </button>
+              <button
+                type="button"
+                className={`ta-provider-trigger${mollieForm.mode === "live" ? " is-active" : ""}`}
+                onClick={() => setMollieForm((current) => (current ? { ...current, mode: "live" } : current))}
+                style={{ marginTop: 8 }}
+              >
+                <span>Live</span>
+              </button>
+            </div>
+            <p className="ta-seo-hint">
+              De gekozen modus bepaalt welke sleutel actief is. Test eerst met <code>test_...</code> voordat je live zet.
+            </p>
+          </div>
+
+          <div className="ta-grid" style={{ marginTop: 12 }}>
+            <label className="ta-field">
+              <span>
+                Test API-sleutel <code>(test_...)</code>
+              </span>
+              {settings?.mollie.testApiKeySet ? (
+                <p className="ta-seo-hint" style={{ margin: "0 0 6px" }}>
+                  Opgeslagen: {settings.mollie.testApiKeyMasked} — leeg laten = behouden
+                </p>
+              ) : null}
+              <input
+                type="password"
+                value={mollieForm.testApiKey}
+                onChange={(event) =>
+                  setMollieForm((current) => (current ? { ...current, testApiKey: event.target.value } : current))
+                }
+                placeholder="test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                autoComplete="off"
+              />
+            </label>
+            <label className="ta-field">
+              <span>
+                Live API-sleutel <code>(live_...)</code>
+              </span>
+              {settings?.mollie.liveApiKeySet ? (
+                <p className="ta-seo-hint" style={{ margin: "0 0 6px" }}>
+                  Opgeslagen: {settings.mollie.liveApiKeyMasked} — leeg laten = behouden
+                </p>
+              ) : null}
+              <input
+                type="password"
+                value={mollieForm.liveApiKey}
+                onChange={(event) =>
+                  setMollieForm((current) => (current ? { ...current, liveApiKey: event.target.value } : current))
+                }
+                placeholder="live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                autoComplete="off"
+              />
+            </label>
+          </div>
+
+          <p className="ta-seo-hint">
+            Sleutels komen van{" "}
+            <a href="https://dashboard.mollie.com/developers/api-keys" target="_blank" rel="noreferrer">
+              dashboard.mollie.com → Developers → API-sleutels
+            </a>
+            .
+          </p>
+
+          <EntraCommands>
+            <EntraCommand active disabled={savingKey === "mollie"} onClick={() => void saveMollie()}>
+              {savingKey === "mollie" ? "Opslaan..." : "Opslaan"}
+            </EntraCommand>
+            <EntraCommand disabled={testingMollie || savingKey === "mollie"} onClick={() => void testMollieConnection()}>
+              {testingMollie ? "Testen..." : "Verbinding testen"}
+            </EntraCommand>
+          </EntraCommands>
+
+          <div className="ta-integration-monitor" style={{ marginTop: 16 }}>
+            <strong>Status</strong>
+            <p className="ta-seo-hint" style={{ margin: "6px 0 0" }}>
+              Actieve modus: <strong>{(settings?.mollie.mode || mollieForm.mode) === "live" ? "Live" : "Test"}</strong>
+              {settings?.mollie.profileId ? ` · profiel ${settings.mollie.profileId}` : ""}
+            </p>
+            {settings?.mollie.lastMessage ? <span>{settings.mollie.lastMessage}</span> : null}
+            <div className="ta-stack" style={{ marginTop: 10, gap: 6 }}>
+              <small>
+                Webhook: <code>{settings?.mollie.webhookUrl || EMPTY_MOLLIE.webhookUrl}</code>
+              </small>
+              <small>
+                Create: <code>{settings?.mollie.createPaymentUrl || EMPTY_MOLLIE.createPaymentUrl}</code>
+              </small>
+              <small>
+                Status: <code>{settings?.mollie.statusUrl || EMPTY_MOLLIE.statusUrl}</code>
+              </small>
+            </div>
+          </div>
         </div>
       ) : null}
 

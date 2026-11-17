@@ -5,6 +5,7 @@ import type {
   IntegrationTestMailInput,
   UpdateIntegrationGoogleAdsInput,
   UpdateIntegrationMailRelayInput,
+  UpdateIntegrationMollieInput,
   UpdateIntegrationNewsletterInput
 } from "@tresamigos/types";
 import { AdminGuard } from "../auth/admin.guard";
@@ -48,6 +49,18 @@ export class AdminIntegrationsController {
   @RequirePermissions("integrations")
   updateNewsletter(@Body() body: UpdateIntegrationNewsletterInput) {
     return this.integrationsService.updateNewsletter(body).then((integrations) => ({ integrations }));
+  }
+
+  @Put("integrations/mollie")
+  @RequirePermissions("integrations")
+  updateMollie(@Body() body: UpdateIntegrationMollieInput) {
+    return this.integrationsService.updateMollie(body).then((integrations) => ({ integrations }));
+  }
+
+  @Post("integrations/mollie/test")
+  @RequirePermissions("integrations")
+  testMollie() {
+    return this.integrationsService.testMollie();
   }
 
   @Post("integrations/mailrelay/test")

@@ -807,10 +807,30 @@ export interface IntegrationNewsletterSettings {
   showPages: boolean;
 }
 
+export type MollieMode = "test" | "live";
+
+export interface IntegrationMollieSettings {
+  enabled: boolean;
+  mode: MollieMode;
+  liveApiKeySet: boolean;
+  liveApiKeyMasked: string;
+  testApiKeySet: boolean;
+  testApiKeyMasked: string;
+  activeKeySet: boolean;
+  profileId: string;
+  lastTestAt: string | null;
+  lastStatus: string;
+  lastMessage: string;
+  webhookUrl: string;
+  createPaymentUrl: string;
+  statusUrl: string;
+}
+
 export interface IntegrationSettingsPublic {
   mailRelay: IntegrationMailRelaySettings;
   googleAds: IntegrationGoogleAdsSettings;
   newsletter: IntegrationNewsletterSettings;
+  mollie: IntegrationMollieSettings;
 }
 
 /** Publieke subset voor de website (geen SMTP-secrets). */
@@ -852,6 +872,15 @@ export interface UpdateIntegrationNewsletterInput {
   showFooter?: boolean;
   showHome?: boolean;
   showPages?: boolean;
+}
+
+export interface UpdateIntegrationMollieInput {
+  enabled?: boolean;
+  mode?: MollieMode;
+  liveApiKey?: string;
+  testApiKey?: string;
+  clearLiveApiKey?: boolean;
+  clearTestApiKey?: boolean;
 }
 
 export type MailGoogleOAuthPurpose = "inbox" | "outbox";

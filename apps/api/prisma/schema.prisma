@@ -117,6 +117,14 @@ model IntegrationSettings {
   newsletterShowFooter   Boolean   @default(true)
   newsletterShowHome     Boolean   @default(true)
   newsletterShowPages    Boolean   @default(true)
+  mollieEnabled          Boolean   @default(false)
+  mollieMode             String    @default("test")
+  mollieLiveApiKey       String    @default("")
+  mollieTestApiKey       String    @default("")
+  mollieProfileId        String    @default("")
+  mollieLastTestAt       DateTime?
+  mollieLastStatus       String    @default("")
+  mollieLastMessage      String    @default("")
   updatedAt              DateTime  @updatedAt
 }
 
