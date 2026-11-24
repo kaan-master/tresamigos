@@ -1,7 +1,7 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
 /** Gelijk houden aan `apps/admin/package.json` → version. */
-export const ADMIN_APP_VERSION = "0.3.22";
+export const ADMIN_APP_VERSION = "0.3.23";
 
 export type ChangelogEntry = {
   version: string;
@@ -12,9 +12,16 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
-    version: "0.3.22",
+    version: "0.3.23",
     date: "24 november 2026",
     current: true,
+    changes: [
+      "Alle uitgaande mails in Tres Amigos-huisstijl met logo (HTML), inclusief franchise-/statusmails en testmails."
+    ]
+  },
+  {
+    version: "0.3.22",
+    date: "24 november 2026",
     changes: [
       "Franchise-werkwijze: klik op een andere status in het hoofdproces → popup met verplichte reden (bijv. menselijke fout)."
     ]

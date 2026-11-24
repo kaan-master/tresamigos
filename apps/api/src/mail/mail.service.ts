@@ -5,6 +5,7 @@ import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import type { MailNotifyCategory } from "@tresamigos/types";
 import { PrismaService } from "../prisma/prisma.module";
 import { RedisService } from "../redis/redis.module";
+import { buildBrandedEmailHtml } from "./mail-layout";
 
 interface PromoMailInput {
   to: string;
@@ -530,20 +531,39 @@ export class MailService {
       replyTo?: string;
       subject: string;
       text: string;
+      html?: string;
     }
   ) {
     const fromAddress = input.fromEmail || config.fromEmail;
     const fromName = input.fromName || config.fromName;
+    const html =
+      input.html ||
+      buildBrandedEmailHtml({
+        subject: input.subject,
+        text: input.text
+      });
+    const boundary = `ta_${randomBytes(12).toString("hex")}`;
+    const textPart = Buffer.from(input.text, "utf8").toString("base64");
+    const htmlPart = Buffer.from(html, "utf8").toString("base64");
     const lines = [
       `From: ${rfc2047(fromName)} <${fromAddress}>`,
       `To: ${input.to}`,
       `Subject: ${rfc2047(input.subject)}`,
       `Reply-To: ${input.replyTo || fromAddress}`,
       "MIME-Version: 1.0",
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      "",
+      `--${boundary}`,
       "Content-Type: text/plain; charset=UTF-8",
       "Content-Transfer-Encoding: base64",
       "",
-      Buffer.from(input.text, "utf8").toString("base64")
+      textPart,
+      `--${boundary}`,
+      "Content-Type: text/html; charset=UTF-8",
+      "Content-Transfer-Encoding: base64",
+      "",
+      htmlPart,
+      `--${boundary}--`
     ];
     const raw = Buffer.from(lines.join("\r\n")).toString("base64url");
     const response = await fetchWithTimeout(GMAIL_SEND_URL, {
@@ -621,6 +641,7 @@ export class MailService {
     replyTo?: string;
     subject: string;
     text: string;
+    html?: string;
     category?: MailNotifyCategory;
   }) {
     const config = await this.resolveConfig(input.category);
@@ -628,9 +649,16 @@ export class MailService {
       this.logger.warn("SMTP/Gmail niet geconfigureerd — mail niet verstuurd.");
       return null;
     }
+    const html =
+      input.html ||
+      buildBrandedEmailHtml({
+        subject: input.subject,
+        text: input.text
+      });
+    const payload = { ...input, html };
     if (config.kind === "google") {
       return withDeadline(
-        this.sendViaGmailApi(config, input),
+        this.sendViaGmailApi(config, payload),
         20_000,
         "Gmail API reageerde niet op tijd."
       );
@@ -643,7 +671,8 @@ export class MailService {
         to: input.to,
         replyTo: input.replyTo || fromAddress,
         subject: input.subject,
-        text: input.text
+        text: input.text,
+        html
       }),
       20_000,
       "SMTP reageerde niet op tijd. Controleer host, poort en firewall."
