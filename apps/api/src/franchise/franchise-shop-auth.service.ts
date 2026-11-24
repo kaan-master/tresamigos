@@ -48,7 +48,9 @@ export class FranchiseShopAuthService {
       email: account.email,
       locationId: account.locationId,
       locationName: account.location.name,
-      locationCode: account.location.code
+      locationCode: account.location.code,
+      company: account.company || "",
+      allowInvoicePayment: account.allowInvoicePayment !== false
     };
     const token = createSessionToken();
     await this.redis.client.set(
@@ -97,7 +99,9 @@ export class FranchiseShopAuthService {
       email: account.email,
       locationId: account.locationId,
       locationName: account.location.name,
-      locationCode: account.location.code
+      locationCode: account.location.code,
+      company: account.company || "",
+      allowInvoicePayment: account.allowInvoicePayment !== false
     };
   }
 }

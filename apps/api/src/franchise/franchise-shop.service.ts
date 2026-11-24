@@ -5,6 +5,7 @@ import {
   FRANCHISE_SHOP_ORDER_CHANNEL_LABELS,
   FRANCHISE_SHOP_ORDER_STATUSES,
   FRANCHISE_SHOP_ORDER_STATUS_LABELS,
+  FRANCHISE_SHOP_PAYMENT_STATUS_LABELS,
   emptyFranchiseShopOrderFlow,
   franchiseShopOrderActionDef,
   franchiseShopOrderActions,
@@ -23,6 +24,8 @@ import {
   type FranchiseShopOrderChannel,
   type FranchiseShopOrderFlow,
   type FranchiseShopOrderStatus,
+  type FranchiseShopPaymentMethod,
+  type FranchiseShopPaymentStatus,
   type FranchiseShopProduct,
   type UpdateFranchiseAccountInput,
   type UpdateFranchiseShopOrderInput,
@@ -30,6 +33,7 @@ import {
 } from "@tresamigos/types";
 import { buildOrderPdf, pdfFilename, type PdfDocKind } from "../documents/order-pdf";
 import { MailService } from "../mail/mail.service";
+import { MollieService, MollieServiceError } from "../mollie/mollie.service";
 import { FranchiseShopAuthService, type FranchiseShopSessionPayload } from "./franchise-shop-auth.service";
 import { PrismaService } from "../prisma/prisma.module";
 
@@ -50,12 +54,30 @@ function asChannel(value: unknown): FranchiseShopOrderChannel {
     : "portaal";
 }
 
+function asPaymentMethod(value: unknown, allowInvoice: boolean): FranchiseShopPaymentMethod {
+  if (value === "ideal") return "ideal";
+  if (value === "invoice" && allowInvoice) return "invoice";
+  return allowInvoice ? "invoice" : "ideal";
+}
+
+function asPaymentStatus(value: unknown): FranchiseShopPaymentStatus {
+  const raw = String(value || "none");
+  if (raw in FRANCHISE_SHOP_PAYMENT_STATUS_LABELS) return raw as FranchiseShopPaymentStatus;
+  return "none";
+}
+
+function documentsReadyFor(paymentMethod: FranchiseShopPaymentMethod, paymentStatus: FranchiseShopPaymentStatus) {
+  if (paymentMethod === "invoice") return paymentStatus === "invoice" || paymentStatus === "paid";
+  return paymentStatus === "paid";
+}
+
 @Injectable()
 export class FranchiseShopService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auth: FranchiseShopAuthService,
-    private readonly mail: MailService
+    private readonly mail: MailService,
+    private readonly mollie: MollieService
   ) {}
 
   private toAccountDto(record: {
@@ -66,6 +88,7 @@ export class FranchiseShopService {
     company: string;
     vatId: string;
     kvk: string;
+    allowInvoicePayment?: boolean;
     active: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -81,6 +104,7 @@ export class FranchiseShopService {
       company: record.company || "",
       vatId: record.vatId || "",
       kvk: record.kvk || "",
+      allowInvoicePayment: record.allowInvoicePayment !== false,
       active: record.active,
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString()
@@ -129,6 +153,10 @@ export class FranchiseShopService {
     notes: string;
     adminNotes: string;
     subtotalCents: number;
+    paymentMethod?: string;
+    paymentStatus?: string;
+    molliePaymentId?: string;
+    paidAt?: Date | null;
     account: { name: string; email: string; company?: string; vatId?: string; kvk?: string };
     items: Array<{
       id: string;
@@ -144,6 +172,8 @@ export class FranchiseShopService {
     const channel = asChannel(record.channel);
     const flow = parseFranchiseShopOrderFlow(record.flow, channel);
     flow.channel = channel;
+    const paymentMethod = record.paymentMethod === "ideal" ? "ideal" : "invoice";
+    const paymentStatus = asPaymentStatus(record.paymentStatus);
     return {
       id: record.id,
       orderNumber: record.orderNumber,
@@ -164,6 +194,11 @@ export class FranchiseShopService {
       notes: record.notes,
       adminNotes: record.adminNotes,
       subtotalCents: record.subtotalCents,
+      paymentMethod,
+      paymentStatus,
+      molliePaymentId: record.molliePaymentId || "",
+      paidAt: record.paidAt?.toISOString() ?? null,
+      documentsReady: documentsReadyFor(paymentMethod, paymentStatus),
       items: [...record.items]
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((item) => ({
@@ -215,6 +250,7 @@ export class FranchiseShopService {
         company: cleanText(input?.company, "", 160),
         vatId: cleanText(input?.vatId, "", 40).toUpperCase(),
         kvk: cleanText(input?.kvk, "", 40),
+        allowInvoicePayment: input.allowInvoicePayment !== false,
         active: input.active !== false
       },
       include: { location: true }
@@ -234,6 +270,7 @@ export class FranchiseShopService {
       company?: string;
       vatId?: string;
       kvk?: string;
+      allowInvoicePayment?: boolean;
       active?: boolean;
     } = {};
 
@@ -255,6 +292,7 @@ export class FranchiseShopService {
     if (input.company !== undefined) data.company = cleanText(input.company, "", 160);
     if (input.vatId !== undefined) data.vatId = cleanText(input.vatId, "", 40).toUpperCase();
     if (input.kvk !== undefined) data.kvk = cleanText(input.kvk, "", 40);
+    if (input.allowInvoicePayment !== undefined) data.allowInvoicePayment = Boolean(input.allowInvoicePayment);
     if (input.active !== undefined) data.active = input.active;
 
     const record = await this.prisma.franchiseAccount.update({
@@ -430,18 +468,35 @@ export class FranchiseShopService {
   }
 
   async placeOrder(session: FranchiseShopSessionPayload, input: CreateFranchiseShopOrderInput) {
+    const account = await this.prisma.franchiseAccount.findUnique({ where: { id: session.accountId } });
+    if (!account || !account.active) throw new BadRequestException({ message: "Account niet actief." });
+
+    const allowInvoice = account.allowInvoicePayment !== false;
+    const paymentMethod = asPaymentMethod(input?.paymentMethod, allowInvoice);
+    if (paymentMethod === "invoice" && !allowInvoice) {
+      throw new BadRequestException({
+        message: "Dit account mag alleen met iDEAL betalen (factuur uitgeschakeld)."
+      });
+    }
+
     const notes = cleanText(input?.notes, "", 1000);
     const orderItems = await this.buildOrderItems(session.locationId, input?.items || []);
     const subtotalCents = orderItems.reduce((sum, item) => sum + item.lineTotalCents, 0);
     const orderNumber = await this.nextOrderNumber();
     const invoiceNumber = await this.nextInvoiceNumber();
-    const flow = this.initialFlow("portaal", "in_afwachting", notes || undefined);
+    const status: FranchiseShopOrderStatus = paymentMethod === "ideal" ? "in_afwachting" : "in_afwachting";
+    const paymentStatus: FranchiseShopPaymentStatus = paymentMethod === "ideal" ? "pending" : "invoice";
+    const flow = this.initialFlow(
+      "portaal",
+      status,
+      paymentMethod === "ideal" ? `iDEAL · ${notes || "wacht op betaling"}`.trim() : notes || undefined
+    );
 
     const record = await this.prisma.franchiseShopOrder.create({
       data: {
         orderNumber,
         invoiceNumber,
-        status: "in_afwachting",
+        status,
         channel: "portaal",
         flow: flow as unknown as Prisma.InputJsonValue,
         accountId: session.accountId,
@@ -450,12 +505,249 @@ export class FranchiseShopService {
         locationCode: session.locationCode,
         notes,
         subtotalCents,
+        paymentMethod,
+        paymentStatus,
         items: { create: orderItems }
       },
       include: { account: true, items: true }
     });
 
-    return { order: this.toOrderDto(record), message: "Bestelling geplaatst." };
+    if (paymentMethod === "invoice") {
+      return {
+        order: this.toOrderDto(record),
+        message: "Bestelling geplaatst op factuur. Factuur en pakbon staan klaar.",
+        checkoutUrl: null as string | null
+      };
+    }
+
+    try {
+      const payment = await this.createMollieCheckoutForOrder(record.id);
+      const refreshed = await this.prisma.franchiseShopOrder.findUnique({
+        where: { id: record.id },
+        include: { account: true, items: true }
+      });
+      return {
+        order: this.toOrderDto(refreshed || record),
+        message: "Bestelling aangemaakt. Rond iDEAL af bij Mollie.",
+        checkoutUrl: payment.checkoutUrl as string | null
+      };
+    } catch (error) {
+      await this.prisma.franchiseShopOrder.delete({ where: { id: record.id } }).catch(() => undefined);
+      if (error instanceof MollieServiceError) throw error;
+      throw new BadRequestException({
+        message: error instanceof Error ? error.message : "iDEAL-betaling starten mislukt."
+      });
+    }
+  }
+
+  private async createMollieCheckoutForOrder(orderId: string) {
+    const order = await this.prisma.franchiseShopOrder.findUnique({
+      where: { id: orderId },
+      include: { account: true }
+    });
+    if (!order) throw new NotFoundException({ message: "Bestelling niet gevonden." });
+
+    const { key } = await this.mollie.assertActiveApiKey();
+    const webhookUrl = this.mollie.resolveWebhookUrl();
+    if (!webhookUrl && process.env.NODE_ENV === "production") {
+      throw new MollieServiceError(
+        "De Mollie webhook-URL is niet publiek bereikbaar via HTTPS. Zet API_PUBLIC_URL.",
+        503
+      );
+    }
+
+    const payment = await this.mollie.createIdealPayment(key, {
+      amountCents: order.subtotalCents,
+      description: `Tres Amigos ${order.orderNumber} · ${order.locationCode} ${order.locationName}`.slice(0, 255),
+      redirectUrl: this.mollie.buildFranchiseRedirectUrl(order.id),
+      webhookUrl: webhookUrl || undefined,
+      customer: { email: order.account.email, name: order.account.name },
+      metadata: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        source: "franchise-shop",
+        amount: this.mollie.mollieAmountValue(order.subtotalCents)
+      }
+    });
+
+    await this.prisma.franchiseShopOrder.update({
+      where: { id: order.id },
+      data: {
+        molliePaymentId: payment.paymentId,
+        paymentMethod: "ideal",
+        paymentStatus: "pending"
+      }
+    });
+
+    return payment;
+  }
+
+  async startIdealPayment(session: FranchiseShopSessionPayload, orderId: string) {
+    const order = await this.prisma.franchiseShopOrder.findFirst({
+      where: { id: orderId, accountId: session.accountId },
+      include: { account: true, items: true }
+    });
+    if (!order) throw new NotFoundException({ message: "Bestelling niet gevonden." });
+    if (order.paymentStatus === "paid" || order.paymentStatus === "invoice") {
+      return { order: this.toOrderDto(order), checkoutUrl: null as string | null, message: "Al afgehandeld." };
+    }
+    const payment = await this.createMollieCheckoutForOrder(order.id);
+    const refreshed = await this.prisma.franchiseShopOrder.findUnique({
+      where: { id: order.id },
+      include: { account: true, items: true }
+    });
+    return {
+      order: this.toOrderDto(refreshed!),
+      checkoutUrl: payment.checkoutUrl,
+      message: "iDEAL-checkout gestart."
+    };
+  }
+
+  async settleMolliePayment(apiKey: string, paymentId: string) {
+    const payment = await this.mollie.getPayment(apiKey, paymentId);
+    const metadataOrderId = payment.metadata.orderId?.trim() || "";
+
+    let order = await this.prisma.franchiseShopOrder.findFirst({
+      where: { molliePaymentId: payment.paymentId },
+      include: { account: true, items: true }
+    });
+    if (!order && metadataOrderId) {
+      order = await this.prisma.franchiseShopOrder.findUnique({
+        where: { id: metadataOrderId },
+        include: { account: true, items: true }
+      });
+    }
+
+    if (!order) {
+      return { payment, order: null, settled: false, orderMissing: payment.status === "paid" };
+    }
+
+    if (payment.metadata.orderId && payment.metadata.orderId !== order.id) {
+      return { payment, order, settled: false, orderMissing: false };
+    }
+
+    if (payment.status !== "paid") {
+      if (
+        (payment.status === "failed" || payment.status === "canceled" || payment.status === "expired") &&
+        (order.paymentStatus === "pending" || order.paymentStatus === "open") &&
+        (!order.molliePaymentId || order.molliePaymentId === payment.paymentId)
+      ) {
+        const updated = await this.prisma.franchiseShopOrder.update({
+          where: { id: order.id },
+          data: {
+            paymentStatus: payment.status,
+            molliePaymentId: payment.paymentId
+          },
+          include: { account: true, items: true }
+        });
+        return { payment, order: updated, settled: false, orderMissing: false };
+      }
+
+      if (payment.status === "open" || payment.status === "pending") {
+        const updated = await this.prisma.franchiseShopOrder.update({
+          where: { id: order.id },
+          data: {
+            paymentStatus: payment.status,
+            molliePaymentId: payment.paymentId
+          },
+          include: { account: true, items: true }
+        });
+        return { payment, order: updated, settled: false, orderMissing: false };
+      }
+
+      return { payment, order, settled: false, orderMissing: false };
+    }
+
+    if (!this.mollie.amountsMatch(order.subtotalCents, payment.amount)) {
+      return { payment, order, settled: false, orderMissing: false };
+    }
+
+    if (order.paymentStatus === "paid") {
+      return { payment, order, settled: true, orderMissing: false };
+    }
+
+    let invoiceNumber = order.invoiceNumber;
+    if (!invoiceNumber) invoiceNumber = await this.nextInvoiceNumber();
+
+    const updated = await this.prisma.franchiseShopOrder.update({
+      where: { id: order.id },
+      data: {
+        paymentStatus: "paid",
+        molliePaymentId: payment.paymentId,
+        paidAt: new Date(),
+        invoiceNumber,
+        status: order.status === "registratie_onvolledig" ? "in_afwachting" : order.status
+      },
+      include: { account: true, items: true }
+    });
+
+    return { payment, order: updated, settled: true, orderMissing: false };
+  }
+
+  async getPaymentStatus(
+    session: FranchiseShopSessionPayload,
+    query: { orderId?: string; paymentId?: string }
+  ) {
+    const { key } = await this.mollie.assertActiveApiKey();
+    let order =
+      (query.orderId
+        ? await this.prisma.franchiseShopOrder.findFirst({
+            where: { id: query.orderId, accountId: session.accountId },
+            include: { account: true, items: true }
+          })
+        : null) ||
+      (query.paymentId
+        ? await this.prisma.franchiseShopOrder.findFirst({
+            where: { molliePaymentId: query.paymentId, accountId: session.accountId },
+            include: { account: true, items: true }
+          })
+        : null);
+
+    if (!order) throw new NotFoundException({ message: "Bestelling niet gevonden." });
+
+    const paymentId = query.paymentId || order.molliePaymentId;
+    if (!paymentId) {
+      return {
+        order: this.toOrderDto(order),
+        paymentId: "",
+        status: order.paymentStatus,
+        settled: order.paymentStatus === "paid" || order.paymentStatus === "invoice"
+      };
+    }
+
+    const result = await this.settleMolliePayment(key, paymentId);
+    const refreshed =
+      result.order && "account" in result.order
+        ? result.order
+        : await this.prisma.franchiseShopOrder.findUnique({
+            where: { id: order.id },
+            include: { account: true, items: true }
+          });
+
+    return {
+      order: this.toOrderDto(refreshed!),
+      paymentId: result.payment.paymentId,
+      status: result.payment.status,
+      settled: result.settled
+    };
+  }
+
+  async getOrderDocumentForAccount(accountId: string, orderId: string, kind: PdfDocKind) {
+    const record = await this.prisma.franchiseShopOrder.findFirst({
+      where: { id: orderId, accountId },
+      include: { account: true, items: true }
+    });
+    if (!record) throw new NotFoundException({ message: "Bestelling niet gevonden." });
+    const dto = this.toOrderDto(record);
+    if (!dto.documentsReady) {
+      throw new BadRequestException({
+        message:
+          kind === "invoice"
+            ? "Factuur is beschikbaar na betaling (iDEAL) of direct bij factuur-bestelling."
+            : "Pakbon is beschikbaar zodra de betaling/factuur rond is."
+      });
+    }
+    return this.getOrderDocument(orderId, kind);
   }
 
   async createAdminOrder(input: AdminCreateFranchiseShopOrderInput) {
@@ -490,6 +782,8 @@ export class FranchiseShopService {
         locationCode: account.location.code,
         notes,
         subtotalCents,
+        paymentMethod: "invoice",
+        paymentStatus: orderItems.length ? "invoice" : "none",
         items: { create: orderItems }
       },
       include: { account: true, items: true }
@@ -743,7 +1037,16 @@ export class FranchiseShopService {
         lineTotalCents: item.lineTotalCents
       })),
       subtotalCents: order.subtotalCents,
-      meta: [{ label: "Franchise", value: `${order.locationCode} ${order.locationName}`.trim() }]
+      meta: [
+        { label: "Franchise", value: `${order.locationCode} ${order.locationName}`.trim() },
+        {
+          label: "Betaling",
+          value:
+            order.paymentMethod === "ideal"
+              ? `iDEAL · ${FRANCHISE_SHOP_PAYMENT_STATUS_LABELS[order.paymentStatus]}`
+              : FRANCHISE_SHOP_PAYMENT_STATUS_LABELS[order.paymentStatus]
+        }
+      ]
     });
 
     return {

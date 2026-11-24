@@ -49,11 +49,20 @@ const ACCESS_GROUPS: Array<{ label: string; items: Array<{ id: AdminTabId; label
 
 const ACCESS_LABELS = new Map(ACCESS_GROUPS.flatMap((group) => group.items.map((item) => [item.id, item.label] as const)));
 
-/** franchiseShop is an alias of franchise (merged hub). */
+/** franchiseShop is an alias of franchise (merged hub) — UI toont één vinkje. */
 function normalizePermissions(permissions: AdminTabId[]): AdminTabId[] {
   const next = permissions.filter((tab) => tab !== "franchiseShop");
   if (permissions.includes("franchiseShop") && !next.includes("franchise")) {
     next.push("franchise");
+  }
+  return next;
+}
+
+/** Opslaan: franchise impliceert franchiseShop-API-rechten. */
+function permissionsForApi(permissions: AdminTabId[]): AdminTabId[] {
+  const next = normalizePermissions(permissions);
+  if (next.includes("franchise") && !next.includes("franchiseShop")) {
+    next.push("franchiseShop");
   }
   return next;
 }
@@ -227,7 +236,7 @@ export function UsersPanel() {
         async () => {
           await createAdminUser({
             ...form,
-            permissions: normalizePermissions(form.permissions)
+            permissions: permissionsForApi(form.permissions)
           });
           setForm(emptyForm);
           setBlade(null);
@@ -249,7 +258,7 @@ export function UsersPanel() {
         async () => {
           await updateAdminUser(userId, {
             name: editForm.name.trim(),
-            permissions: normalizePermissions(editForm.permissions),
+            permissions: permissionsForApi(editForm.permissions),
             avatarData: editForm.avatarData,
             ...(editForm.password ? { password: editForm.password } : {})
           });

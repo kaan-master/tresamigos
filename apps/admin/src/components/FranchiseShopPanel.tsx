@@ -68,6 +68,7 @@ export function FranchiseShopPanel({ content, view }: Props) {
     company: "",
     vatId: "",
     kvk: "",
+    allowInvoicePayment: true,
     active: true
   });
   const [orderStatus, setOrderStatus] = useState<FranchiseShopOrderStatus>("in_afwachting");
@@ -154,6 +155,7 @@ export function FranchiseShopPanel({ content, view }: Props) {
         company: "",
         vatId: "",
         kvk: "",
+        allowInvoicePayment: true,
         active: true
       });
       return;
@@ -166,6 +168,7 @@ export function FranchiseShopPanel({ content, view }: Props) {
       company: selectedAccount.company || "",
       vatId: selectedAccount.vatId || "",
       kvk: selectedAccount.kvk || "",
+      allowInvoicePayment: selectedAccount.allowInvoicePayment !== false,
       active: selectedAccount.active
     });
   }, [selectedAccount, locations]);
@@ -260,6 +263,7 @@ export function FranchiseShopPanel({ content, view }: Props) {
             company: accountForm.company,
             vatId: accountForm.vatId,
             kvk: accountForm.kvk,
+            allowInvoicePayment: accountForm.allowInvoicePayment,
             active: accountForm.active,
             ...(accountForm.password ? { password: accountForm.password } : {})
           })
@@ -499,7 +503,7 @@ export function FranchiseShopPanel({ content, view }: Props) {
                 <AdminListRow
                   key={item.id}
                   title={item.name}
-                  meta={`${item.email} · ${item.locationCode} ${item.locationName}${item.company ? ` · ${item.company}` : ""}`}
+                  meta={`${item.email} · ${item.locationCode} ${item.locationName}${item.company ? ` · ${item.company}` : ""} · ${item.allowInvoicePayment !== false ? "factuur+iDEAL" : "alleen iDEAL"}`}
                   badge={item.active ? "Actief" : "Uit"}
                   active={item.id === selectedAccountId}
                   onClick={() => setSelectedAccountId(item.id)}
@@ -564,6 +568,14 @@ export function FranchiseShopPanel({ content, view }: Props) {
                   />
                 </label>
               </div>
+              <label className="ta-toggle">
+                <input
+                  type="checkbox"
+                  checked={accountForm.allowInvoicePayment}
+                  onChange={(e) => setAccountForm((c) => ({ ...c, allowInvoicePayment: e.target.checked }))}
+                />
+                <span>Mag op factuur betalen (uit = alleen iDEAL)</span>
+              </label>
               <label className="ta-toggle">
                 <input type="checkbox" checked={accountForm.active} onChange={(e) => setAccountForm((c) => ({ ...c, active: e.target.checked }))} />
                 <span>Account actief</span>
@@ -782,11 +794,21 @@ export function FranchiseShopPanel({ content, view }: Props) {
                   <button className="ta-btn ta-btn-ghost" type="button" onClick={() => setShowProcess(true)}>
                     Werkwijze
                   </button>
-                  <button className="ta-btn ta-btn-ghost" type="button" onClick={() => void downloadInvoice(selectedOrder)}>
+                  <button
+                    className="ta-btn ta-btn-ghost"
+                    type="button"
+                    disabled={!selectedOrder.documentsReady && selectedOrder.paymentMethod === "ideal"}
+                    onClick={() => void downloadInvoice(selectedOrder)}
+                  >
                     <IconPdf width={16} height={16} />
                     Factuur PDF
                   </button>
-                  <button className="ta-btn ta-btn-ghost" type="button" onClick={() => void downloadPackingSlip(selectedOrder)}>
+                  <button
+                    className="ta-btn ta-btn-ghost"
+                    type="button"
+                    disabled={!selectedOrder.documentsReady && selectedOrder.paymentMethod === "ideal"}
+                    onClick={() => void downloadPackingSlip(selectedOrder)}
+                  >
                     <IconPdf width={16} height={16} />
                     Pakbon PDF
                   </button>
@@ -796,6 +818,13 @@ export function FranchiseShopPanel({ content, view }: Props) {
                 <label className="ta-field">
                   <span>Factuurnummer</span>
                   <input readOnly value={selectedOrder.invoiceNumber || "—"} />
+                </label>
+                <label className="ta-field">
+                  <span>Betaling</span>
+                  <input
+                    readOnly
+                    value={`${selectedOrder.paymentMethod === "ideal" ? "iDEAL" : "Factuur"} · ${selectedOrder.paymentStatus}${selectedOrder.paidAt ? ` · ${new Date(selectedOrder.paidAt).toLocaleString("nl-NL")}` : ""}`}
+                  />
                 </label>
                 <label className="ta-field">
                   <span>Franchise</span>

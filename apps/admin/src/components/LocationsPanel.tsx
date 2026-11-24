@@ -3,7 +3,7 @@ import { formatStoreCode, type Location, type SiteContent } from "@tresamigos/ty
 import { AdminListRow, AdminSearchBar } from "./AdminListUi";
 import { FormSaveBar } from "./FormSaveBar";
 import { useQuietSaveOptional } from "../context/QuietSaveContext";
-import { createSlugId } from "../lib/id";
+import { createUniqueSlugId } from "../lib/id";
 
 interface Props {
   content: SiteContent;
@@ -12,14 +12,23 @@ interface Props {
   saving?: boolean;
 }
 
-function emptyLocation(index: number): Location {
+function nextStoreCode(locations: Location[]): string {
+  const used = new Set(locations.map((item) => formatStoreCode(item.code, 0)));
+  for (let index = 1; index <= 999; index += 1) {
+    const code = String(index).padStart(3, "0");
+    if (!used.has(code)) return code;
+  }
+  return formatStoreCode("", locations.length);
+}
+
+function emptyLocation(locations: Location[]): Location {
   return {
-    id: createSlugId("nieuwe-vestiging", "loc"),
+    id: createUniqueSlugId("nieuwe-vestiging", "loc", locations.map((item) => item.id)),
     area: "Amsterdam",
     name: "Nieuwe vestiging",
     address: "",
     note: "Take away and delivery options",
-    code: formatStoreCode("", index),
+    code: nextStoreCode(locations),
     active: true,
     links: [{ label: "Take Away", url: "" }]
   };
@@ -63,7 +72,8 @@ export function LocationsPanel({ content, onChange, onSaveQuiet, saving = false 
   }
 
   function addLocation() {
-    const nextLoc = emptyLocation(content.locations.length);
+    if (saving) return;
+    const nextLoc = emptyLocation(content.locations);
     const next = setLocations([...content.locations, nextLoc]);
     setSelectedId(nextLoc.id);
     void persistNow(next);

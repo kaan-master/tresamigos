@@ -3,6 +3,8 @@ import type {
   FranchiseShopCatalogProduct,
   FranchiseShopLoginResponse,
   FranchiseShopOrder,
+  FranchiseShopPaymentMethod,
+  FranchiseShopPaymentStatus,
   FranchiseShopSessionUser
 } from "@tresamigos/types";
 
@@ -65,13 +67,50 @@ export function fetchFranchiseCatalog() {
   return franchiseApi<{ products: FranchiseShopCatalogProduct[] }>("/api/franchise/shop/catalog");
 }
 
-export function placeFranchiseOrder(items: Array<{ productId: string; quantity: number }>, notes?: string) {
-  return franchiseApi<{ order: FranchiseShopOrder; message: string }>("/api/franchise/shop/orders", {
-    method: "POST",
-    body: JSON.stringify({ items, notes })
-  });
+export function placeFranchiseOrder(
+  items: Array<{ productId: string; quantity: number }>,
+  notes?: string,
+  paymentMethod?: FranchiseShopPaymentMethod
+) {
+  return franchiseApi<{ order: FranchiseShopOrder; message: string; checkoutUrl?: string | null }>(
+    "/api/franchise/shop/orders",
+    {
+      method: "POST",
+      body: JSON.stringify({ items, notes, paymentMethod })
+    }
+  );
 }
 
 export function fetchFranchiseOrders() {
   return franchiseApi<{ orders: FranchiseShopOrder[] }>("/api/franchise/shop/orders");
+}
+
+export function fetchFranchisePaymentStatus(params: { orderId?: string; paymentId?: string }) {
+  const query = new URLSearchParams();
+  if (params.orderId) query.set("orderId", params.orderId);
+  if (params.paymentId) query.set("paymentId", params.paymentId);
+  return franchiseApi<{
+    order: FranchiseShopOrder;
+    paymentId: string;
+    status: FranchiseShopPaymentStatus | string;
+    settled: boolean;
+  }>(`/api/payments/mollie/status?${query.toString()}`);
+}
+
+export async function downloadFranchisePdf(path: string, filename: string) {
+  const token = getFranchiseToken();
+  const response = await fetch(apiUrl(path), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => ({}))) as { message?: string };
+    throw new Error(data.message || "Download mislukt.");
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }

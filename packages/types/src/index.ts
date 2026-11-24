@@ -1748,6 +1748,8 @@ export interface FranchiseAccount {
   company: string;
   vatId: string;
   kvk: string;
+  /** Mag op factuur bestellen. false = alleen iDEAL. */
+  allowInvoicePayment: boolean;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -1761,6 +1763,7 @@ export interface CreateFranchiseAccountInput {
   company?: string;
   vatId?: string;
   kvk?: string;
+  allowInvoicePayment?: boolean;
   active?: boolean;
 }
 
@@ -1772,6 +1775,7 @@ export interface UpdateFranchiseAccountInput {
   company?: string;
   vatId?: string;
   kvk?: string;
+  allowInvoicePayment?: boolean;
   active?: boolean;
 }
 
@@ -1817,6 +1821,29 @@ export interface FranchiseShopOrderItem {
   lineTotalCents: number;
 }
 
+export type FranchiseShopPaymentMethod = "invoice" | "ideal";
+
+export type FranchiseShopPaymentStatus =
+  | "none"
+  | "invoice"
+  | "pending"
+  | "open"
+  | "paid"
+  | "failed"
+  | "canceled"
+  | "expired";
+
+export const FRANCHISE_SHOP_PAYMENT_STATUS_LABELS: Record<FranchiseShopPaymentStatus, string> = {
+  none: "Geen",
+  invoice: "Op factuur",
+  pending: "Wacht op betaling",
+  open: "Open (bank)",
+  paid: "Betaald",
+  failed: "Mislukt",
+  canceled: "Geannuleerd",
+  expired: "Verlopen"
+};
+
 export interface FranchiseShopOrder {
   id: string;
   orderNumber: string;
@@ -1837,15 +1864,22 @@ export interface FranchiseShopOrder {
   notes: string;
   adminNotes: string;
   subtotalCents: number;
+  paymentMethod: FranchiseShopPaymentMethod;
+  paymentStatus: FranchiseShopPaymentStatus;
+  molliePaymentId: string;
+  paidAt: string | null;
   items: FranchiseShopOrderItem[];
   flow: FranchiseShopOrderFlow;
   nextActions: FranchiseShopOrderActionDef[];
   question: string;
+  /** Documenten (factuur/pakbon) beschikbaar voor download. */
+  documentsReady: boolean;
 }
 
 export interface CreateFranchiseShopOrderInput {
   items: Array<{ productId: string; quantity: number }>;
   notes?: string;
+  paymentMethod?: FranchiseShopPaymentMethod;
 }
 
 export interface AdminCreateFranchiseShopOrderInput {
@@ -1886,6 +1920,8 @@ export interface FranchiseShopSessionUser {
   locationId: string;
   locationName: string;
   locationCode: string;
+  company?: string;
+  allowInvoicePayment: boolean;
 }
 
 export interface FranchiseShopLoginResponse {

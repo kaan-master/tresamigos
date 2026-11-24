@@ -1,14 +1,27 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
-import type { FranchiseShopCatalogProduct, FranchiseShopOrder, FranchiseShopOrderStatus, FranchiseShopSessionUser } from "@tresamigos/types";
-import { FRANCHISE_SHOP_ORDER_STATUS_COLORS, FRANCHISE_SHOP_ORDER_STATUS_LABELS } from "@tresamigos/types";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import type {
+  FranchiseShopCatalogProduct,
+  FranchiseShopOrder,
+  FranchiseShopOrderStatus,
+  FranchiseShopPaymentMethod,
+  FranchiseShopPaymentStatus,
+  FranchiseShopSessionUser
+} from "@tresamigos/types";
+import {
+  FRANCHISE_SHOP_ORDER_STATUS_COLORS,
+  FRANCHISE_SHOP_ORDER_STATUS_LABELS,
+  FRANCHISE_SHOP_PAYMENT_STATUS_LABELS
+} from "@tresamigos/types";
 import { assetUrl } from "../lib/api";
 import { dismissSiteBoot } from "../lib/waitForPageImages";
 import {
   clearFranchiseToken,
+  downloadFranchisePdf,
   fetchFranchiseCatalog,
   fetchFranchiseMe,
   fetchFranchiseOrders,
+  fetchFranchisePaymentStatus,
   getFranchiseToken,
   loginFranchise,
   logoutFranchise,
@@ -19,12 +32,18 @@ import "./franchise-shop.css";
 
 type ShopTab = "catalog" | "orders" | "checkout";
 
+const TERMINAL_PAYMENT: FranchiseShopPaymentStatus[] = ["paid", "failed", "canceled", "expired", "invoice"];
+
 function orderStatusLabel(status: string) {
   return FRANCHISE_SHOP_ORDER_STATUS_LABELS[status as FranchiseShopOrderStatus] || status;
 }
 
 function orderStatusColor(status: string) {
   return FRANCHISE_SHOP_ORDER_STATUS_COLORS[status as FranchiseShopOrderStatus] || "#8a8886";
+}
+
+function paymentStatusLabel(status: string) {
+  return FRANCHISE_SHOP_PAYMENT_STATUS_LABELS[status as FranchiseShopPaymentStatus] || status;
 }
 
 function productImage(path?: string) {
@@ -130,6 +149,7 @@ export function FranchiseLoginPage() {
 
 export function FranchiseShopPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState<FranchiseShopSessionUser | null>(null);
   const [products, setProducts] = useState<FranchiseShopCatalogProduct[]>([]);
   const [orders, setOrders] = useState<FranchiseShopOrder[]>([]);
@@ -140,6 +160,9 @@ export function FranchiseShopPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<FranchiseShopPaymentMethod>("invoice");
+  const [paymentWatch, setPaymentWatch] = useState<{ orderId: string; label: string } | null>(null);
+  const pollRef = useRef<number | null>(null);
 
   useEffect(() => {
     dismissSiteBoot();
@@ -159,6 +182,7 @@ export function FranchiseShopPage() {
         setProducts(catalog.products);
         setOrders(orderData.orders);
         setQty(Object.fromEntries(catalog.products.map((product) => [product.id, 0])));
+        setPaymentMethod(me.user.allowInvoicePayment === false ? "ideal" : "invoice");
       } catch {
         clearFranchiseToken();
         navigate("/franchise/login", { replace: true });
@@ -167,6 +191,61 @@ export function FranchiseShopPage() {
       }
     })();
   }, [navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    const orderId = searchParams.get("orderId") || "";
+    const payment = searchParams.get("payment") || "";
+    if (payment !== "return" || !orderId) return;
+    setTab("orders");
+    setPaymentWatch({ orderId, label: "Betaling controleren..." });
+    setMessage("Terug van Mollie — status wordt bijgewerkt.");
+    setSearchParams({}, { replace: true });
+  }, [user, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!paymentWatch) return;
+    let cancelled = false;
+    let attempts = 0;
+
+    async function poll() {
+      if (cancelled) return;
+      attempts += 1;
+      try {
+        const result = await fetchFranchisePaymentStatus({ orderId: paymentWatch.orderId });
+        setOrders((current) => {
+          const rest = current.filter((item) => item.id !== result.order.id);
+          return [result.order, ...rest];
+        });
+        const status = String(result.status || result.order.paymentStatus) as FranchiseShopPaymentStatus;
+        if (TERMINAL_PAYMENT.includes(status) || result.settled) {
+          setPaymentWatch(null);
+          if (status === "paid") setMessage(`Betaling geslaagd voor ${result.order.orderNumber}. Factuur en pakbon staan klaar.`);
+          else if (status === "failed" || status === "canceled" || status === "expired") {
+            setMessage(`Betaling ${paymentStatusLabel(status).toLowerCase()} voor ${result.order.orderNumber}.`);
+          } else setMessage(`Status: ${paymentStatusLabel(status)}.`);
+          return;
+        }
+        setPaymentWatch({
+          orderId: paymentWatch.orderId,
+          label: `Wachten op bank… (${paymentStatusLabel(status)})`
+        });
+      } catch (error) {
+        if (attempts >= 12) {
+          setPaymentWatch(null);
+          setMessage(error instanceof Error ? error.message : "Status ophalen mislukt.");
+          return;
+        }
+      }
+      pollRef.current = window.setTimeout(() => void poll(), 2500);
+    }
+
+    void poll();
+    return () => {
+      cancelled = true;
+      if (pollRef.current != null) window.clearTimeout(pollRef.current);
+    };
+  }, [paymentWatch?.orderId]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -205,22 +284,43 @@ export function FranchiseShopPage() {
 
   async function handleOrder() {
     if (!cart.length || submitting) return;
+    const method: FranchiseShopPaymentMethod =
+      user?.allowInvoicePayment === false ? "ideal" : paymentMethod;
     setSubmitting(true);
     setMessage("");
     try {
       const result = await placeFranchiseOrder(
         cart.map((line) => ({ productId: line.product.id, quantity: line.quantity })),
-        notes
+        notes,
+        method
       );
-      setMessage(`Bestelling ${result.order.orderNumber} is geplaatst.`);
       setQty(Object.fromEntries(products.map((product) => [product.id, 0])));
       setNotes("");
       setOrders((current) => [result.order, ...current]);
+      if (result.checkoutUrl) {
+        setMessage(`Bestelling ${result.order.orderNumber} — doorsturen naar iDEAL…`);
+        window.location.href = result.checkoutUrl;
+        return;
+      }
+      setMessage(result.message || `Bestelling ${result.order.orderNumber} is geplaatst.`);
       setTab("orders");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Bestellen mislukt.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function downloadDocs(order: FranchiseShopOrder, kind: "invoice" | "packing-slip") {
+    try {
+      await downloadFranchisePdf(
+        `/api/franchise/shop/orders/${order.id}/${kind === "invoice" ? "invoice.pdf" : "packing-slip.pdf"}`,
+        kind === "invoice"
+          ? `factuur-${order.invoiceNumber || order.orderNumber}.pdf`
+          : `pakbon-${order.orderNumber}.pdf`
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Download mislukt.");
     }
   }
 
@@ -373,8 +473,36 @@ export function FranchiseShopPage() {
             <img className="fs-aside-logo" src="/assets/site/tres-amigos-logo-new.png" alt="" />
             <h2>Bestelling afronden</h2>
             <p className="fs-lead">
-              Prijzen gelden voor {user.locationCode} {user.locationName}. Facturatie via Tres Amigos.
+              Prijzen gelden voor {user.locationCode} {user.locationName}.
+              {user.allowInvoicePayment === false
+                ? " Dit account betaalt alleen via iDEAL."
+                : " Kies factuur of iDEAL."}
             </p>
+            {user.allowInvoicePayment !== false ? (
+              <fieldset className="fs-pay-methods">
+                <legend>Betaalwijze</legend>
+                <label className={paymentMethod === "invoice" ? "is-active" : ""}>
+                  <input
+                    type="radio"
+                    name="pay"
+                    checked={paymentMethod === "invoice"}
+                    onChange={() => setPaymentMethod("invoice")}
+                  />
+                  <span>Op factuur</span>
+                </label>
+                <label className={paymentMethod === "ideal" ? "is-active" : ""}>
+                  <input
+                    type="radio"
+                    name="pay"
+                    checked={paymentMethod === "ideal"}
+                    onChange={() => setPaymentMethod("ideal")}
+                  />
+                  <span>iDEAL</span>
+                </label>
+              </fieldset>
+            ) : (
+              <p className="fs-lead">Betaalwijze: iDEAL</p>
+            )}
             <label>
               <span>Opmerking</span>
               <textarea
@@ -389,10 +517,16 @@ export function FranchiseShopPage() {
               <strong>{formatEuro(cartTotalCents)}</strong>
             </div>
             {message && tab === "checkout" ? (
-              <p className={message.includes("geplaatst") ? "fs-success" : "fs-error"}>{message}</p>
+              <p className={message.includes("geplaatst") || message.includes("Factuur") ? "fs-success" : "fs-error"}>
+                {message}
+              </p>
             ) : null}
             <button type="button" disabled={!cart.length || submitting} onClick={() => void handleOrder()}>
-              {submitting ? "Bezig..." : "Bestelling plaatsen"}
+              {submitting
+                ? "Bezig..."
+                : (user.allowInvoicePayment === false ? "ideal" : paymentMethod) === "ideal"
+                  ? "Betalen met iDEAL"
+                  : "Bestelling op factuur"}
             </button>
           </aside>
         </div>
@@ -406,7 +540,20 @@ export function FranchiseShopPage() {
               <p className="fs-lead">Overzicht van geplaatste bestellingen en status.</p>
             </div>
           </div>
-          {message && tab === "orders" ? <p className="fs-success">{message}</p> : null}
+          {paymentWatch ? <p className="fs-lead">{paymentWatch.label}</p> : null}
+          {message && tab === "orders" ? (
+            <p
+              className={
+                message.toLowerCase().includes("mislukt") ||
+                message.toLowerCase().includes("geannuleerd") ||
+                message.toLowerCase().includes("verlopen")
+                  ? "fs-error"
+                  : "fs-success"
+              }
+            >
+              {message}
+            </p>
+          ) : null}
           {orders.length ? (
             <div className="fs-order-list">
               {orders.map((order) => (
@@ -415,6 +562,10 @@ export function FranchiseShopPage() {
                     <div>
                       <strong>{order.orderNumber}</strong>
                       <span>{new Date(order.createdAt).toLocaleString("nl-NL")}</span>
+                      <span className="fs-pay-meta">
+                        {order.paymentMethod === "ideal" ? "iDEAL" : "Factuur"} · {paymentStatusLabel(order.paymentStatus)}
+                        {order.invoiceNumber ? ` · ${order.invoiceNumber}` : ""}
+                      </span>
                     </div>
                     <span className="fs-order-status">
                       <span
@@ -443,6 +594,19 @@ export function FranchiseShopPage() {
                     <span>Totaal</span>
                     <strong>{formatEuro(order.subtotalCents)}</strong>
                   </div>
+                  {order.documentsReady ? (
+                    <div className="fs-doc-actions">
+                      <button type="button" onClick={() => void downloadDocs(order, "invoice")}>
+                        Factuur PDF
+                      </button>
+                      <button type="button" onClick={() => void downloadDocs(order, "packing-slip")}>
+                        Pakbon PDF
+                      </button>
+                    </div>
+                  ) : order.paymentMethod === "ideal" &&
+                    (order.paymentStatus === "pending" || order.paymentStatus === "open") ? (
+                    <p className="fs-lead">Wacht op iDEAL-betaling — daarna staan factuur en pakbon klaar.</p>
+                  ) : null}
                 </article>
               ))}
             </div>

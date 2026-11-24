@@ -71,6 +71,32 @@ export class PublicFranchiseShopController {
   myOrders(@Req() req: { franchiseSession: FranchiseShopSessionPayload }) {
     return this.shop.listMyOrders(req.franchiseSession.accountId);
   }
+
+  @Get("shop/orders/:id/invoice.pdf")
+  @UseGuards(FranchiseShopGuard)
+  async myInvoicePdf(
+    @Req() req: { franchiseSession: FranchiseShopSessionPayload },
+    @Param("id") id: string,
+    @Res() res: Response
+  ) {
+    const doc = await this.shop.getOrderDocumentForAccount(req.franchiseSession.accountId, id, "invoice");
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${doc.filename}"`);
+    res.send(doc.buffer);
+  }
+
+  @Get("shop/orders/:id/packing-slip.pdf")
+  @UseGuards(FranchiseShopGuard)
+  async myPackingSlipPdf(
+    @Req() req: { franchiseSession: FranchiseShopSessionPayload },
+    @Param("id") id: string,
+    @Res() res: Response
+  ) {
+    const doc = await this.shop.getOrderDocumentForAccount(req.franchiseSession.accountId, id, "packing-slip");
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${doc.filename}"`);
+    res.send(doc.buffer);
+  }
 }
 
 @Controller("api/admin/franchise-shop")

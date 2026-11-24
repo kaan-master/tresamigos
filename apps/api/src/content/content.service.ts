@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import type { MenuItem, OrderLink, PageSeo, SeoPageKey, SiteContent } from "@tresamigos/types";
 import { sanitizeContent } from "@tresamigos/utils";
@@ -309,7 +309,39 @@ export class ContentService {
 
       await tx.orderLink.deleteMany();
       const keepLocationIds = content.locations.map((location) => location.id);
+
+      const removable = await tx.location.findMany({
+        where: keepLocationIds.length ? { id: { notIn: keepLocationIds } } : undefined,
+        include: {
+          _count: { select: { franchiseAccounts: true, countSessions: true, countStaff: true } }
+        }
+      });
+      const blocked = removable.filter(
+        (row) => row._count.franchiseAccounts > 0 || row._count.countSessions > 0 || row._count.countStaff > 0
+      );
+      if (blocked.length) {
+        throw new BadRequestException({
+          message: `Kan vestiging niet verwijderen (franchise-accounts of tellingen): ${blocked
+            .map((row) => `${row.code} ${row.name}`.trim())
+            .join(", ")}.`
+        });
+      }
+      if (removable.length) {
+        await tx.location.deleteMany({ where: { id: { in: removable.map((row) => row.id) } } });
+      }
+
+      const usedCodes = new Set<string>();
+      const resolvedCodes: string[] = [];
       for (const [index, location] of content.locations.entries()) {
+        let code = String(location.code || "").trim() || String(index + 1).padStart(3, "0");
+        if (usedCodes.has(code)) {
+          let next = 1;
+          while (usedCodes.has(String(next).padStart(3, "0")) && next < 1000) next += 1;
+          code = String(next).padStart(3, "0");
+        }
+        usedCodes.add(code);
+        resolvedCodes.push(code);
+
         await tx.location.upsert({
           where: { id: location.id },
           create: {
@@ -318,7 +350,7 @@ export class ContentService {
             name: location.name,
             address: location.address,
             note: location.note,
-            code: `__${index}`,
+            code: `__tmp_${index}_${Date.now().toString(36)}`,
             featured: location.featured === true,
             active: location.active !== false,
             sortOrder: index
@@ -328,18 +360,16 @@ export class ContentService {
             name: location.name,
             address: location.address,
             note: location.note,
-            code: `__${index}`,
+            code: `__tmp_${index}_${Date.now().toString(36)}`,
             featured: location.featured === true,
             active: location.active !== false,
             sortOrder: index
           }
         });
       }
-      if (keepLocationIds.length) {
-        await tx.location.deleteMany({ where: { id: { notIn: keepLocationIds } } });
-      }
+
       for (const [index, location] of content.locations.entries()) {
-        const code = location.code || String(index + 1).padStart(3, "0");
+        const code = resolvedCodes[index];
         await tx.location.update({
           where: { id: location.id },
           data: { code }

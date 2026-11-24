@@ -1,7 +1,7 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
 /** Gelijk houden aan `apps/admin/package.json` → version. */
-export const ADMIN_APP_VERSION = "0.3.14";
+export const ADMIN_APP_VERSION = "0.3.15";
 
 export type ChangelogEntry = {
   version: string;
@@ -12,9 +12,20 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.3.15",
+    date: "24 november 2026",
+    current: true,
+    changes: [
+      "Vestiging aanmaken: unieke ids/codes en duidelijke fout bij gekoppelde franchise/tellingen.",
+      "Franchise-rechten: Koppelingen/Franchise dekt nu ook de shop-API (accounts, orders, PDF).",
+      "Franchise-accounts: schakelaar ‘mag op factuur’ — uit = alleen iDEAL.",
+      "Mollie iDEAL voor franchise-orders: test/live, webhook, status (paid/open/pending/failed/canceled/expired).",
+      "Na factuur of geslaagde iDEAL: factuur- en pakbon-PDF voor admin én franchise-portaal."
+    ]
+  },
+  {
     version: "0.3.14",
     date: "14 november 2026",
-    current: true,
     changes: [
       "Overzicht: bezoekerskalender als heatmap (donkerder bij meer bezoekers dan gebruikelijk).",
       "Rechts onder Uniek: 24-uurs grafiek met piekuren van een gemiddelde drukke dag."

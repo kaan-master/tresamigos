@@ -370,19 +370,21 @@ model CountLine {
 }
 
 model FranchiseAccount {
-  id           String               @id @default(uuid())
-  email        String               @unique
-  name         String
-  passwordHash String
-  locationId   String
-  location     Location             @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  company      String               @default("")
-  vatId        String               @default("")
-  kvk          String               @default("")
-  active       Boolean              @default(true)
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-  orders       FranchiseShopOrder[]
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  name                String
+  passwordHash        String
+  locationId          String
+  location            Location             @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  company             String               @default("")
+  vatId               String               @default("")
+  kvk                 String               @default("")
+  /// Mag op rekening/factuur bestellen. Uit = alleen iDEAL.
+  allowInvoicePayment Boolean              @default(true)
+  active              Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  orders              FranchiseShopOrder[]
 
   @@index([locationId])
 }
@@ -414,27 +416,34 @@ model FranchiseProductPrice {
 }
 
 model FranchiseShopOrder {
-  id             String                   @id @default(uuid())
-  orderNumber    String                   @unique
-  createdAt      DateTime                 @default(now())
-  updatedAt      DateTime                 @updatedAt
-  status         String                   @default("in_afwachting")
-  channel        String                   @default("portaal")
-  flow           Json                     @default("{}")
-  accountId      String
-  account        FranchiseAccount         @relation(fields: [accountId], references: [id], onDelete: Restrict)
-  locationId     String
-  locationName   String
-  locationCode   String                   @default("")
-  notes          String                   @default("")
-  adminNotes     String                   @default("")
-  subtotalCents  Int                      @default(0)
-  invoiceNumber  String                   @default("")
-  items          FranchiseShopOrderItem[]
+  id              String                   @id @default(uuid())
+  orderNumber     String                   @unique
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  status          String                   @default("in_afwachting")
+  channel         String                   @default("portaal")
+  flow            Json                     @default("{}")
+  accountId       String
+  account         FranchiseAccount         @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  locationId      String
+  locationName    String
+  locationCode    String                   @default("")
+  notes           String                   @default("")
+  adminNotes      String                   @default("")
+  subtotalCents   Int                      @default(0)
+  invoiceNumber   String                   @default("")
+  /// invoice | ideal
+  paymentMethod   String                   @default("invoice")
+  /// none | pending | open | paid | failed | canceled | expired | invoice
+  paymentStatus   String                   @default("none")
+  molliePaymentId String                   @default("")
+  paidAt          DateTime?
+  items           FranchiseShopOrderItem[]
 
   @@index([accountId])
   @@index([locationId])
   @@index([createdAt])
+  @@index([molliePaymentId])
 }
 
 model FranchiseShopOrderItem {

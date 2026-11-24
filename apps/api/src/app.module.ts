@@ -21,6 +21,7 @@ import { SeoModule } from "./seo/seo.module";
 import { UsersModule } from "./users/users.module";
 import { TellingenModule } from "./tellingen/tellingen.module";
 import { TasksModule } from "./tasks/tasks.module";
+import { PaymentsModule } from "./payments/payments.module";
 
 @Module({
   imports: [
@@ -46,7 +47,8 @@ import { TasksModule } from "./tasks/tasks.module";
     UsersModule,
     SeoModule,
     TellingenModule,
-    TasksModule
+    TasksModule,
+    PaymentsModule
   ],
   controllers: [HealthController]
 })

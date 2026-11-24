@@ -23,7 +23,14 @@ function allPermissions(): AdminTabId[] {
 function sanitizePermissions(input: string[] | undefined): AdminTabId[] {
   const allowed = new Set<string>(ADMIN_TAB_IDS);
   const mapped = (input || []).map((item) => (item === "videos" ? "media" : item));
-  return mapped.filter((item): item is AdminTabId => allowed.has(item));
+  const filtered = mapped.filter((item): item is AdminTabId => allowed.has(item));
+  // Franchise-hub en franchise-shop delen rechten: één vinkje = beide.
+  const set = new Set(filtered);
+  if (set.has("franchise") || set.has("franchiseShop")) {
+    set.add("franchise");
+    set.add("franchiseShop");
+  }
+  return [...set];
 }
 
 @Injectable()
@@ -141,13 +148,15 @@ export class AuthService {
   hasPermission(session: AdminSessionPayload | null, permission: AdminTabId): boolean {
     if (!session) return false;
     if (session.role === "master") return true;
-    return session.permissions.includes(permission);
+    const perms = sanitizePermissions(session.permissions);
+    return perms.includes(permission);
   }
 
   hasAnyPermission(session: AdminSessionPayload | null, permissions: AdminTabId[]): boolean {
     if (!session) return false;
     if (session.role === "master") return true;
-    return permissions.some((permission) => session.permissions.includes(permission));
+    const perms = sanitizePermissions(session.permissions);
+    return permissions.some((permission) => perms.includes(permission));
   }
 
   toSessionUser(session: AdminSessionPayload): AdminSessionUser {
