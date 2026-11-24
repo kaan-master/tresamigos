@@ -91,6 +91,7 @@ export function FranchiseShopPanel({ content, view }: Props) {
   const [statusFilter, setStatusFilter] = useState("");
   const [savingStatus, setSavingStatus] = useState(false);
   const [showProcess, setShowProcess] = useState(false);
+  const [processHighlight, setProcessHighlight] = useState<FranchiseShopOrderStatus | null>(null);
   const [showRegister, setShowRegister] = useState(false);
   const [showManualStatus, setShowManualStatus] = useState(false);
   const [registerForm, setRegisterForm] = useState({
@@ -912,7 +913,7 @@ export function FranchiseShopPanel({ content, view }: Props) {
                 ) : null}
               </div>
               <p className="ta-seo-hint">Van binnenkomst tot ontvangst op de vestiging. Nieuwe stappen zet je op de bestelling zelf.</p>
-              <OrderProcessFlow />
+              <OrderProcessFlow highlightStatus={processHighlight || selectedOrder?.status || null} />
             </div>
           ) : selectedOrder ? (
             <div className="ta-detail-pane">
@@ -924,7 +925,10 @@ export function FranchiseShopPanel({ content, view }: Props) {
                     type="button"
                     title="Werkwijze"
                     aria-label="Werkwijze bekijken"
-                    onClick={() => setShowProcess(true)}
+                    onClick={() => {
+                      setProcessHighlight(selectedOrder.status);
+                      setShowProcess(true);
+                    }}
                   >
                     ?
                   </button>
@@ -999,7 +1003,10 @@ export function FranchiseShopPanel({ content, view }: Props) {
                 order={selectedOrder}
                 busy={savingStatus}
                 onAction={(input) => void applyOrderAction(input)}
-                onOpenHelp={() => setShowProcess(true)}
+                onOpenHelp={(status) => {
+                  setProcessHighlight(status || selectedOrder.status);
+                  setShowProcess(true);
+                }}
               />
               <button className="ta-btn ta-btn-ghost" type="button" onClick={() => setShowManualStatus((value) => !value)}>
                 {showManualStatus ? "Handmatige status verbergen" : "Status handmatig zetten"}

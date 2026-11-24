@@ -1,5 +1,11 @@
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { Application, CateringOrder, FranchiseInquiry, SiteContent } from "@tresamigos/types";
+import type {
+  Application,
+  CateringOrder,
+  FranchiseInquiry,
+  FranchiseShopOrder,
+  SiteContent
+} from "@tresamigos/types";
 import { api } from "./lib/api";
 import { readAdminRoute, writeAdminRoute, type AdminRouteTab } from "./lib/adminRoute";
 import { IconLogout, IconMenu, tabIcons } from "./components/AdminIcons";
@@ -94,6 +100,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
   const [applications, setApplications] = useState<Application[]>([]);
   const [franchiseInquiries, setFranchiseInquiries] = useState<FranchiseInquiry[]>([]);
   const [cateringOrders, setCateringOrders] = useState<CateringOrder[]>([]);
+  const [franchiseShopOrders, setFranchiseShopOrders] = useState<FranchiseShopOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [franchiseHighlight, setFranchiseHighlight] = useState(() =>
@@ -127,6 +134,15 @@ export function AdminDashboard({ user, onLogout }: Props) {
     }
   }
 
+  async function loadFranchiseShopOrders() {
+    try {
+      const data = await api<{ orders: FranchiseShopOrder[] }>("/api/admin/franchise-shop/orders");
+      setFranchiseShopOrders(data.orders);
+    } catch {
+      setFranchiseShopOrders([]);
+    }
+  }
+
   async function refreshContent() {
     const contentData = await api<SiteContent>("/api/admin/content");
     contentRef.current = contentData;
@@ -147,7 +163,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
       setContent(contentData);
       setApplications(applicationsData.applications);
       setFranchiseInquiries(franchiseData.inquiries);
-      await loadCateringOrders();
+      await Promise.all([loadCateringOrders(), loadFranchiseShopOrders()]);
       clearFeedback();
     } catch (error) {
       notifyError(error instanceof Error ? error.message : "Probeer opnieuw.", "Laden mislukt");
@@ -162,7 +178,10 @@ export function AdminDashboard({ user, onLogout }: Props) {
   }, []);
 
   useEffect(() => {
-    const interval = window.setInterval(() => void loadCateringOrders(), 45_000);
+    const interval = window.setInterval(() => {
+      void loadCateringOrders();
+      void loadFranchiseShopOrders();
+    }, 45_000);
     return () => window.clearInterval(interval);
   }, []);
 
@@ -194,6 +213,14 @@ export function AdminDashboard({ user, onLogout }: Props) {
   const newCateringOrderCount = useMemo(
     () => cateringOrders.filter((order) => order.status === "nieuw").length,
     [cateringOrders]
+  );
+
+  const newFranchiseOrderCount = useMemo(
+    () =>
+      franchiseShopOrders.filter(
+        (order) => order.status === "in_afwachting" || order.status === "registratie_onvolledig"
+      ).length,
+    [franchiseShopOrders]
   );
 
   const kpis = useMemo(() => {
@@ -265,12 +292,17 @@ export function AdminDashboard({ user, onLogout }: Props) {
         id,
         label,
         Icon: tabIcons[id],
-        badge: id === "catering" && newCateringOrderCount > 0 ? newCateringOrderCount : undefined,
+        badge:
+          id === "catering" && newCateringOrderCount > 0
+            ? newCateringOrderCount
+            : id === "franchise" && newFranchiseOrderCount > 0
+              ? newFranchiseOrderCount
+              : undefined,
         featureBadge: id === "franchise" && franchiseHighlight ? franchiseHighlight.label : undefined,
         featureTitle: id === "franchise" && franchiseHighlight ? franchiseHighlight.title : undefined,
         featureKind: id === "franchise" && franchiseHighlight ? franchiseHighlight.kind : undefined
       })),
-    [visibleTabs, newCateringOrderCount, franchiseHighlight]
+    [visibleTabs, newCateringOrderCount, newFranchiseOrderCount, franchiseHighlight]
   );
 
   const searchItems = useMemo(
@@ -311,6 +343,7 @@ export function AdminDashboard({ user, onLogout }: Props) {
     if (id === "franchise" && user) {
       markFeatureSeen(user.id, FRANCHISE_FEATURE.key);
       setFranchiseHighlight(null);
+      void loadFranchiseShopOrders();
     }
     if (id !== "catering") {
       setCateringNavigateView(null);
@@ -623,15 +656,33 @@ export function AdminDashboard({ user, onLogout }: Props) {
                     <p className="ta-nav-group-label">{section.label}</p>
                     {sectionTabs.map(([id, label]) => {
                       const Icon = tabIcons[id];
-                      const badge = id === "catering" && newCateringOrderCount > 0 ? newCateringOrderCount : null;
+                      const badge =
+                        id === "catering" && newCateringOrderCount > 0
+                          ? newCateringOrderCount
+                          : id === "franchise" && newFranchiseOrderCount > 0
+                            ? newFranchiseOrderCount
+                            : null;
                       const feature = id === "franchise" ? franchiseHighlight : null;
+                      const hasOrderNotification =
+                        (id === "catering" && newCateringOrderCount > 0) ||
+                        (id === "franchise" && newFranchiseOrderCount > 0);
                       return (
                         <button
                           key={id}
                           type="button"
-                          className={`${activeTab === id ? "is-active" : ""}${id === "catering" && newCateringOrderCount > 0 ? " has-notification" : ""}${feature ? ` is-feature-highlight is-feature-${feature.kind}` : ""}`}
-                          title={feature?.title || undefined}
-                          aria-label={feature ? `${label}. ${feature.title}` : label}
+                          className={`${activeTab === id ? "is-active" : ""}${hasOrderNotification ? " has-notification" : ""}${feature ? ` is-feature-highlight is-feature-${feature.kind}` : ""}`}
+                          title={
+                            id === "franchise" && newFranchiseOrderCount > 0
+                              ? `${newFranchiseOrderCount} bestelling${newFranchiseOrderCount === 1 ? "" : "en"} wacht${newFranchiseOrderCount === 1 ? "" : "en"} op actie`
+                              : feature?.title || undefined
+                          }
+                          aria-label={
+                            id === "franchise" && newFranchiseOrderCount > 0
+                              ? `${label}. ${newFranchiseOrderCount} nieuwe bestelling${newFranchiseOrderCount === 1 ? "" : "en"}`
+                              : feature
+                                ? `${label}. ${feature.title}`
+                                : label
+                          }
                           onClick={() => selectTab(id)}
                         >
                           <Icon width={18} height={18} />

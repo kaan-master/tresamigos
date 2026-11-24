@@ -738,29 +738,87 @@ export class FranchiseShopService {
     return { payment, order: updated, settled: true, orderMissing: false };
   }
 
+  private async buildOrderMailAttachments(order: FranchiseShopOrder) {
+    if (!order.documentsReady) return [];
+    try {
+      const [invoice, packing] = await Promise.all([
+        this.getOrderDocument(order.id, "invoice"),
+        this.getOrderDocument(order.id, "packing-slip")
+      ]);
+      return [
+        {
+          filename: invoice.filename,
+          content: invoice.buffer,
+          contentType: "application/pdf"
+        },
+        {
+          filename: packing.filename,
+          content: packing.buffer,
+          contentType: "application/pdf"
+        }
+      ];
+    } catch {
+      return [];
+    }
+  }
+
   private async notifyOrderPlaced(order: FranchiseShopOrder, paidIdeal = false) {
-    if (!order.accountEmail) return;
     const pay =
       order.paymentMethod === "ideal"
         ? paidIdeal || order.paymentStatus === "paid"
           ? "Betaald via iDEAL"
           : "iDEAL"
         : "Op factuur";
+    const attachments = await this.buildOrderMailAttachments(order);
+    const docsLine = attachments.length
+      ? "Factuur en pakbon zitten als PDF bij deze mail (en staan ook in het franchise-portaal)."
+      : order.documentsReady
+        ? "Factuur en pakbon staan klaar in het franchise-portaal."
+        : "Factuur en pakbon volgen zodra de iDEAL-betaling is afgerond.";
+
+    const customerBody = [
+      `Je bestelling ${order.orderNumber} is ontvangen voor ${order.locationCode} ${order.locationName}.`,
+      `Betaling: ${pay}.`,
+      `Status: ${FRANCHISE_SHOP_ORDER_STATUS_LABELS[order.status]}.`,
+      docsLine,
+      "Je ontvangt een mail bij elke volgende statusupdate."
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    const internalBody = [
+      `Nieuwe franchise-bestelling ${order.orderNumber}.`,
+      `Vestiging: ${order.locationCode} ${order.locationName}`,
+      `Contact: ${order.accountName || order.contactName || "—"}${order.accountEmail ? ` · ${order.accountEmail}` : ""}`,
+      `Betaling: ${pay}`,
+      `Status: ${FRANCHISE_SHOP_ORDER_STATUS_LABELS[order.status]}`,
+      `Totaal: € ${(order.subtotalCents / 100).toFixed(2).replace(".", ",")}`,
+      attachments.length ? "Factuur en pakbon zitten als bijlage." : ""
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
     try {
-      await this.mail.sendNotificationEmail({
-        to: order.accountEmail,
-        subject: `Bestelling ${order.orderNumber} ontvangen`,
-        body: [
-          `Je bestelling ${order.orderNumber} is ontvangen voor ${order.locationCode} ${order.locationName}.`,
-          `Betaling: ${pay}.`,
-          `Status: ${FRANCHISE_SHOP_ORDER_STATUS_LABELS[order.status]}.`,
-          order.documentsReady ? "Factuur en pakbon staan klaar in het franchise-portaal." : "",
-          "Je ontvangt een mail bij elke volgende statusupdate."
-        ]
-          .filter(Boolean)
-          .join("\n\n"),
-        category: "franchise"
-      });
+      if (order.accountEmail) {
+        await this.mail.sendNotificationEmail({
+          to: order.accountEmail,
+          subject: `Bestelling ${order.orderNumber} ontvangen`,
+          body: customerBody,
+          attachments,
+          category: "franchise"
+        });
+      }
+
+      const internal = await this.mail.getNotifyEmail("franchise");
+      if (internal && internal.toLowerCase() !== String(order.accountEmail || "").toLowerCase()) {
+        await this.mail.sendNotificationEmail({
+          to: internal,
+          subject: `Nieuwe franchise-bestelling ${order.orderNumber}`,
+          body: internalBody,
+          attachments,
+          category: "franchise"
+        });
+      }
     } catch {
       /* ignore mail failures on place */
     }
@@ -899,8 +957,12 @@ export class FranchiseShopService {
       include: { account: true, items: true }
     });
 
+    const order = this.toOrderDto(record);
+    if (!incomplete && order.items.length) {
+      void this.notifyOrderPlaced(order);
+    }
     return {
-      order: this.toOrderDto(record),
+      order,
       message: incomplete ? "Bestelling geregistreerd als onvolledig." : "Bestelling geregistreerd."
     };
   }

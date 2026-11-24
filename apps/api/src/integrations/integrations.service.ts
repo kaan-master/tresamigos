@@ -171,7 +171,7 @@ export class IntegrationsService {
       liveApiKeyMasked: liveSet ? this.mollieService.maskKey(row.mollieLiveApiKey) : "",
       testApiKeySet: testSet,
       testApiKeyMasked: testSet ? this.mollieService.maskKey(row.mollieTestApiKey) : "",
-      activeKeySet: mode === "live" ? liveSet : testSet,
+      activeKeySet: mode === "live" ? liveSet || testSet : testSet || liveSet,
       profileId: row.mollieProfileId || "",
       lastTestAt: row.mollieLastTestAt?.toISOString() ?? null,
       lastStatus: row.mollieLastStatus || "",
@@ -374,17 +374,31 @@ export class IntegrationsService {
       }
     }
 
-    const mode = this.mollieService.normalizeMode(data.mollieMode ?? current.mollieMode);
+    const requestedMode = this.mollieService.normalizeMode(data.mollieMode ?? current.mollieMode);
     const liveKey = data.mollieLiveApiKey !== undefined ? data.mollieLiveApiKey : current.mollieLiveApiKey;
     const testKey = data.mollieTestApiKey !== undefined ? data.mollieTestApiKey : current.mollieTestApiKey;
     const enabled = data.mollieEnabled !== undefined ? data.mollieEnabled : current.mollieEnabled;
+    const hasLive = Boolean(String(liveKey || "").trim());
+    const hasTest = Boolean(String(testKey || "").trim());
+
+    // Alleen test-sleutel? Dan mag Mollie gewoon in testmodus aan — niet blokkeren op live.
+    let mode = requestedMode;
+    if (enabled && mode === "live" && !hasLive && hasTest) {
+      mode = "test";
+      data.mollieMode = "test";
+    }
+    if (enabled && mode === "test" && !hasTest && hasLive) {
+      mode = "live";
+      data.mollieMode = "live";
+    }
+
     if (enabled) {
       const active = mode === "live" ? liveKey : testKey;
       if (!String(active || "").trim()) {
         throw new BadRequestException({
           message:
             mode === "live"
-              ? "Zet eerst een live-sleutel (live_...) voordat je Mollie live activeert."
+              ? "Zet eerst een live-sleutel (live_...) voordat je Mollie live activeert, of kies testmodus met een test_... sleutel."
               : "Zet eerst een test-sleutel (test_...) voordat je Mollie in testmodus activeert."
         });
       }
@@ -400,13 +414,21 @@ export class IntegrationsService {
 
   async testMollie() {
     const current = await this.getOrCreate();
-    const mode = this.mollieService.normalizeMode(current.mollieMode);
-    const key = mode === "live" ? current.mollieLiveApiKey : current.mollieTestApiKey;
+    let mode = this.mollieService.normalizeMode(current.mollieMode);
+    let key = mode === "live" ? current.mollieLiveApiKey : current.mollieTestApiKey;
+    if (!String(key || "").trim()) {
+      const fallbackMode = mode === "live" ? "test" : "live";
+      const fallbackKey = fallbackMode === "live" ? current.mollieLiveApiKey : current.mollieTestApiKey;
+      if (String(fallbackKey || "").trim()) {
+        mode = fallbackMode;
+        key = fallbackKey;
+      }
+    }
     if (!String(key || "").trim()) {
       throw new BadRequestException({
         message:
           mode === "live"
-            ? "Geen live-sleutel opgeslagen. Vul live_... in en sla op."
+            ? "Geen live-sleutel opgeslagen. Vul live_... in en sla op, of zet testmodus aan met een test_... sleutel."
             : "Geen test-sleutel opgeslagen. Vul test_... in en sla op."
       });
     }
@@ -415,6 +437,7 @@ export class IntegrationsService {
     await this.prisma.integrationSettings.update({
       where: { id: PRIMARY_ID },
       data: {
+        mollieMode: mode,
         mollieLastTestAt: new Date(),
         mollieLastStatus: result.ok ? "success" : "error",
         mollieLastMessage: result.message,

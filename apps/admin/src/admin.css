@@ -4650,6 +4650,56 @@ body.admin-tablet-mode .ta-action-dock {
   max-width: 420px;
 }
 
+.ta-mollie-mode-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-width: 520px;
+}
+
+.ta-mollie-mode-btn {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid #d1d1d1;
+  border-radius: 12px;
+  background: #fff;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ta-mollie-mode-btn strong {
+  font-size: 14px;
+  color: #242424;
+}
+
+.ta-mollie-mode-btn span {
+  font-size: 12px;
+  color: #605e5c;
+}
+
+.ta-mollie-mode-btn:hover:not(:disabled) {
+  background: #fafafa;
+}
+
+.ta-mollie-mode-btn.is-active {
+  border-color: #fcb92a;
+  background: #fff9ea;
+  box-shadow: 0 0 0 1px #fcb92a;
+}
+
+.ta-mollie-mode-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .ta-mollie-mode-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .ta-provider-trigger,
 .ta-provider-menu button,
 .ta-provider-login {
@@ -6001,21 +6051,104 @@ body.admin-tablet-mode .ta-action-dock {
   gap: 8px;
 }
 
-.order-workflow-log li {
+.order-workflow-log > li {
+  margin: 0;
+  padding: 0;
+}
+
+.order-workflow-log-item {
+  width: 100%;
   display: grid;
-  gap: 2px;
-  padding: 8px 10px;
-  border-left: 3px solid #efd596;
-  background: #fafafa;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid #edebe9;
+  border-left-width: 4px;
+  border-radius: 10px;
+  background: #fff;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: background 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.order-workflow-log-item:hover:not(:disabled) {
+  background: #faf9f8;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.order-workflow-log-item:disabled {
+  cursor: default;
+}
+
+.order-workflow-log-time {
+  color: #605e5c;
   font-size: 12px;
 }
 
-.order-workflow-log span {
-  color: #616161;
+.order-workflow-log-status .status-chip {
+  font-size: 13px;
+  font-weight: 800;
 }
 
-.order-workflow-log em {
-  font-style: normal;
-  color: #5b4210;
+.order-workflow-log-note {
+  color: #323130;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.order-workflow-log-mail {
+  display: inline-flex;
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.order-workflow-log-mail.is-ok {
+  background: #dff6dd;
+  color: #0b6a0b;
+}
+
+.order-workflow-log-mail.is-warn {
+  background: #fde7e9;
+  color: #a4262c;
+}
+
+.order-workflow-log-hint {
+  color: #8764b8;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.order-flow-highlight-banner {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff9ea;
+  border: 1px solid #efd596;
+  font-size: 13px;
+  color: #605e5c;
+}
+
+.order-flow-step {
+  position: relative;
+}
+
+.order-flow-step.is-highlight {
+  font-weight: 800;
+  transform: scale(1.02);
+  z-index: 1;
+}
+
+.order-flow-you-are-here {
+  display: inline-flex;
+  margin-bottom: 6px;
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 

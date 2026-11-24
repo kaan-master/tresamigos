@@ -579,9 +579,19 @@ export function IntegrationsPanel({
     setSavingKey("mollie");
     setMessage("");
     setError("");
+    const typingTest = mollieForm.testApiKey.trim().startsWith("test_");
+    const typingLive = mollieForm.liveApiKey.trim().startsWith("live_");
+    const hasTest = typingTest || Boolean(settings?.mollie?.testApiKeySet);
+    const hasLive = typingLive || Boolean(settings?.mollie?.liveApiKeySet);
+    let mode = mollieForm.mode;
+    if (mollieForm.enabled && mode === "live" && !hasLive && hasTest) mode = "test";
+    if (mollieForm.enabled && mode === "test" && !hasTest && hasLive) mode = "live";
+    if (mode !== mollieForm.mode) {
+      setMollieForm((current) => (current ? { ...current, mode } : current));
+    }
     const payload: UpdateIntegrationMollieInput = {
       enabled: mollieForm.enabled,
-      mode: mollieForm.mode,
+      mode,
       ...(mollieForm.liveApiKey.trim() ? { liveApiKey: mollieForm.liveApiKey.trim() } : {}),
       ...(mollieForm.testApiKey.trim() ? { testApiKey: mollieForm.testApiKey.trim() } : {})
     };
@@ -1327,36 +1337,66 @@ export function IntegrationsPanel({
 
       {view === "mollie" && mollieForm ? (
         <div className="ta-integrations-mollie">
+          {(() => {
+            const hasTestKey =
+              mollieForm.testApiKey.trim().startsWith("test_") || Boolean(settings?.mollie?.testApiKeySet);
+            const hasLiveKey =
+              mollieForm.liveApiKey.trim().startsWith("live_") || Boolean(settings?.mollie?.liveApiKeySet);
+            const liveBlocked = !hasLiveKey;
+            return (
+              <>
           <label className="ta-check">
             <input
               type="checkbox"
               checked={mollieForm.enabled}
-              onChange={(event) => setMollieForm((current) => (current ? { ...current, enabled: event.target.checked } : current))}
+              onChange={(event) => {
+                const enabled = event.target.checked;
+                setMollieForm((current) => {
+                  if (!current) return current;
+                  const nextMode =
+                    enabled && current.mode === "live" && !hasLiveKey && hasTestKey ? "test" : current.mode;
+                  return { ...current, enabled, mode: nextMode };
+                });
+              }}
             />
             <span>Mollie actief</span>
           </label>
 
+          {!hasLiveKey && hasTestKey ? (
+            <p className="ta-seo-hint" style={{ marginTop: 10 }}>
+              Je hebt alleen een <strong>test-sleutel</strong>. Zet <strong>Testmodus</strong> aan (hieronder) en
+              vink Mollie actief — live is pas mogelijk met een <code>live_...</code> sleutel.
+            </p>
+          ) : null}
+
           <div className="ta-provider-field" style={{ marginTop: 12 }}>
             <span className="ta-provider-label">Modus</span>
-            <div className="ta-provider-select">
+            <div className="ta-mollie-mode-row" role="group" aria-label="Mollie modus">
               <button
                 type="button"
-                className={`ta-provider-trigger${mollieForm.mode === "test" ? " is-active" : ""}`}
+                className={`ta-mollie-mode-btn${mollieForm.mode === "test" ? " is-active" : ""}`}
                 onClick={() => setMollieForm((current) => (current ? { ...current, mode: "test" } : current))}
               >
-                <span>Test</span>
+                <strong>Testmodus</strong>
+                <span>Veilig met test_… sleutel</span>
               </button>
               <button
                 type="button"
-                className={`ta-provider-trigger${mollieForm.mode === "live" ? " is-active" : ""}`}
-                onClick={() => setMollieForm((current) => (current ? { ...current, mode: "live" } : current))}
-                style={{ marginTop: 8 }}
+                className={`ta-mollie-mode-btn${mollieForm.mode === "live" ? " is-active" : ""}`}
+                disabled={liveBlocked}
+                title={liveBlocked ? "Vul eerst een live_… sleutel in" : "Live betalingen"}
+                onClick={() => {
+                  if (liveBlocked) return;
+                  setMollieForm((current) => (current ? { ...current, mode: "live" } : current));
+                }}
               >
-                <span>Live</span>
+                <strong>Live</strong>
+                <span>{liveBlocked ? "Live-sleutel ontbreekt" : "Echte betalingen"}</span>
               </button>
             </div>
             <p className="ta-seo-hint">
-              De gekozen modus bepaalt welke sleutel actief is. Test eerst met <code>test_...</code> voordat je live zet.
+              Met alleen een test-sleutel kun je gewoon testmodus aanzetten. Live vereist een aparte{" "}
+              <code>live_...</code> sleutel.
             </p>
           </div>
 
@@ -1374,9 +1414,18 @@ export function IntegrationsPanel({
                 type="text"
                 spellCheck={false}
                 value={mollieForm.testApiKey}
-                onChange={(event) =>
-                  setMollieForm((current) => (current ? { ...current, testApiKey: event.target.value } : current))
-                }
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setMollieForm((current) =>
+                    current
+                      ? {
+                          ...current,
+                          testApiKey: value,
+                          mode: value.trim().startsWith("test_") ? "test" : current.mode
+                        }
+                      : current
+                  );
+                }}
                 placeholder="test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                 autoComplete="off"
                 name="mollie-test-api-key"
@@ -1395,15 +1444,27 @@ export function IntegrationsPanel({
                 type="text"
                 spellCheck={false}
                 value={mollieForm.liveApiKey}
-                onChange={(event) =>
-                  setMollieForm((current) => (current ? { ...current, liveApiKey: event.target.value } : current))
-                }
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setMollieForm((current) =>
+                    current
+                      ? {
+                          ...current,
+                          liveApiKey: value,
+                          mode: value.trim().startsWith("live_") ? "live" : current.mode
+                        }
+                      : current
+                  );
+                }}
                 placeholder="live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                 autoComplete="off"
                 name="mollie-live-api-key"
               />
             </label>
           </div>
+              </>
+            );
+          })()}
 
           <p className="ta-seo-hint">
             Sleutels komen van{" "}

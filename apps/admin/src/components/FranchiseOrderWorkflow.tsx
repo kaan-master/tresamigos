@@ -26,7 +26,7 @@ type Props = {
     toStatus?: FranchiseShopOrderStatus;
     deviationKind?: FranchiseShopDeviationKind | "";
   }) => void;
-  onOpenHelp?: () => void;
+  onOpenHelp?: (status?: FranchiseShopOrderStatus) => void;
 };
 
 function toneClass(tone: FranchiseShopOrderActionDef["tone"]) {
@@ -128,7 +128,7 @@ export function FranchiseOrderWorkflow({ order, busy, onAction, onOpenHelp }: Pr
             className="order-workflow-help"
             title="Werkwijze bekijken"
             aria-label="Werkwijze bekijken"
-            onClick={onOpenHelp}
+            onClick={() => onOpenHelp(order.status)}
           >
             ?
           </button>
@@ -254,16 +254,39 @@ export function FranchiseOrderWorkflow({ order, busy, onAction, onOpenHelp }: Pr
       </div>
 
       {flow.events.length ? (
-        <ol className="order-workflow-log">
-          {[...flow.events].reverse().map((event, index) => (
-            <li key={`${event.at}-${index}`}>
-              <span>{event.at ? new Date(event.at).toLocaleString("nl-NL") : "—"}</span>
-              <strong>{FRANCHISE_SHOP_ORDER_STATUS_LABELS[event.toStatus] || event.toStatus}</strong>
-              {event.note ? <em>{event.note}</em> : null}
-              {event.notified === true ? <em>Mail verstuurd</em> : null}
-              {event.notified === false ? <em>Mail niet verstuurd</em> : null}
-            </li>
-          ))}
+        <ol className="order-workflow-log" aria-label="Geschiedenis">
+          {[...flow.events].reverse().map((event, index) => {
+            const color = FRANCHISE_SHOP_ORDER_STATUS_COLORS[event.toStatus] || "#8a8886";
+            const label = FRANCHISE_SHOP_ORDER_STATUS_LABELS[event.toStatus] || event.toStatus;
+            const clickable = Boolean(onOpenHelp);
+            return (
+              <li key={`${event.at}-${index}`}>
+                <button
+                  type="button"
+                  className="order-workflow-log-item"
+                  style={{ borderLeftColor: color }}
+                  disabled={!clickable}
+                  title={clickable ? `Toon “${label}” in de werkwijze` : undefined}
+                  onClick={() => onOpenHelp?.(event.toStatus)}
+                >
+                  <span className="order-workflow-log-time">
+                    {event.at ? new Date(event.at).toLocaleString("nl-NL") : "—"}
+                  </span>
+                  <span className="order-workflow-log-status">
+                    <StatusChip status={event.toStatus} label={label} color={color} />
+                  </span>
+                  {event.note ? <span className="order-workflow-log-note">{event.note}</span> : null}
+                  {event.notified === true ? (
+                    <span className="order-workflow-log-mail is-ok">Mail verstuurd</span>
+                  ) : null}
+                  {event.notified === false ? (
+                    <span className="order-workflow-log-mail is-warn">Mail niet verstuurd</span>
+                  ) : null}
+                  {clickable ? <span className="order-workflow-log-hint">Toon in werkwijze</span> : null}
+                </button>
+              </li>
+            );
+          })}
         </ol>
       ) : null}
 

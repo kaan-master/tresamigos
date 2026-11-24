@@ -1,7 +1,7 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
 /** Gelijk houden aan `apps/admin/package.json` → version. */
-export const ADMIN_APP_VERSION = "0.3.23";
+export const ADMIN_APP_VERSION = "0.3.26";
 
 export type ChangelogEntry = {
   version: string;
@@ -12,9 +12,31 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
-    version: "0.3.23",
+    version: "0.3.26",
     date: "24 november 2026",
     current: true,
+    changes: [
+      "Mollie: met alleen een test-sleutel kun je testmodus aanzetten; live blijft geblokkeerd zonder live_… sleutel."
+    ]
+  },
+  {
+    version: "0.3.25",
+    date: "24 november 2026",
+    changes: [
+      "Franchise-bestelling: factuur- en pakbon-PDF als bijlage in de bevestigingsmail (klant + franchise-mailbox).",
+      "Franchise-tab: badge met aantal bestellingen die op actie wachten (in afwachting / onvolledig)."
+    ]
+  },
+  {
+    version: "0.3.24",
+    date: "24 november 2026",
+    changes: [
+      "Franchise-geschiedenis: status met kleur/label; klik opent de werkwijze met die stap gemarkeerd."
+    ]
+  },
+  {
+    version: "0.3.23",
+    date: "24 november 2026",
     changes: [
       "Alle uitgaande mails in Tres Amigos-huisstijl met logo (HTML), inclusief franchise-/statusmails en testmails."
     ]

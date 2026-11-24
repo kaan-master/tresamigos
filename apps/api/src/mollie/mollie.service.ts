@@ -136,16 +136,24 @@ export class MollieService {
   async resolveActiveApiKey(): Promise<{ key: string; mode: MollieMode } | null> {
     const row = await this.getRow();
     if (!row?.mollieEnabled) return null;
-    const mode = this.normalizeMode(row.mollieMode);
-    const key = mode === "live" ? row.mollieLiveApiKey : row.mollieTestApiKey;
-    if (!key?.trim()) return null;
-    return { key: key.trim(), mode };
+    const preferred = this.normalizeMode(row.mollieMode);
+    const preferredKey = preferred === "live" ? row.mollieLiveApiKey : row.mollieTestApiKey;
+    if (preferredKey?.trim()) return { key: preferredKey.trim(), mode: preferred };
+
+    // Alleen de andere sleutel aanwezig? Gebruik die (test-only setup werkt zo zonder live key).
+    const fallbackMode: MollieMode = preferred === "live" ? "test" : "live";
+    const fallbackKey = fallbackMode === "live" ? row.mollieLiveApiKey : row.mollieTestApiKey;
+    if (fallbackKey?.trim()) return { key: fallbackKey.trim(), mode: fallbackMode };
+    return null;
   }
 
   async assertActiveApiKey() {
     const resolved = await this.resolveActiveApiKey();
     if (!resolved) {
-      throw new MollieServiceError("Mollie is niet actief of de API-sleutel voor de gekozen modus ontbreekt.", 503);
+      throw new MollieServiceError(
+        "Mollie is niet actief of er ontbreekt een API-sleutel. Vul een test_... sleutel in en zet testmodus aan.",
+        503
+      );
     }
     return resolved;
   }

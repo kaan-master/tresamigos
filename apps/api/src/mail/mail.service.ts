@@ -42,6 +42,12 @@ interface GoogleConfig {
 
 type MailConfig = SmtpConfig | GoogleConfig;
 
+export type MailAttachment = {
+  filename: string;
+  content: Buffer;
+  contentType?: string;
+};
+
 type StoredGoogleAccount = {
   email: string;
   refreshToken: string;
@@ -532,6 +538,7 @@ export class MailService {
       subject: string;
       text: string;
       html?: string;
+      attachments?: MailAttachment[];
     }
   ) {
     const fromAddress = input.fromEmail || config.fromEmail;
@@ -542,30 +549,63 @@ export class MailService {
         subject: input.subject,
         text: input.text
       });
-    const boundary = `ta_${randomBytes(12).toString("hex")}`;
+    const attachments = Array.isArray(input.attachments) ? input.attachments.filter((item) => item?.content?.length) : [];
+    const altBoundary = `ta_alt_${randomBytes(10).toString("hex")}`;
+    const mixedBoundary = `ta_mix_${randomBytes(10).toString("hex")}`;
     const textPart = Buffer.from(input.text, "utf8").toString("base64");
     const htmlPart = Buffer.from(html, "utf8").toString("base64");
-    const lines = [
-      `From: ${rfc2047(fromName)} <${fromAddress}>`,
-      `To: ${input.to}`,
-      `Subject: ${rfc2047(input.subject)}`,
-      `Reply-To: ${input.replyTo || fromAddress}`,
-      "MIME-Version: 1.0",
-      `Content-Type: multipart/alternative; boundary="${boundary}"`,
-      "",
-      `--${boundary}`,
+    const alternative = [
+      `--${altBoundary}`,
       "Content-Type: text/plain; charset=UTF-8",
       "Content-Transfer-Encoding: base64",
       "",
       textPart,
-      `--${boundary}`,
+      `--${altBoundary}`,
       "Content-Type: text/html; charset=UTF-8",
       "Content-Transfer-Encoding: base64",
       "",
       htmlPart,
-      `--${boundary}--`
+      `--${altBoundary}--`
+    ].join("\r\n");
+
+    const header = [
+      `From: ${rfc2047(fromName)} <${fromAddress}>`,
+      `To: ${input.to}`,
+      `Subject: ${rfc2047(input.subject)}`,
+      `Reply-To: ${input.replyTo || fromAddress}`,
+      "MIME-Version: 1.0"
     ];
-    const raw = Buffer.from(lines.join("\r\n")).toString("base64url");
+
+    let body: string;
+    if (!attachments.length) {
+      body = [...header, `Content-Type: multipart/alternative; boundary="${altBoundary}"`, "", alternative].join("\r\n");
+    } else {
+      const parts = [
+        ...header,
+        `Content-Type: multipart/mixed; boundary="${mixedBoundary}"`,
+        "",
+        `--${mixedBoundary}`,
+        `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
+        "",
+        alternative
+      ];
+      for (const file of attachments) {
+        const filename = String(file.filename || "bijlage.pdf").replace(/[\r\n"]/g, "");
+        const type = file.contentType || "application/pdf";
+        parts.push(
+          `--${mixedBoundary}`,
+          `Content-Type: ${type}; name="${filename}"`,
+          "Content-Transfer-Encoding: base64",
+          `Content-Disposition: attachment; filename="${filename}"`,
+          "",
+          file.content.toString("base64")
+        );
+      }
+      parts.push(`--${mixedBoundary}--`);
+      body = parts.join("\r\n");
+    }
+
+    const raw = Buffer.from(body).toString("base64url");
     const response = await fetchWithTimeout(GMAIL_SEND_URL, {
       method: "POST",
       headers: {
@@ -642,6 +682,7 @@ export class MailService {
     subject: string;
     text: string;
     html?: string;
+    attachments?: MailAttachment[];
     category?: MailNotifyCategory;
   }) {
     const config = await this.resolveConfig(input.category);
@@ -655,7 +696,8 @@ export class MailService {
         subject: input.subject,
         text: input.text
       });
-    const payload = { ...input, html };
+    const attachments = Array.isArray(input.attachments) ? input.attachments.filter((item) => item?.content?.length) : [];
+    const payload = { ...input, html, attachments };
     if (config.kind === "google") {
       return withDeadline(
         this.sendViaGmailApi(config, payload),
@@ -672,7 +714,12 @@ export class MailService {
         replyTo: input.replyTo || fromAddress,
         subject: input.subject,
         text: input.text,
-        html
+        html,
+        attachments: attachments.map((file) => ({
+          filename: file.filename,
+          content: file.content,
+          contentType: file.contentType || "application/pdf"
+        }))
       }),
       20_000,
       "SMTP reageerde niet op tijd. Controleer host, poort en firewall."
@@ -735,6 +782,7 @@ export class MailService {
     replyTo?: string;
     subject: string;
     body: string;
+    attachments?: MailAttachment[];
     category?: MailNotifyCategory;
   }) {
     return Boolean(
@@ -744,6 +792,7 @@ export class MailService {
         replyTo: input.replyTo,
         subject: input.subject,
         text: input.body,
+        attachments: input.attachments,
         category: input.category
       })
     );
