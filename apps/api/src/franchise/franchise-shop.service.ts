@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import {
   FRANCHISE_SHOP_ORDER_CHANNELS,
   FRANCHISE_SHOP_ORDER_CHANNEL_LABELS,
+  FRANCHISE_SHOP_ORDER_HAPPY_PATH,
   FRANCHISE_SHOP_ORDER_STATUSES,
   FRANCHISE_SHOP_ORDER_STATUS_LABELS,
   FRANCHISE_SHOP_PAYMENT_STATUS_LABELS,
@@ -146,10 +147,12 @@ export class FranchiseShopService {
     status: string;
     channel?: string;
     flow?: unknown;
-    accountId: string;
+    accountId: string | null;
     locationId: string;
     locationName: string;
     locationCode: string;
+    contactName?: string;
+    contactPhone?: string;
     notes: string;
     adminNotes: string;
     subtotalCents: number;
@@ -157,7 +160,7 @@ export class FranchiseShopService {
     paymentStatus?: string;
     molliePaymentId?: string;
     paidAt?: Date | null;
-    account: { name: string; email: string; company?: string; vatId?: string; kvk?: string };
+    account: { name: string; email: string; company?: string; vatId?: string; kvk?: string } | null;
     items: Array<{
       id: string;
       productId: string;
@@ -174,6 +177,8 @@ export class FranchiseShopService {
     flow.channel = channel;
     const paymentMethod = record.paymentMethod === "ideal" ? "ideal" : "invoice";
     const paymentStatus = asPaymentStatus(record.paymentStatus);
+    const contactName = cleanText(record.contactName, "", 160);
+    const contactPhone = cleanText(record.contactPhone, "", 40);
     return {
       id: record.id,
       orderNumber: record.orderNumber,
@@ -182,12 +187,14 @@ export class FranchiseShopService {
       updatedAt: record.updatedAt.toISOString(),
       status,
       channel,
-      accountId: record.accountId,
-      accountName: record.account.name,
-      accountEmail: record.account.email,
-      accountCompany: record.account.company || "",
-      accountVatId: record.account.vatId || "",
-      accountKvk: record.account.kvk || "",
+      accountId: record.accountId || "",
+      accountName: record.account?.name || contactName || "Onbekend",
+      accountEmail: record.account?.email || "",
+      accountCompany: record.account?.company || "",
+      accountVatId: record.account?.vatId || "",
+      accountKvk: record.account?.kvk || "",
+      contactName,
+      contactPhone,
       locationId: record.locationId,
       locationName: record.locationName,
       locationCode: record.locationCode,
@@ -210,7 +217,7 @@ export class FranchiseShopService {
           lineTotalCents: item.lineTotalCents
         })),
       flow,
-      nextActions: franchiseShopOrderActions(status),
+      nextActions: franchiseShopOrderActions(status, flow),
       question: franchiseShopOrderQuestion(status)
     };
   }
@@ -412,8 +419,8 @@ export class FranchiseShopService {
 
   private async buildOrderItems(
     locationId: string,
-    lines: Array<{ productId?: string; quantity?: number }>,
-    options?: { allowEmpty?: boolean }
+    lines: Array<{ productId?: string; quantity?: number; unitPriceCents?: number }>,
+    options?: { allowEmpty?: boolean; allowPriceOverride?: boolean }
   ) {
     const sliced = Array.isArray(lines) ? lines.slice(0, 40) : [];
     if (!sliced.length) {
@@ -424,7 +431,7 @@ export class FranchiseShopService {
     const productIds = [...new Set(sliced.map((line) => cleanText(line.productId, "", 80)).filter(Boolean))];
     const products = await this.prisma.franchiseShopProduct.findMany({
       where: { id: { in: productIds }, active: true },
-      include: { prices: { where: { locationId } } }
+      include: { prices: locationId ? { where: { locationId } } : true }
     });
     const byId = new Map(products.map((product) => [product.id, product]));
     const orderItems: Array<{
@@ -440,16 +447,24 @@ export class FranchiseShopService {
       const productId = cleanText(line.productId, "", 80);
       const quantity = Math.min(999, Math.max(1, Math.round(Number(line.quantity) || 0)));
       const product = byId.get(productId);
-      const price = product?.prices[0];
-      if (!product || !price) {
-        throw new BadRequestException({ message: "Geen prijs voor product in deze franchise." });
+      if (!product) {
+        throw new BadRequestException({ message: "Onbekend of inactief product in de bestelling." });
+      }
+      const catalogCents = product.prices[0]?.priceCents;
+      const override =
+        options?.allowPriceOverride && line.unitPriceCents != null ? moneyCents(line.unitPriceCents) : null;
+      const unitPriceCents = override != null && override > 0 ? override : catalogCents;
+      if (unitPriceCents == null || unitPriceCents < 0) {
+        throw new BadRequestException({
+          message: `Geen prijs voor “${product.name}” bij deze vestiging. Vul een bedrag in euro in.`
+        });
       }
       orderItems.push({
         productId: product.id,
         productName: product.name,
         quantity,
-        unitPriceCents: price.priceCents,
-        lineTotalCents: price.priceCents * quantity,
+        unitPriceCents,
+        lineTotalCents: unitPriceCents * quantity,
         sortOrder: index
       });
     }
@@ -467,75 +482,104 @@ export class FranchiseShopService {
     });
   }
 
+  private prismaFailureMessage(error: unknown, fallback: string) {
+    const detail = error instanceof Error ? error.message : "";
+    const code =
+      error && typeof error === "object" && "code" in error ? String((error as { code?: string }).code || "") : "";
+    if (
+      code === "P2022" ||
+      detail.includes("column") ||
+      detail.includes("does not exist") ||
+      detail.includes("Unknown argument")
+    ) {
+      return "Database is nog niet bijgewerkt (migratie). Draai de franchise/Mollie-migraties en probeer opnieuw.";
+    }
+    return detail || fallback;
+  }
+
   async placeOrder(session: FranchiseShopSessionPayload, input: CreateFranchiseShopOrderInput) {
-    const account = await this.prisma.franchiseAccount.findUnique({ where: { id: session.accountId } });
-    if (!account || !account.active) throw new BadRequestException({ message: "Account niet actief." });
-
-    const allowInvoice = account.allowInvoicePayment !== false;
-    const paymentMethod = asPaymentMethod(input?.paymentMethod, allowInvoice);
-    if (paymentMethod === "invoice" && !allowInvoice) {
-      throw new BadRequestException({
-        message: "Dit account mag alleen met iDEAL betalen (factuur uitgeschakeld)."
-      });
-    }
-
-    const notes = cleanText(input?.notes, "", 1000);
-    const orderItems = await this.buildOrderItems(session.locationId, input?.items || []);
-    const subtotalCents = orderItems.reduce((sum, item) => sum + item.lineTotalCents, 0);
-    const orderNumber = await this.nextOrderNumber();
-    const invoiceNumber = await this.nextInvoiceNumber();
-    const status: FranchiseShopOrderStatus = paymentMethod === "ideal" ? "in_afwachting" : "in_afwachting";
-    const paymentStatus: FranchiseShopPaymentStatus = paymentMethod === "ideal" ? "pending" : "invoice";
-    const flow = this.initialFlow(
-      "portaal",
-      status,
-      paymentMethod === "ideal" ? `iDEAL · ${notes || "wacht op betaling"}`.trim() : notes || undefined
-    );
-
-    const record = await this.prisma.franchiseShopOrder.create({
-      data: {
-        orderNumber,
-        invoiceNumber,
-        status,
-        channel: "portaal",
-        flow: flow as unknown as Prisma.InputJsonValue,
-        accountId: session.accountId,
-        locationId: session.locationId,
-        locationName: session.locationName,
-        locationCode: session.locationCode,
-        notes,
-        subtotalCents,
-        paymentMethod,
-        paymentStatus,
-        items: { create: orderItems }
-      },
-      include: { account: true, items: true }
-    });
-
-    if (paymentMethod === "invoice") {
-      return {
-        order: this.toOrderDto(record),
-        message: "Bestelling geplaatst op factuur. Factuur en pakbon staan klaar.",
-        checkoutUrl: null as string | null
-      };
-    }
-
     try {
-      const payment = await this.createMollieCheckoutForOrder(record.id);
-      const refreshed = await this.prisma.franchiseShopOrder.findUnique({
-        where: { id: record.id },
+      const account = await this.prisma.franchiseAccount.findUnique({ where: { id: session.accountId } });
+      if (!account || !account.active) throw new BadRequestException({ message: "Account niet actief." });
+
+      const allowInvoice = account.allowInvoicePayment !== false;
+      const paymentMethod = asPaymentMethod(input?.paymentMethod, allowInvoice);
+      if (paymentMethod === "invoice" && !allowInvoice) {
+        throw new BadRequestException({
+          message: "Dit account mag alleen met iDEAL betalen (factuur uitgeschakeld)."
+        });
+      }
+
+      const notes = cleanText(input?.notes, "", 1000);
+      const orderItems = await this.buildOrderItems(session.locationId, input?.items || []);
+      const subtotalCents = orderItems.reduce((sum, item) => sum + item.lineTotalCents, 0);
+      const orderNumber = await this.nextOrderNumber();
+      const invoiceNumber = await this.nextInvoiceNumber();
+      const status: FranchiseShopOrderStatus = "in_afwachting";
+      const paymentStatus: FranchiseShopPaymentStatus = paymentMethod === "ideal" ? "pending" : "invoice";
+      const flow = this.initialFlow(
+        "portaal",
+        status,
+        paymentMethod === "ideal" ? `iDEAL · ${notes || "wacht op betaling"}`.trim() : notes || undefined
+      );
+
+      const record = await this.prisma.franchiseShopOrder.create({
+        data: {
+          orderNumber,
+          invoiceNumber,
+          status,
+          channel: "portaal",
+          flow: flow as unknown as Prisma.InputJsonValue,
+          accountId: session.accountId,
+          locationId: session.locationId,
+          locationName: session.locationName,
+          locationCode: session.locationCode,
+          contactName: account.name,
+          contactPhone: "",
+          notes,
+          subtotalCents,
+          paymentMethod,
+          paymentStatus,
+          items: { create: orderItems }
+        },
         include: { account: true, items: true }
       });
-      return {
-        order: this.toOrderDto(refreshed || record),
-        message: "Bestelling aangemaakt. Rond iDEAL af bij Mollie.",
-        checkoutUrl: payment.checkoutUrl as string | null
-      };
+
+      if (paymentMethod === "invoice") {
+        const order = this.toOrderDto(record);
+        void this.notifyOrderPlaced(order);
+        return {
+          order,
+          message: "Bestelling geplaatst op factuur. Factuur en pakbon staan klaar.",
+          checkoutUrl: null as string | null
+        };
+      }
+
+      try {
+        const payment = await this.createMollieCheckoutForOrder(record.id);
+        const refreshed = await this.prisma.franchiseShopOrder.findUnique({
+          where: { id: record.id },
+          include: { account: true, items: true }
+        });
+        return {
+          order: this.toOrderDto(refreshed || record),
+          message: "Bestelling aangemaakt. Rond iDEAL af bij Mollie.",
+          checkoutUrl: payment.checkoutUrl as string | null
+        };
+      } catch (error) {
+        await this.prisma.franchiseShopOrder.delete({ where: { id: record.id } }).catch(() => undefined);
+        if (error instanceof MollieServiceError) {
+          throw new BadRequestException({ message: error.message || "iDEAL-betaling starten mislukt." });
+        }
+        if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
+        throw new BadRequestException({
+          message: this.prismaFailureMessage(error, "iDEAL-betaling starten mislukt.")
+        });
+      }
     } catch (error) {
-      await this.prisma.franchiseShopOrder.delete({ where: { id: record.id } }).catch(() => undefined);
-      if (error instanceof MollieServiceError) throw error;
+      if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
       throw new BadRequestException({
-        message: error instanceof Error ? error.message : "iDEAL-betaling starten mislukt."
+        message: this.prismaFailureMessage(error, "Bestelling plaatsen mislukt.")
       });
     }
   }
@@ -556,12 +600,21 @@ export class FranchiseShopService {
       );
     }
 
+    const customerEmail = order.account?.email || "";
+    if (!customerEmail.includes("@")) {
+      throw new BadRequestException({
+        message: "iDEAL vereist een franchise-account met e-mailadres."
+      });
+    }
     const payment = await this.mollie.createIdealPayment(key, {
       amountCents: order.subtotalCents,
       description: `Tres Amigos ${order.orderNumber} · ${order.locationCode} ${order.locationName}`.slice(0, 255),
       redirectUrl: this.mollie.buildFranchiseRedirectUrl(order.id),
       webhookUrl: webhookUrl || undefined,
-      customer: { email: order.account.email, name: order.account.name },
+      customer: {
+        email: customerEmail,
+        name: order.account?.name || order.contactName || order.locationName
+      },
       metadata: {
         orderId: order.id,
         orderNumber: order.orderNumber,
@@ -681,7 +734,36 @@ export class FranchiseShopService {
       include: { account: true, items: true }
     });
 
+    void this.notifyOrderPlaced(this.toOrderDto(updated), true);
     return { payment, order: updated, settled: true, orderMissing: false };
+  }
+
+  private async notifyOrderPlaced(order: FranchiseShopOrder, paidIdeal = false) {
+    if (!order.accountEmail) return;
+    const pay =
+      order.paymentMethod === "ideal"
+        ? paidIdeal || order.paymentStatus === "paid"
+          ? "Betaald via iDEAL"
+          : "iDEAL"
+        : "Op factuur";
+    try {
+      await this.mail.sendNotificationEmail({
+        to: order.accountEmail,
+        subject: `Bestelling ${order.orderNumber} ontvangen`,
+        body: [
+          `Je bestelling ${order.orderNumber} is ontvangen voor ${order.locationCode} ${order.locationName}.`,
+          `Betaling: ${pay}.`,
+          `Status: ${FRANCHISE_SHOP_ORDER_STATUS_LABELS[order.status]}.`,
+          order.documentsReady ? "Factuur en pakbon staan klaar in het franchise-portaal." : "",
+          "Je ontvangt een mail bij elke volgende statusupdate."
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
+        category: "franchise"
+      });
+    } catch {
+      /* ignore mail failures on place */
+    }
   }
 
   async getPaymentStatus(
@@ -751,16 +833,42 @@ export class FranchiseShopService {
   }
 
   async createAdminOrder(input: AdminCreateFranchiseShopOrderInput) {
-    const account = await this.prisma.franchiseAccount.findUnique({
-      where: { id: cleanText(input?.accountId, "", 80) },
-      include: { location: true }
-    });
-    if (!account) throw new BadRequestException({ message: "Kies een franchise-account." });
-
     const channel = asChannel(input?.channel);
+    const accountId = cleanText(input?.accountId, "", 80);
+    const contactPhone = cleanText(input?.contactPhone, "", 40);
+    const contactName = cleanText(input?.contactName, "", 160);
     const notes = cleanText(input?.notes, "", 1000);
     const missingData = cleanText(input?.missingData, "", 2000);
-    const orderItems = await this.buildOrderItems(account.locationId, input?.items || [], { allowEmpty: true });
+
+    if (channel === "whatsapp" && !accountId && contactPhone.replace(/\D/g, "").length < 8) {
+      throw new BadRequestException({
+        message: "Vul een WhatsApp-nummer in (of koppel een franchise-account)."
+      });
+    }
+
+    const account = accountId
+      ? await this.prisma.franchiseAccount.findUnique({
+          where: { id: accountId },
+          include: { location: true }
+        })
+      : null;
+    if (accountId && !account) throw new BadRequestException({ message: "Franchise-account niet gevonden." });
+
+    const locationId = account?.locationId || cleanText(input?.locationId, "", 80);
+    if (!locationId) {
+      throw new BadRequestException({
+        message: "Kies een vestiging of een franchise-account."
+      });
+    }
+    const location =
+      account?.location ||
+      (await this.prisma.location.findUnique({ where: { id: locationId } }));
+    if (!location) throw new BadRequestException({ message: "Vestiging niet gevonden." });
+
+    const orderItems = await this.buildOrderItems(location.id, input?.items || [], {
+      allowEmpty: true,
+      allowPriceOverride: true
+    });
     const incomplete = input?.incomplete === true || !orderItems.length;
     const status: FranchiseShopOrderStatus = incomplete ? "registratie_onvolledig" : "in_afwachting";
     const flow = this.initialFlow(channel, status, missingData || notes || undefined);
@@ -776,10 +884,12 @@ export class FranchiseShopService {
         status,
         channel,
         flow: flow as unknown as Prisma.InputJsonValue,
-        accountId: account.id,
-        locationId: account.locationId,
-        locationName: account.location.name,
-        locationCode: account.location.code,
+        accountId: account?.id || null,
+        locationId: location.id,
+        locationName: location.name,
+        locationCode: location.code,
+        contactName: contactName || account?.name || "",
+        contactPhone: contactPhone,
         notes,
         subtotalCents,
         paymentMethod: "invoice",
@@ -825,6 +935,25 @@ export class FranchiseShopService {
     const nextStatus = FRANCHISE_SHOP_ORDER_STATUSES.includes(cleanText(input?.status, "", 40) as FranchiseShopOrderStatus)
       ? (cleanText(input.status, "", 40) as FranchiseShopOrderStatus)
       : current.status;
+
+    let notified: boolean | undefined;
+    if (nextStatus !== current.status && current.accountEmail) {
+      try {
+        notified = await this.mail.sendNotificationEmail({
+          to: current.accountEmail,
+          subject: `${current.orderNumber}: status ${FRANCHISE_SHOP_ORDER_STATUS_LABELS[nextStatus]}`,
+          body: [
+            `Bestelling ${current.orderNumber} (${current.locationCode} ${current.locationName}) heeft een nieuwe status.`,
+            `Was: ${FRANCHISE_SHOP_ORDER_STATUS_LABELS[current.status]}`,
+            `Nu: ${FRANCHISE_SHOP_ORDER_STATUS_LABELS[nextStatus]}`
+          ].join("\n"),
+          category: "franchise"
+        });
+      } catch {
+        notified = false;
+      }
+    }
+
     const flow =
       nextStatus !== current.status
         ? this.appendFlowEvent(current.flow, {
@@ -832,12 +961,13 @@ export class FranchiseShopService {
             action: "registered",
             fromStatus: current.status,
             toStatus: nextStatus,
-            note: "Handmatige status"
+            note: "Handmatige status",
+            notified
           })
         : current.flow;
 
     const nextItems = Array.isArray(input.items)
-      ? await this.buildOrderItems(existing.locationId, input.items, { allowEmpty: true })
+      ? await this.buildOrderItems(existing.locationId, input.items, { allowEmpty: true, allowPriceOverride: true })
       : null;
 
     const record = await this.prisma.franchiseShopOrder.update({
@@ -867,7 +997,60 @@ export class FranchiseShopService {
 
     const current = this.toOrderDto(existing);
     const action = cleanText(input?.action, "", 40) as FranchiseShopOrderAction;
-    const def = franchiseShopOrderActionDef(current.status, action);
+
+    if (action === "jump_status") {
+      const note = cleanText(input?.note, "", 2000);
+      if (!note) {
+        throw new BadRequestException({
+          message: "Geef aan waarom je de status handmatig wijzigt."
+        });
+      }
+      const target = cleanText(input?.toStatus, "", 40) as FranchiseShopOrderStatus;
+      if (!(FRANCHISE_SHOP_ORDER_HAPPY_PATH as readonly string[]).includes(target)) {
+        throw new BadRequestException({ message: "Ongeldige doelstatus." });
+      }
+      if (target === current.status) {
+        throw new BadRequestException({ message: "De bestelling heeft deze status al." });
+      }
+
+      const shouldNotify = input?.notify !== false;
+      let notified: boolean | undefined;
+      if (shouldNotify) {
+        notified = await this.notifyOrderAction(current, "jump_status", note, target);
+      }
+
+      const nextFlow = this.appendFlowEvent(current.flow, {
+        at: new Date().toISOString(),
+        action: "jump_status",
+        fromStatus: current.status,
+        toStatus: target,
+        note,
+        notified
+      });
+
+      const record = await this.prisma.franchiseShopOrder.update({
+        where: { id },
+        data: {
+          status: target,
+          flow: nextFlow as unknown as Prisma.InputJsonValue
+        },
+        include: { account: true, items: true }
+      });
+
+      const order = this.toOrderDto(record);
+      return {
+        order,
+        mailSent: notified,
+        message:
+          notified === false
+            ? `Status gezet op ${FRANCHISE_SHOP_ORDER_STATUS_LABELS[target]}. Mail niet verstuurd.`
+            : notified
+              ? `Status gezet op ${FRANCHISE_SHOP_ORDER_STATUS_LABELS[target]}. Statusmail verstuurd.`
+              : `Status gezet op ${FRANCHISE_SHOP_ORDER_STATUS_LABELS[target]}.`
+      };
+    }
+
+    const def = franchiseShopOrderActionDef(current.status, action, current.flow);
     if (!def) {
       throw new BadRequestException({
         message: `Deze stap hoort niet bij status ${FRANCHISE_SHOP_ORDER_STATUS_LABELS[current.status]}.`
@@ -914,17 +1097,18 @@ export class FranchiseShopService {
       flow.missingData = "";
     }
 
-    const shouldNotify = def.notify && input?.notify !== false;
+    const nextStatus = def.toStatus;
+    const shouldNotify = Boolean(def.notify) && input?.notify !== false;
     let notified: boolean | undefined;
     if (shouldNotify) {
-      notified = await this.notifyOrderAction(current, def.id, note);
+      notified = await this.notifyOrderAction(current, def.id, note, nextStatus);
     }
 
     const nextFlow = this.appendFlowEvent(flow, {
       at: new Date().toISOString(),
       action: def.id,
       fromStatus: current.status,
-      toStatus: def.toStatus,
+      toStatus: nextStatus,
       note: note || undefined,
       notified
     });
@@ -932,7 +1116,7 @@ export class FranchiseShopService {
     const record = await this.prisma.franchiseShopOrder.update({
       where: { id },
       data: {
-        status: def.toStatus,
+        status: nextStatus,
         channel: current.channel,
         flow: nextFlow as unknown as Prisma.InputJsonValue,
         adminNotes: note && def.tone === "danger" ? [current.adminNotes, note].filter(Boolean).join("\n") : undefined
@@ -947,23 +1131,42 @@ export class FranchiseShopService {
       message:
         notified === false
           ? `${def.label}. Mail naar de vestiging is niet verstuurd.`
-          : def.label
+          : notified
+            ? `${def.label}. Statusmail naar ${order.accountEmail} verstuurd.`
+            : def.label
     };
   }
 
   private async notifyOrderAction(
     order: FranchiseShopOrder,
     action: FranchiseShopOrderAction,
-    note: string
+    note: string,
+    nextStatus: FranchiseShopOrderStatus
   ): Promise<boolean> {
     const to = order.accountEmail;
     if (!to) return false;
     const channel = FRANCHISE_SHOP_ORDER_CHANNEL_LABELS[order.channel];
+    const statusLabel = FRANCHISE_SHOP_ORDER_STATUS_LABELS[nextStatus];
+    const location = `${order.locationCode} ${order.locationName}`.trim();
     const subjects: Partial<Record<FranchiseShopOrderAction, string>> = {
       request_missing_data: `Ontbrekende gegevens voor ${order.orderNumber}`,
+      mark_incomplete: `Registratie onvolledig: ${order.orderNumber}`,
+      complete_registration: `${order.orderNumber} is compleet geregistreerd`,
       require_action: `Actie vereist voor ${order.orderNumber}`,
+      resolve_action: `${order.orderNumber}: actie afgestemd`,
+      confirm_order: `${order.orderNumber} is bevestigd`,
+      start_processing: `${order.orderNumber} wordt behandeld`,
+      mark_ready: `${order.orderNumber} is gereed voor verzending`,
       mark_shipped: `${order.orderNumber} is onderweg`,
-      confirm_order: `${order.orderNumber} is bevestigd`
+      mark_arrived: `${order.orderNumber}: levering ontvangen`,
+      confirm_complete_receipt: `${order.orderNumber} is afgerond`,
+      report_deviation: `Afwijking bij ${order.orderNumber}`,
+      plan_nalevering: `Nalevering gepland voor ${order.orderNumber}`,
+      accept_with_deviation: `${order.orderNumber} afgerond met afwijking`,
+      process_nalevering: `Nalevering voor ${order.orderNumber}`,
+      revert: `${order.orderNumber}: status teruggezet naar ${statusLabel}`,
+      jump_status: `${order.orderNumber}: status gewijzigd naar ${statusLabel}`,
+      cancel: `${order.orderNumber} is geannuleerd`
     };
     const bodies: Partial<Record<FranchiseShopOrderAction, string>> = {
       request_missing_data: [
@@ -973,16 +1176,59 @@ export class FranchiseShopService {
       ]
         .filter(Boolean)
         .join("\n\n"),
+      mark_incomplete: [
+        `Bestelling ${order.orderNumber} staat opnieuw op registratie onvolledig.`,
+        note ? `Wat ontbreekt:\n${note}` : ""
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+      complete_registration: `Bestelling ${order.orderNumber} is compleet geregistreerd en wacht op bevestiging door de productiekeuken.`,
       require_action: [
         `De productiekeuken heeft een actie nodig voor ${order.orderNumber}.`,
-        note ? note : "Neem contact op over een wijziging, tekort of alternatief."
+        note || "Neem contact op over een wijziging, tekort of alternatief."
       ].join("\n\n"),
-      mark_shipped: `Bestelling ${order.orderNumber} is onderweg naar ${order.locationCode} ${order.locationName}. Controleer de levering bij ontvangst.`,
-      confirm_order: `Bestelling ${order.orderNumber} is bevestigd door de productiekeuken.`
+      resolve_action: [
+        `De actie voor ${order.orderNumber} is afgestemd. De keuken controleert opnieuw.`,
+        note ? `Afspraak:\n${note}` : ""
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+      confirm_order: `Bestelling ${order.orderNumber} is bevestigd door de productiekeuken. Status: ${statusLabel}.`,
+      start_processing: `Bestelling ${order.orderNumber} is in behandeling. Status: ${statusLabel}.`,
+      mark_ready: `Bestelling ${order.orderNumber} is gereed voor verzending. Status: ${statusLabel}.`,
+      mark_shipped: `Bestelling ${order.orderNumber} is onderweg naar ${location}. Controleer de levering bij ontvangst.`,
+      mark_arrived: `Bestelling ${order.orderNumber} is gemarkeerd als ontvangen. Controleer of alles compleet en correct is.`,
+      confirm_complete_receipt: `Bestelling ${order.orderNumber} is volledig ontvangen en afgerond. Factuur en pakbon staan klaar in het portaal.`,
+      report_deviation: [
+        `Er is een afwijking geregistreerd bij ${order.orderNumber}.`,
+        note ? `Toelichting:\n${note}` : "",
+        `Nieuwe status: ${statusLabel}.`
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+      plan_nalevering: [
+        `Er is een nalevering gepland voor ${order.orderNumber}.`,
+        note ? `Details:\n${note}` : ""
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+      accept_with_deviation: `Bestelling ${order.orderNumber} is afgerond met afwijking (geen nalevering).`,
+      process_nalevering: `De nalevering voor ${order.orderNumber} wordt verwerkt. Controleer opnieuw bij ontvangst.`,
+      revert: `De status van bestelling ${order.orderNumber} is teruggezet naar ${statusLabel}.${note ? `\n\nToelichting: ${note}` : ""}`,
+      jump_status: [
+        `De status van bestelling ${order.orderNumber} is handmatig gewijzigd.`,
+        `Was: ${FRANCHISE_SHOP_ORDER_STATUS_LABELS[order.status]}`,
+        `Nu: ${statusLabel}`,
+        note ? `Reden:\n${note}` : ""
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+      cancel: `Bestelling ${order.orderNumber} is geannuleerd.${note ? `\n\nReden: ${note}` : ""}`
     };
-    const subject = subjects[action];
-    const body = bodies[action];
-    if (!subject || !body) return false;
+    const subject = subjects[action] || `${order.orderNumber}: status ${statusLabel}`;
+    const body =
+      bodies[action] ||
+      `Bestelling ${order.orderNumber} (${location}) heeft een nieuwe status: ${statusLabel}.${note ? `\n\n${note}` : ""}`;
     try {
       return await this.mail.sendNotificationEmail({
         to,
@@ -1025,6 +1271,7 @@ export class FranchiseShopService {
       customer: {
         name: order.accountName,
         email: order.accountEmail,
+        phone: order.contactPhone || undefined,
         company: order.accountCompany,
         vatId: order.accountVatId,
         kvk: order.accountKvk,

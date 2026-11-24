@@ -7,6 +7,9 @@ export interface AdminTabletHubItem {
   label: string;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
   badge?: number;
+  featureBadge?: string;
+  featureTitle?: string;
+  featureKind?: "new" | "update";
   tone?: "yellow" | "blue" | "green" | "red" | "brand";
 }
 
@@ -42,14 +45,17 @@ export function AdminTabletHub({ items, activeId, onSelect, variant = "page" }: 
           <button
             key={item.id}
             type="button"
-            className={`ta-tile tone-${tone}${activeId === item.id ? " is-active" : ""}`}
+            className={`ta-tile tone-${tone}${activeId === item.id ? " is-active" : ""}${item.featureBadge ? ` is-feature-highlight is-feature-${item.featureKind || "update"}` : ""}`}
             style={{ animationDelay: `${index * 45}ms` }}
+            title={item.featureTitle || undefined}
+            aria-label={item.featureTitle ? `${item.label}. ${item.featureTitle}` : item.label}
             onClick={() => pick(item.id)}
           >
             <span className="ta-tile-icon">
               <item.Icon width={variant === "menu" ? 22 : 26} height={variant === "menu" ? 22 : 26} />
             </span>
             <strong>{item.label}</strong>
+            {item.featureBadge ? <em className="ta-tile-feature">{item.featureBadge}</em> : null}
             {item.badge && item.badge > 0 ? <em className="ta-tile-badge">{item.badge}</em> : null}
           </button>
         );

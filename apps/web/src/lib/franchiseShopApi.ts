@@ -32,15 +32,23 @@ async function franchiseApi<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers || {})
     }
   });
-  const data = (await response.json().catch(() => ({}))) as T & { message?: unknown };
+  const data = (await response.json().catch(() => ({}))) as T & { message?: unknown; error?: unknown };
   if (!response.ok) {
     const message = data.message;
-    const text =
-      typeof message === "string"
-        ? message
-        : message && typeof message === "object" && "message" in message && typeof (message as { message: unknown }).message === "string"
-          ? (message as { message: string }).message
-          : "Er ging iets mis.";
+    let text = "Er ging iets mis.";
+    if (typeof message === "string") {
+      text = message;
+    } else if (Array.isArray(message)) {
+      text = message.map(String).filter(Boolean).join(" ");
+    } else if (message && typeof message === "object" && "message" in message) {
+      const nested = (message as { message: unknown }).message;
+      if (typeof nested === "string") text = nested;
+    } else if (typeof data.error === "string" && data.error !== "Internal Server Error") {
+      text = data.error;
+    }
+    if (/internal server error/i.test(text)) {
+      text = "Bestelling mislukt door een serverfout. Controleer of de database-migraties zijn gedraaid.";
+    }
     throw new Error(text);
   }
   return data;

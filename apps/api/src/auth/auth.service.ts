@@ -14,6 +14,9 @@ export interface AdminSessionPayload {
   name: string;
   email: string;
   permissions: AdminTabId[];
+  /** Alleen true in de sessie van de allereerste login. */
+  firstLogin?: boolean;
+  loginCount?: number;
 }
 
 function allPermissions(): AdminTabId[] {
@@ -53,12 +56,21 @@ export class AuthService {
       const account = await this.prisma.adminUser.findUnique({ where: { email: normalizedEmail } });
       if (!account || !account.active || !verifyPassword(password, account.passwordHash)) return null;
 
+      const firstLogin = account.loginCount === 0;
+      const loginCount = account.loginCount + 1;
+      await this.prisma.adminUser.update({
+        where: { id: account.id },
+        data: { loginCount, lastLoginAt: new Date() }
+      });
+
       const user: AdminSessionUser = {
         id: account.id,
         name: account.name,
         email: account.email,
         role: "employee",
-        permissions: sanitizePermissions(account.permissions)
+        permissions: sanitizePermissions(account.permissions),
+        firstLogin,
+        loginCount
       };
       const token = createSessionToken();
       await this.storeSession(token, {
@@ -66,7 +78,9 @@ export class AuthService {
         userId: account.id,
         name: account.name,
         email: account.email,
-        permissions: user.permissions
+        permissions: user.permissions,
+        firstLogin,
+        loginCount
       });
       return { token, user };
     }
@@ -78,14 +92,18 @@ export class AuthService {
       name: "Beheerder",
       email: "",
       role: "master",
-      permissions: allPermissions()
+      permissions: allPermissions(),
+      firstLogin: false,
+      loginCount: 1
     };
     const token = createSessionToken();
     await this.storeSession(token, {
       role: "master",
       name: user.name,
       email: user.email,
-      permissions: user.permissions
+      permissions: user.permissions,
+      firstLogin: false,
+      loginCount: 1
     });
     return { token, user };
   }
@@ -121,7 +139,9 @@ export class AuthService {
           userId: account.id,
           name: account.name,
           email: account.email,
-          permissions: sanitizePermissions(account.permissions)
+          permissions: sanitizePermissions(account.permissions),
+          firstLogin: parsed.firstLogin === true,
+          loginCount: account.loginCount
         };
       }
       return {
@@ -129,7 +149,9 @@ export class AuthService {
         userId: parsed.userId,
         name: parsed.name || "Beheerder",
         email: parsed.email || "",
-        permissions: parsed.role === "master" ? allPermissions() : sanitizePermissions(parsed.permissions)
+        permissions: parsed.role === "master" ? allPermissions() : sanitizePermissions(parsed.permissions),
+        firstLogin: parsed.firstLogin === true,
+        loginCount: parsed.loginCount
       };
     } catch {
       return null;
@@ -165,7 +187,9 @@ export class AuthService {
       name: session.name,
       email: session.email,
       role: session.role,
-      permissions: session.permissions
+      permissions: session.permissions,
+      firstLogin: session.firstLogin === true,
+      loginCount: session.loginCount
     };
   }
 

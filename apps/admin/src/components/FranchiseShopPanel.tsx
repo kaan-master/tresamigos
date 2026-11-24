@@ -41,6 +41,21 @@ function formatEuro(cents: number) {
   return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(cents / 100);
 }
 
+function parseEuroToCents(value: string): number | undefined {
+  const normalized = value.trim().replace(/\s/g, "").replace(",", ".");
+  if (!normalized) return undefined;
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount) || amount < 0) return undefined;
+  return Math.round(amount * 100);
+}
+
+function centsToEuroInput(cents: number | undefined) {
+  if (cents == null || !Number.isFinite(cents)) return "";
+  return (cents / 100).toFixed(2).replace(".", ",");
+}
+
+type RegisterLine = { productId: string; quantity: string; priceEuro: string };
+
 export function FranchiseShopPanel({ content, view }: Props) {
   const { runSave } = useAdminFeedback();
   const [products, setProducts] = useState<FranchiseShopProduct[]>([]);
@@ -80,11 +95,14 @@ export function FranchiseShopPanel({ content, view }: Props) {
   const [showManualStatus, setShowManualStatus] = useState(false);
   const [registerForm, setRegisterForm] = useState({
     accountId: "",
+    locationId: content.locations[0]?.id || "",
+    contactName: "",
+    contactPhone: "",
     channel: "whatsapp" as FranchiseShopOrderChannel,
     notes: "",
     incomplete: false,
     missingData: "",
-    items: [] as Array<{ productId: string; quantity: string }>
+    items: [] as RegisterLine[]
   });
 
   const locations = content.locations;
@@ -327,6 +345,7 @@ export function FranchiseShopPanel({ content, view }: Props) {
   async function applyOrderAction(input: {
     action: FranchiseShopOrderAction;
     note?: string;
+    toStatus?: FranchiseShopOrderStatus;
     deviationKind?: string;
   }) {
     if (!selectedOrder || savingStatus) return;
@@ -348,24 +367,70 @@ export function FranchiseShopPanel({ content, view }: Props) {
     }
   }
 
+  function registerLocationId() {
+    const account = accounts.find((item) => item.id === registerForm.accountId);
+    return account?.locationId || registerForm.locationId;
+  }
+
+  function catalogPriceEuro(productId: string, locationId: string) {
+    const product = products.find((item) => item.id === productId);
+    const cents = product?.prices?.[locationId];
+    return centsToEuroInput(cents);
+  }
+
+  function setRegisterLine(index: number, patch: Partial<RegisterLine>) {
+    setRegisterForm((current) => ({
+      ...current,
+      items: current.items.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+        const next = { ...item, ...patch };
+        if (patch.productId != null && !patch.priceEuro) {
+          const suggested = catalogPriceEuro(patch.productId, registerLocationId());
+          if (suggested) next.priceEuro = suggested;
+        }
+        return next;
+      })
+    }));
+  }
+
   async function registerOrder() {
-    if (!registerForm.accountId) {
-      setMessage("Kies een franchise-account.");
+    const locationId = registerLocationId();
+    if (!registerForm.accountId && !locationId) {
+      setMessage("Kies een vestiging of een franchise-account.");
       return;
     }
+    if (
+      registerForm.channel === "whatsapp" &&
+      !registerForm.accountId &&
+      registerForm.contactPhone.replace(/\D/g, "").length < 8
+    ) {
+      setMessage("Vul een WhatsApp-nummer in (of kies een account).");
+      return;
+    }
+    const items = registerForm.items
+      .filter((item) => item.productId && Number(item.quantity) > 0)
+      .map((item) => {
+        const unitPriceCents = parseEuroToCents(item.priceEuro);
+        return {
+          productId: item.productId,
+          quantity: Number(item.quantity),
+          ...(unitPriceCents != null ? { unitPriceCents } : {})
+        };
+      });
     await runSave(
       async () => {
         const data = await api<{ order: FranchiseShopOrder; message?: string }>("/api/admin/franchise-shop/orders", {
           method: "POST",
           body: JSON.stringify({
-            accountId: registerForm.accountId,
+            accountId: registerForm.accountId || undefined,
+            locationId: registerForm.accountId ? undefined : locationId,
+            contactName: registerForm.contactName || undefined,
+            contactPhone: registerForm.contactPhone || undefined,
             channel: registerForm.channel,
             notes: registerForm.notes,
             incomplete: registerForm.incomplete,
             missingData: registerForm.missingData,
-            items: registerForm.items
-              .filter((item) => item.productId && Number(item.quantity) > 0)
-              .map((item) => ({ productId: item.productId, quantity: Number(item.quantity) }))
+            items
           })
         });
         setOrders((current) => [data.order, ...current]);
@@ -373,7 +438,10 @@ export function FranchiseShopPanel({ content, view }: Props) {
         setShowRegister(false);
         setShowProcess(false);
         setRegisterForm({
-          accountId: registerForm.accountId,
+          accountId: "",
+          locationId: locations[0]?.id || "",
+          contactName: "",
+          contactPhone: "",
           channel: "whatsapp",
           notes: "",
           incomplete: false,
@@ -645,22 +713,11 @@ export function FranchiseShopPanel({ content, view }: Props) {
                   Annuleren
                 </button>
               </div>
-              <p className="ta-seo-hint">Voor bestellingen via WhatsApp, e-mail of een ander kanaal. Portaalorders komen vanzelf binnen.</p>
+              <p className="ta-seo-hint">
+                Voor WhatsApp/e-mail: account is optioneel. Bij WhatsApp vul je een nummer in. Vul per regel een prijs in euro
+                in als er nog geen catalogusprijs is.
+              </p>
               <div className="ta-grid">
-                <label className="ta-field">
-                  <span>Franchise-account</span>
-                  <select
-                    value={registerForm.accountId}
-                    onChange={(event) => setRegisterForm((current) => ({ ...current, accountId: event.target.value }))}
-                  >
-                    <option value="">Kies account</option>
-                    {accounts.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.locationCode} {account.name} · {account.email}
-                      </option>
-                    ))}
-                  </select>
-                </label>
                 <label className="ta-field">
                   <span>Kanaal</span>
                   <select
@@ -676,6 +733,68 @@ export function FranchiseShopPanel({ content, view }: Props) {
                     ))}
                     <option value="portaal">Portaal (handmatig)</option>
                   </select>
+                </label>
+                <label className="ta-field">
+                  <span>Franchise-account (optioneel)</span>
+                  <select
+                    value={registerForm.accountId}
+                    onChange={(event) => {
+                      const accountId = event.target.value;
+                      const account = accounts.find((item) => item.id === accountId);
+                      setRegisterForm((current) => ({
+                        ...current,
+                        accountId,
+                        locationId: account?.locationId || current.locationId,
+                        contactName: current.contactName || account?.name || "",
+                        contactPhone: current.contactPhone
+                      }));
+                    }}
+                  >
+                    <option value="">Geen account</option>
+                    {accounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.locationCode} {account.name} · {account.email}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {!registerForm.accountId ? (
+                  <label className="ta-field">
+                    <span>Vestiging</span>
+                    <select
+                      value={registerForm.locationId}
+                      onChange={(event) => setRegisterForm((current) => ({ ...current, locationId: event.target.value }))}
+                    >
+                      <option value="">Kies vestiging</option>
+                      {locations.map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.code} {location.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+                <label className="ta-field">
+                  <span>Naam / contact</span>
+                  <input
+                    value={registerForm.contactName}
+                    onChange={(event) => setRegisterForm((current) => ({ ...current, contactName: event.target.value }))}
+                    placeholder="Optioneel"
+                  />
+                </label>
+                <label className="ta-field">
+                  <span>
+                    {registerForm.channel === "whatsapp" ? "WhatsApp-nummer" : "Telefoon"}
+                    {registerForm.channel === "whatsapp" && !registerForm.accountId ? " *" : ""}
+                  </span>
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    value={registerForm.contactPhone}
+                    onChange={(event) => setRegisterForm((current) => ({ ...current, contactPhone: event.target.value }))}
+                    placeholder="06 12345678"
+                    required={registerForm.channel === "whatsapp" && !registerForm.accountId}
+                  />
                 </label>
                 <label className="ta-field ta-grid-wide">
                   <span>Opmerking van de vestiging</span>
@@ -704,20 +823,16 @@ export function FranchiseShopPanel({ content, view }: Props) {
                   </label>
                 ) : null}
               </div>
-              <div className="ta-link-table" style={{ marginTop: 12 }}>
+              <div className="ta-link-table fs-register-lines" style={{ marginTop: 12 }}>
+                <div className="ta-link-row fs-register-head" aria-hidden="true">
+                  <span>Product</span>
+                  <span>Aantal</span>
+                  <span>Prijs (€)</span>
+                  <span />
+                </div>
                 {registerForm.items.map((line, index) => (
                   <div className="ta-link-row" key={`${line.productId}-${index}`}>
-                    <select
-                      value={line.productId}
-                      onChange={(event) =>
-                        setRegisterForm((current) => ({
-                          ...current,
-                          items: current.items.map((item, itemIndex) =>
-                            itemIndex === index ? { ...item, productId: event.target.value } : item
-                          )
-                        }))
-                      }
-                    >
+                    <select value={line.productId} onChange={(event) => setRegisterLine(index, { productId: event.target.value })}>
                       <option value="">Product</option>
                       {products.filter((product) => product.active).map((product) => (
                         <option key={product.id} value={product.id}>
@@ -728,16 +843,21 @@ export function FranchiseShopPanel({ content, view }: Props) {
                     <input
                       type="number"
                       min={1}
+                      aria-label="Aantal"
                       value={line.quantity}
-                      onChange={(event) =>
-                        setRegisterForm((current) => ({
-                          ...current,
-                          items: current.items.map((item, itemIndex) =>
-                            itemIndex === index ? { ...item, quantity: event.target.value } : item
-                          )
-                        }))
-                      }
+                      onChange={(event) => setRegisterLine(index, { quantity: event.target.value })}
                     />
+                    <label className="fs-euro-field">
+                      <span aria-hidden="true">€</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0,00"
+                        aria-label="Prijs in euro"
+                        value={line.priceEuro}
+                        onChange={(event) => setRegisterLine(index, { priceEuro: event.target.value })}
+                      />
+                    </label>
                     <button
                       className="ta-btn ta-btn-ghost"
                       type="button"
@@ -757,12 +877,20 @@ export function FranchiseShopPanel({ content, view }: Props) {
                 <button
                   className="ta-btn"
                   type="button"
-                  onClick={() =>
+                  onClick={() => {
+                    const productId = products.find((product) => product.active)?.id || "";
                     setRegisterForm((current) => ({
                       ...current,
-                      items: [...current.items, { productId: products.find((product) => product.active)?.id || "", quantity: "1" }]
-                    }))
-                  }
+                      items: [
+                        ...current.items,
+                        {
+                          productId,
+                          quantity: "1",
+                          priceEuro: catalogPriceEuro(productId, registerLocationId())
+                        }
+                      ]
+                    }));
+                  }}
                 >
                   + Product
                 </button>
@@ -791,8 +919,14 @@ export function FranchiseShopPanel({ content, view }: Props) {
               <div className="ta-toolbar ta-toolbar-spread">
                 <h3 className="ta-section-title">{selectedOrder.orderNumber}</h3>
                 <div className="ta-toolbar">
-                  <button className="ta-btn ta-btn-ghost" type="button" onClick={() => setShowProcess(true)}>
-                    Werkwijze
+                  <button
+                    className="ta-btn ta-btn-ghost order-workflow-help-btn"
+                    type="button"
+                    title="Werkwijze"
+                    aria-label="Werkwijze bekijken"
+                    onClick={() => setShowProcess(true)}
+                  >
+                    ?
                   </button>
                   <button
                     className="ta-btn ta-btn-ghost"
@@ -832,7 +966,16 @@ export function FranchiseShopPanel({ content, view }: Props) {
                 </label>
                 <label className="ta-field">
                   <span>Contact</span>
-                  <input readOnly value={`${selectedOrder.accountName} · ${selectedOrder.accountEmail}`} />
+                  <input
+                    readOnly
+                    value={[
+                      selectedOrder.accountName,
+                      selectedOrder.accountEmail || null,
+                      selectedOrder.contactPhone || null
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  />
                 </label>
                 <label className="ta-field">
                   <span>Bedrijf</span>
@@ -856,6 +999,7 @@ export function FranchiseShopPanel({ content, view }: Props) {
                 order={selectedOrder}
                 busy={savingStatus}
                 onAction={(input) => void applyOrderAction(input)}
+                onOpenHelp={() => setShowProcess(true)}
               />
               <button className="ta-btn ta-btn-ghost" type="button" onClick={() => setShowManualStatus((value) => !value)}>
                 {showManualStatus ? "Handmatige status verbergen" : "Status handmatig zetten"}

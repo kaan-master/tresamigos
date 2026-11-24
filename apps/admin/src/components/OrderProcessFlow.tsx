@@ -114,11 +114,11 @@ export function OrderProcessFlow() {
           </Branch>
         </div>
         <p className="order-flow-continue">Volledige ontvangst en ontvangst met afwijking komen hier samen</p>
-        <Step tone="afgerond">Werk voorraad en bestelling bij</Step>
-        <Down />
         <Step tone="afgerond">Status: Afgerond</Step>
         <Down />
-        <Step tone="proces">Actualiseer voorraad en prognose</Step>
+        <Step tone="proces">Werk voorraad bij in Tellingen (handmatig)</Step>
+        <Down />
+        <Step tone="afgerond">Vink af: tellingen gedaan</Step>
         <Down />
         <Step tone="afgerond">Einde proces</Step>
       </div>

@@ -66,7 +66,7 @@ function QtyControl({
 }) {
   return (
     <div className="fs-qty" role="group" aria-label={ariaLabel || "Aantal"}>
-      <button type="button" aria-label="Minder" onClick={() => onChange(value - 1)}>
+      <button type="button" aria-label="Minder" onClick={() => onChange(Math.max(0, value - 1))}>
         −
       </button>
       <input
@@ -76,11 +76,11 @@ function QtyControl({
         value={String(value)}
         onChange={(e) => {
           const digits = e.target.value.replace(/\D/g, "");
-          onChange(digits ? Number(digits) : 0);
+          onChange(digits ? Math.min(999, Number(digits)) : 0);
         }}
         aria-label="Aantal"
       />
-      <button type="button" aria-label="Meer" onClick={() => onChange(value + 1)}>
+      <button type="button" aria-label="Meer" onClick={() => onChange(Math.min(999, value + 1))}>
         +
       </button>
     </div>
@@ -161,6 +161,7 @@ export function FranchiseShopPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<FranchiseShopPaymentMethod>("invoice");
+  const [invoiceAccepted, setInvoiceAccepted] = useState(false);
   const [paymentWatch, setPaymentWatch] = useState<{ orderId: string; label: string } | null>(null);
   const pollRef = useRef<number | null>(null);
 
@@ -286,6 +287,10 @@ export function FranchiseShopPage() {
     if (!cart.length || submitting) return;
     const method: FranchiseShopPaymentMethod =
       user?.allowInvoicePayment === false ? "ideal" : paymentMethod;
+    if (method === "invoice" && !invoiceAccepted) {
+      setMessage("Bevestig dat je akkoord gaat met deze bestelling op factuur.");
+      return;
+    }
     setSubmitting(true);
     setMessage("");
     try {
@@ -296,6 +301,7 @@ export function FranchiseShopPage() {
       );
       setQty(Object.fromEntries(products.map((product) => [product.id, 0])));
       setNotes("");
+      setInvoiceAccepted(false);
       setOrders((current) => [result.order, ...current]);
       if (result.checkoutUrl) {
         setMessage(`Bestelling ${result.order.orderNumber} — doorsturen naar iDEAL…`);
@@ -486,7 +492,10 @@ export function FranchiseShopPage() {
                     type="radio"
                     name="pay"
                     checked={paymentMethod === "invoice"}
-                    onChange={() => setPaymentMethod("invoice")}
+                    onChange={() => {
+                      setPaymentMethod("invoice");
+                      setInvoiceAccepted(false);
+                    }}
                   />
                   <span>Op factuur</span>
                 </label>
@@ -495,7 +504,10 @@ export function FranchiseShopPage() {
                     type="radio"
                     name="pay"
                     checked={paymentMethod === "ideal"}
-                    onChange={() => setPaymentMethod("ideal")}
+                    onChange={() => {
+                      setPaymentMethod("ideal");
+                      setInvoiceAccepted(false);
+                    }}
                   />
                   <span>iDEAL</span>
                 </label>
@@ -503,12 +515,25 @@ export function FranchiseShopPage() {
             ) : (
               <p className="fs-lead">Betaalwijze: iDEAL</p>
             )}
+            {(user.allowInvoicePayment === false ? "ideal" : paymentMethod) === "invoice" ? (
+              <label className={`fs-agree${invoiceAccepted ? " is-active" : ""}`}>
+                <input
+                  type="checkbox"
+                  checked={invoiceAccepted}
+                  onChange={(event) => setInvoiceAccepted(event.target.checked)}
+                />
+                <span>
+                  Ik ga akkoord met deze bestelling op factuur voor {formatEuro(cartTotalCents)}. Tres Amigos mag deze
+                  order in behandeling nemen.
+                </span>
+              </label>
+            ) : null}
             <label>
               <span>Opmerking</span>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={4}
+                rows={3}
                 placeholder="Levertijd, contactpersoon, bijzonderheden..."
               />
             </label>
@@ -521,12 +546,20 @@ export function FranchiseShopPage() {
                 {message}
               </p>
             ) : null}
-            <button type="button" disabled={!cart.length || submitting} onClick={() => void handleOrder()}>
+            <button
+              type="button"
+              disabled={
+                !cart.length ||
+                submitting ||
+                ((user.allowInvoicePayment === false ? "ideal" : paymentMethod) === "invoice" && !invoiceAccepted)
+              }
+              onClick={() => void handleOrder()}
+            >
               {submitting
                 ? "Bezig..."
                 : (user.allowInvoicePayment === false ? "ideal" : paymentMethod) === "ideal"
                   ? "Betalen met iDEAL"
-                  : "Bestelling op factuur"}
+                  : "Bestelling bevestigen"}
             </button>
           </aside>
         </div>

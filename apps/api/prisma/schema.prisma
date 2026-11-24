@@ -53,15 +53,17 @@ model SiteSettings {
 }
 
 model AdminUser {
-  id           String   @id @default(uuid())
-  email        String   @unique
+  id           String    @id @default(uuid())
+  email        String    @unique
   name         String
   passwordHash String
   permissions  String[]
-  avatarData   String   @default("")
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  avatarData   String    @default("")
+  active       Boolean   @default(true)
+  loginCount   Int       @default(0)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   todoOwned    TodoTask[]     @relation("TodoPrimaryAssignee")
   todoSeats    TodoAssignee[]
   todoComments TodoComment[]
@@ -423,11 +425,13 @@ model FranchiseShopOrder {
   status          String                   @default("in_afwachting")
   channel         String                   @default("portaal")
   flow            Json                     @default("{}")
-  accountId       String
-  account         FranchiseAccount         @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  accountId       String?
+  account         FranchiseAccount?        @relation(fields: [accountId], references: [id], onDelete: Restrict)
   locationId      String
   locationName    String
   locationCode    String                   @default("")
+  contactName     String                   @default("")
+  contactPhone    String                   @default("")
   notes           String                   @default("")
   adminNotes      String                   @default("")
   subtotalCents   Int                      @default(0)

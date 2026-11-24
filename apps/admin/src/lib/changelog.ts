@@ -1,7 +1,7 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
 /** Gelijk houden aan `apps/admin/package.json` → version. */
-export const ADMIN_APP_VERSION = "0.3.15";
+export const ADMIN_APP_VERSION = "0.3.22";
 
 export type ChangelogEntry = {
   version: string;
@@ -12,9 +12,61 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
-    version: "0.3.15",
+    version: "0.3.22",
     date: "24 november 2026",
     current: true,
+    changes: [
+      "Franchise-werkwijze: klik op een andere status in het hoofdproces → popup met verplichte reden (bijv. menselijke fout)."
+    ]
+  },
+  {
+    version: "0.3.21",
+    date: "24 november 2026",
+    changes: [
+      "Franchise-shop: bestellen op factuur/iDEAL stabieler (duidelijke fouten i.p.v. Internal Server Error).",
+      "Shop-layout: volle breedte, grotere productfoto’s, horizontale aantallen, bevestiging bij factuur."
+    ]
+  },
+  {
+    version: "0.3.20",
+    date: "24 november 2026",
+    changes: [
+      "Handmatige franchise-registratie: WhatsApp-nummer verplicht zonder account, account optioneel, euro-prijsveld per productregel."
+    ]
+  },
+  {
+    version: "0.3.19",
+    date: "24 november 2026",
+    changes: [
+      "Franchise-werkwijze: ‘Voorraad/prognose’ hernoemd naar duidelijke checklist ‘Tellingen bijgewerkt’ (geen automatische voorraad)."
+    ]
+  },
+  {
+    version: "0.3.18",
+    date: "24 november 2026",
+    changes: [
+      "Franchise-tab: highlight ‘Nieuw’ bij eerste login, ‘Update’ bij nieuwe features; tooltip bij hover, verdwijnt na openen."
+    ]
+  },
+  {
+    version: "0.3.17",
+    date: "24 november 2026",
+    changes: [
+      "Franchise-werkwijze: statusmails naar de vestiging bij elke stap (en bij plaatsen).",
+      "Bestelling bevestigen met vinkje; knop ? opent de werkwijze.",
+      "Status één stap terugzetten; tekstveld alleen bij acties die toelichting vereisen."
+    ]
+  },
+  {
+    version: "0.3.16",
+    date: "24 november 2026",
+    changes: [
+      "Mollie-koppeling: test- en live-sleutelvelden laden weer correct (formulier was leeg)."
+    ]
+  },
+  {
+    version: "0.3.15",
+    date: "24 november 2026",
     changes: [
       "Vestiging aanmaken: unieke ids/codes en duidelijke fout bij gekoppelde franchise/tellingen.",
       "Franchise-rechten: Koppelingen/Franchise dekt nu ook de shop-API (accounts, orders, PDF).",

@@ -315,20 +315,11 @@ export function IntegrationsPanel({
     setError("");
     try {
       const result = await api<{ integrations: IntegrationSettingsPublic }>("/api/admin/integrations");
-      setSettings(result.integrations);
-      setMailForm(toMailForm(result.integrations.mailRelay));
-      setGoogleForm({
-        enabled: result.integrations.googleAds.enabled,
-        conversionId: result.integrations.googleAds.conversionId
-      });
-      setNewsletterForm({
-        enabled: result.integrations.newsletter.enabled,
-        showFooter: result.integrations.newsletter.showFooter,
-        showHome: result.integrations.newsletter.showHome,
-        showPages: result.integrations.newsletter.showPages
-      });
+      applySettings(result.integrations);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Integraties laden mislukt.");
+      // Zorg dat Mollie-formulier toch beschikbaar is als de API nog geen mollie teruggeeft.
+      setMollieForm((current) => current || toMollieForm(EMPTY_MOLLIE));
     } finally {
       setLoading(false);
     }
@@ -400,10 +391,10 @@ export function IntegrationsPanel({
         id: "mollie" as const,
         label: "Mollie",
         hint: "Online betalingen · test & live",
-        active: settings.mollie.enabled,
-        detail: settings.mollie.enabled
+        active: Boolean(settings.mollie?.enabled),
+        detail: settings.mollie?.enabled
           ? `${settings.mollie.mode === "live" ? "Live" : "Test"}${settings.mollie.activeKeySet ? "" : " · sleutel ontbreekt"}`
-          : settings.mollie.testApiKeySet || settings.mollie.liveApiKeySet
+          : settings.mollie?.testApiKeySet || settings.mollie?.liveApiKeySet
             ? "Uit · sleutels opgeslagen"
             : "Niet geconfigureerd"
       },
@@ -418,7 +409,8 @@ export function IntegrationsPanel({
   }, [settings, connectedCategories]);
 
   function applySettings(next: IntegrationSettingsPublic) {
-    setSettings(next);
+    const mollie = next.mollie || EMPTY_MOLLIE;
+    setSettings({ ...next, mollie });
     setMailForm(toMailForm(next.mailRelay));
     setGoogleForm({ enabled: next.googleAds.enabled, conversionId: next.googleAds.conversionId });
     setNewsletterForm({
@@ -427,7 +419,7 @@ export function IntegrationsPanel({
       showHome: next.newsletter.showHome,
       showPages: next.newsletter.showPages
     });
-    setMollieForm(toMollieForm(next.mollie || EMPTY_MOLLIE));
+    setMollieForm(toMollieForm(mollie));
   }
 
   async function saveMailRelay() {
@@ -1373,38 +1365,42 @@ export function IntegrationsPanel({
               <span>
                 Test API-sleutel <code>(test_...)</code>
               </span>
-              {settings?.mollie.testApiKeySet ? (
+              {settings?.mollie?.testApiKeySet ? (
                 <p className="ta-seo-hint" style={{ margin: "0 0 6px" }}>
                   Opgeslagen: {settings.mollie.testApiKeyMasked} — leeg laten = behouden
                 </p>
               ) : null}
               <input
-                type="password"
+                type="text"
+                spellCheck={false}
                 value={mollieForm.testApiKey}
                 onChange={(event) =>
                   setMollieForm((current) => (current ? { ...current, testApiKey: event.target.value } : current))
                 }
                 placeholder="test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                 autoComplete="off"
+                name="mollie-test-api-key"
               />
             </label>
             <label className="ta-field">
               <span>
                 Live API-sleutel <code>(live_...)</code>
               </span>
-              {settings?.mollie.liveApiKeySet ? (
+              {settings?.mollie?.liveApiKeySet ? (
                 <p className="ta-seo-hint" style={{ margin: "0 0 6px" }}>
                   Opgeslagen: {settings.mollie.liveApiKeyMasked} — leeg laten = behouden
                 </p>
               ) : null}
               <input
-                type="password"
+                type="text"
+                spellCheck={false}
                 value={mollieForm.liveApiKey}
                 onChange={(event) =>
                   setMollieForm((current) => (current ? { ...current, liveApiKey: event.target.value } : current))
                 }
                 placeholder="live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                 autoComplete="off"
+                name="mollie-live-api-key"
               />
             </label>
           </div>

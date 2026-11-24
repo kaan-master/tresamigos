@@ -29,6 +29,7 @@ import { useAdminFeedback } from "./context/AdminFeedbackContext";
 import { QuietSaveCapture, QuietSaveProvider } from "./context/QuietSaveContext";
 import { useAdminTablet } from "./context/AdminTabletContext";
 import { formatAdminVersionLabel } from "./lib/changelog";
+import { FRANCHISE_FEATURE, franchiseNavHighlight, markFeatureSeen } from "./lib/featureHighlights";
 import type { AdminSessionUser, AdminTabId } from "@tresamigos/types";
 
 const tabs = [
@@ -95,6 +96,22 @@ export function AdminDashboard({ user, onLogout }: Props) {
   const [cateringOrders, setCateringOrders] = useState<CateringOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [franchiseHighlight, setFranchiseHighlight] = useState(() =>
+    user ? franchiseNavHighlight(user.id, user.firstLogin === true) : null
+  );
+
+  useEffect(() => {
+    if (!user) {
+      setFranchiseHighlight(null);
+      return;
+    }
+    if (activeTab === "franchise") {
+      markFeatureSeen(user.id, FRANCHISE_FEATURE.key);
+      setFranchiseHighlight(null);
+      return;
+    }
+    setFranchiseHighlight(franchiseNavHighlight(user.id, user.firstLogin === true));
+  }, [user?.id, user?.firstLogin, activeTab]);
 
   function updateContent(next: SiteContent) {
     contentRef.current = next;
@@ -248,9 +265,12 @@ export function AdminDashboard({ user, onLogout }: Props) {
         id,
         label,
         Icon: tabIcons[id],
-        badge: id === "catering" && newCateringOrderCount > 0 ? newCateringOrderCount : undefined
+        badge: id === "catering" && newCateringOrderCount > 0 ? newCateringOrderCount : undefined,
+        featureBadge: id === "franchise" && franchiseHighlight ? franchiseHighlight.label : undefined,
+        featureTitle: id === "franchise" && franchiseHighlight ? franchiseHighlight.title : undefined,
+        featureKind: id === "franchise" && franchiseHighlight ? franchiseHighlight.kind : undefined
       })),
-    [visibleTabs, newCateringOrderCount]
+    [visibleTabs, newCateringOrderCount, franchiseHighlight]
   );
 
   const searchItems = useMemo(
@@ -288,6 +308,10 @@ export function AdminDashboard({ user, onLogout }: Props) {
     setActiveTab(id);
     setNavOpen(false);
     openPanel();
+    if (id === "franchise" && user) {
+      markFeatureSeen(user.id, FRANCHISE_FEATURE.key);
+      setFranchiseHighlight(null);
+    }
     if (id !== "catering") {
       setCateringNavigateView(null);
       setCateringOpenOrderId(null);
@@ -324,6 +348,10 @@ export function AdminDashboard({ user, onLogout }: Props) {
       return;
     }
     if (item.target.kind === "franchise") {
+      if (user) {
+        markFeatureSeen(user.id, FRANCHISE_FEATURE.key);
+        setFranchiseHighlight(null);
+      }
       setActiveTab("franchise");
       setFranchiseNavigateView(item.target.view);
       setNavOpen(false);
@@ -596,15 +624,24 @@ export function AdminDashboard({ user, onLogout }: Props) {
                     {sectionTabs.map(([id, label]) => {
                       const Icon = tabIcons[id];
                       const badge = id === "catering" && newCateringOrderCount > 0 ? newCateringOrderCount : null;
+                      const feature = id === "franchise" ? franchiseHighlight : null;
                       return (
                         <button
                           key={id}
                           type="button"
-                          className={`${activeTab === id ? "is-active" : ""}${id === "catering" && newCateringOrderCount > 0 ? " has-notification" : ""}`}
+                          className={`${activeTab === id ? "is-active" : ""}${id === "catering" && newCateringOrderCount > 0 ? " has-notification" : ""}${feature ? ` is-feature-highlight is-feature-${feature.kind}` : ""}`}
+                          title={feature?.title || undefined}
+                          aria-label={feature ? `${label}. ${feature.title}` : label}
                           onClick={() => selectTab(id)}
                         >
                           <Icon width={18} height={18} />
                           <span>{label}</span>
+                          {feature ? (
+                            <span className="ta-nav-feature" aria-hidden="true">
+                              <span className="ta-nav-feature-dot" />
+                              {feature.label}
+                            </span>
+                          ) : null}
                           {badge ? <span className="ta-nav-badge">{badge}</span> : null}
                         </button>
                       );
