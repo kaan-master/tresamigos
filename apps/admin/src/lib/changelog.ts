@@ -1,7 +1,7 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
 /** Gelijk houden aan `apps/admin/package.json` → version. */
-export const ADMIN_APP_VERSION = "0.3.26";
+export const ADMIN_APP_VERSION = "0.3.28";
 
 export type ChangelogEntry = {
   version: string;
@@ -12,9 +12,23 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
-    version: "0.3.26",
+    version: "0.3.28",
     date: "24 november 2026",
     current: true,
+    changes: [
+      "Franchise-bestelling: knop ‘? Werkwijze’ i.p.v. alleen een vraagteken."
+    ]
+  },
+  {
+    version: "0.3.27",
+    date: "24 november 2026",
+    changes: [
+      "Mollie ‘Verbinding testen’ werkt nu ook met een test-sleutel (check via /methods i.p.v. live-only organisaties-API)."
+    ]
+  },
+  {
+    version: "0.3.26",
+    date: "24 november 2026",
     changes: [
       "Mollie: met alleen een test-sleutel kun je testmodus aanzetten; live blijft geblokkeerd zonder live_… sleutel."
     ]

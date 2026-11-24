@@ -5889,19 +5889,22 @@ body.admin-tablet-mode .ta-action-dock {
 
 .order-workflow-help,
 .order-workflow-help-btn {
-  width: 28px;
-  height: 28px;
+  width: auto;
+  min-height: 28px;
   border-radius: 999px;
   border: 1px solid rgba(0, 0, 0, 0.16);
   background: #fff;
   font: inherit;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
   cursor: pointer;
-  padding: 0;
+  padding: 6px 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 .order-workflow-help:hover,

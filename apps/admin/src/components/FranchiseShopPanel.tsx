@@ -923,14 +923,14 @@ export function FranchiseShopPanel({ content, view }: Props) {
                   <button
                     className="ta-btn ta-btn-ghost order-workflow-help-btn"
                     type="button"
-                    title="Werkwijze"
+                    title="Werkwijze / workflow bekijken"
                     aria-label="Werkwijze bekijken"
                     onClick={() => {
                       setProcessHighlight(selectedOrder.status);
                       setShowProcess(true);
                     }}
                   >
-                    ?
+                    ? Werkwijze
                   </button>
                   <button
                     className="ta-btn ta-btn-ghost"

@@ -126,11 +126,11 @@ export function FranchiseOrderWorkflow({ order, busy, onAction, onOpenHelp }: Pr
           <button
             type="button"
             className="order-workflow-help"
-            title="Werkwijze bekijken"
+            title="Werkwijze / workflow bekijken"
             aria-label="Werkwijze bekijken"
             onClick={() => onOpenHelp(order.status)}
           >
-            ?
+            ? Werkwijze
           </button>
         ) : null}
       </div>

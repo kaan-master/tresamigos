@@ -215,19 +215,29 @@ export class MollieService {
   }
 
   async ping(apiKey: string) {
+    const key = apiKey.trim();
+    const mode: MollieMode = key.startsWith("live_") ? "live" : "test";
     try {
-      const data = await this.mollieRequest<{ id?: string; name?: string; email?: string }>(
-        apiKey,
-        "/organizations/me"
-      );
+      // Belangrijk: /organizations/me is live-only en faalt met test_… sleutels.
+      // /methods werkt in test én live.
+      const data = await this.mollieRequest<{
+        count?: number;
+        _embedded?: { methods?: Array<{ id?: string }> };
+      }>(key, "/methods");
+      const methods = data._embedded?.methods || [];
+      const ideal = methods.some((method) => method.id === "ideal");
       return {
         ok: true as const,
-        message: `Verbonden met Mollie${data.name ? ` (${data.name})` : ""}${data.email ? ` · ${data.email}` : ""}.`,
-        profileId: String(data.id || "").trim()
+        message: `Verbonden met Mollie (${mode})${ideal ? " · iDEAL beschikbaar" : ""}.`,
+        profileId: ""
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Mollie ping mislukt.";
-      this.logger.warn(`Mollie ping mislukt: ${message}`);
+      let message = error instanceof Error ? error.message : "Mollie ping mislukt.";
+      if (/only available in live mode/i.test(message) && mode === "test") {
+        message =
+          "Mollie weigerde een live-only API met je test-sleutel. Sla op, herstart/deploy de API, en test opnieuw — de check gebruikt nu /methods (werkt wél in testmodus).";
+      }
+      this.logger.warn(`Mollie ping mislukt (${mode}): ${message}`);
       return { ok: false as const, message, profileId: "" };
     }
   }
