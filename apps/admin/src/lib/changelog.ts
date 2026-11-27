@@ -1,7 +1,7 @@
 /** Admin-app versie + changelog (zichtbaar rechtsonder in de zijbalk). */
 
 /** Gelijk houden aan `apps/admin/package.json` → version. */
-export const ADMIN_APP_VERSION = "0.3.28";
+export const ADMIN_APP_VERSION = "0.3.29";
 
 export type ChangelogEntry = {
   version: string;
@@ -12,9 +12,17 @@ export type ChangelogEntry = {
 
 export const ADMIN_CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.3.29",
+    date: "27 november 2026",
+    current: true,
+    changes: [
+      "Franchise-shop: standaardcatalogus (vlees, groenten, sauzen, drinks) met prijzen per vestiging.",
+      "Bij deploy: alle bestaande franchise-bestellingen worden gewist voor een schone start."
+    ]
+  },
+  {
     version: "0.3.28",
     date: "24 november 2026",
-    current: true,
     changes: [
       "Franchise-bestelling: knop ‘? Werkwijze’ i.p.v. alleen een vraagteken."
     ]

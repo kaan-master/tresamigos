@@ -5,6 +5,7 @@ import { ADMIN_TAB_IDS, type SiteContent } from "@tresamigos/types";
 import { sanitizeContent } from "@tresamigos/utils";
 import { hashPassword } from "@tresamigos/utils/crypto-node";
 import { COUNT_LISTS } from "./countCatalog";
+import { FRANCHISE_SHOP_CATALOG, franchiseShopProductDescription } from "./franchiseShopCatalog";
 
 const prisma = new PrismaClient({
   log: process.env.DEBUG_SEED === "1" ? ["query", "warn", "error"] : ["warn", "error"]
@@ -256,6 +257,43 @@ async function upsertCountCatalog() {
   }
 }
 
+async function upsertFranchiseShopCatalog() {
+  const locations = await prisma.location.findMany({ select: { id: true } });
+  if (!locations.length) {
+    logStep("franchise shop catalogus overgeslagen (geen vestigingen)");
+    return;
+  }
+
+  for (const item of FRANCHISE_SHOP_CATALOG) {
+    await prisma.franchiseShopProduct.upsert({
+      where: { id: item.id },
+      create: {
+        id: item.id,
+        name: item.name,
+        description: franchiseShopProductDescription(item),
+        sku: item.sku,
+        active: true,
+        sortOrder: item.sortOrder
+      },
+      update: {
+        name: item.name,
+        description: franchiseShopProductDescription(item),
+        sku: item.sku,
+        active: true,
+        sortOrder: item.sortOrder
+      }
+    });
+
+    for (const location of locations) {
+      await prisma.franchiseProductPrice.upsert({
+        where: { productId_locationId: { productId: item.id, locationId: location.id } },
+        create: { productId: item.id, locationId: location.id, priceCents: item.priceCents },
+        update: { priceCents: item.priceCents }
+      });
+    }
+  }
+}
+
 async function upsertAdminUser(password: string) {
   const existing = await prisma.adminUser.findUnique({ where: { email: ADMIN_EMAIL } });
   if (existing) {
@@ -297,6 +335,8 @@ async function main() {
   await upsertAdminUser(adminPassword);
   logStep("telling catalogus");
   await upsertCountCatalog();
+  logStep("franchise shop catalogus");
+  await upsertFranchiseShopCatalog();
 
   console.log("Seed completed.");
   console.log(`Admin login: ${ADMIN_EMAIL}`);
